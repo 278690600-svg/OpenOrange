@@ -1,0 +1,16 @@
+{
+  "id": "Chc4zOJ7wihaRuM9",
+  "messages": [
+    {
+      "parts": [
+        {
+          "type": "text",
+          "text": "你好"
+        }
+      ],
+      "id": "SiZRvZIj9h2dRjpg",
+      "role": "user"
+    }
+  ],
+  "trigger": "submit-message"
+}

@@ -1,0 +1,66 @@
+﻿鈻?Next.js 16.1.6 (Turbopack)
+- Environments: .env
+
+  Creating an optimized production build ...
+node.exe : Error: Cannot apply unknown utility class `app-scrollbar`
+所在位置 行:1 字符: 1
++ & "D:\nodejs/node.exe" "D:\nodejs/node_modules/npm/bin/npx-cli.js" ne .
+..
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Error: Cannot a...`app-scro 
+   llbar`:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+    [2m[at onInvalidCandidate (D:\ClosedUI\node_modules\tailwindcss\dist
+\lib.js:21:1511)][0m
+    [2m[at Ee (D:\ClosedUI\node_modules\tailwindcss\dist\lib.js:16:36740
+)][0m
+    [2m[at D:\ClosedUI\node_modules\tailwindcss\dist\lib.js:21:355][0m
+    [2m[at Pr (D:\ClosedUI\node_modules\tailwindcss\dist\lib.js:3:1733)]
+[0m
+    [2m[at _ (D:\ClosedUI\node_modules\tailwindcss\dist\lib.js:3:1377)]
+[0m
+    [2m[at Te (D:\ClosedUI\node_modules\tailwindcss\dist\lib.js:21:172)]
+[0m
+    [2m[at pn (D:\ClosedUI\node_modules\tailwindcss\dist\lib.js:38:294)]
+[0m
+    [2m[at async dn (D:\ClosedUI\node_modules\tailwindcss\dist\lib.js:38
+:631)][0m
+    [2m[at async Xr (D:\ClosedUI\node_modules\@tailwindcss\node\dist\ind
+ex.js:10:3417)][0m
+    [2m[at async N (D:\ClosedUI\node_modules\@tailwindcss\postcss\dist\i
+ndex.js:10:3979)][0m
+
+> Build error occurred
+Error: Turbopack build failed with 1 errors:
+./src/app/globals.css
+Error evaluating Node.js code
+CssSyntaxError: tailwindcss: D:\ClosedUI\src\app\globals.css:1:1: Cannot 
+apply unknown utility class `app-scrollbar`
+    at Input.error (node_modules/postcss/lib/input.js:135:16) [D:\ClosedU
+I\.next\build\chunks\node_modules_fe693df6._.js:4651:22]
+    at Root.error (node_modules/postcss/lib/node.js:146:32) [D:\ClosedUI\
+.next\build\chunks\node_modules_fe693df6._.js:928:38]
+    [at Object.Once (D:\ClosedUI\node_modules\@tailwindcss\postcss\dist\i
+ndex.js:10:6913)]
+    at async LazyResult.runAsync (node_modules/postcss/lib/lazy-result.js
+:293:11) [D:\ClosedUI\.next\build\chunks\node_modules_fe693df6._.js:6214:
+21]
+    at async transform (turbopack:///[turbopack-node]/transforms/postcss.
+ts:70:34) [D:\ClosedUI\.next\build\chunks\[root-of-the-server]__51225daf.
+_.js:146:36]
+    at async run (turbopack:///[turbopack-node]/ipc/evaluate.ts:92:23) [D
+:\ClosedUI\.next\build\chunks\[root-of-the-server]__974941ed._.js:443:31]
+
+Import trace:
+  Client Component Browser:
+    ./src/app/globals.css [Client Component Browser]
+    ./src/app/layout.tsx [Server Component]
+
+
+    at async transform (turbopack:///[turbopack-node]/transforms/postcss.
+ts:70:34) [D:\ClosedUI\.next\build\chunks\[root-of-the-server]__51225daf.
+_.js:146:36])
+    at async run (turbopack:///[turbopack-node]/ipc/evaluate.ts:92:23) [D
+:\ClosedUI\.next\build\chunks\[root-of-the-server]__974941ed._.js:443:31]
+)

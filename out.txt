@@ -1,0 +1,64 @@
+﻿node.exe : Loaded Prism
+a config from prisma.co
+nfig.ts.
+所在位置 行:1 字符: 1
++ & "D:\nodejs/node.exe
+" "D:\nodejs/node_modul
+es/npm/bin/npx-cli.js" 
+pr ...
++ ~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~
+~~
+    + CategoryInfo     
+         : NotSpecifi  
+  ed: (Loaded Prisma   
+  c...isma.config.t    
+s.:String) [], Rem    o
+teException
+    + FullyQualifiedEr 
+   rorId : NativeComm  
+  andError
+ 
+
+Prisma schema loaded fr
+om prisma\schema.prisma
+.
+
+Error: Prisma schema va
+lidation - (validate wa
+sm)
+Error code: P1012
+[1;91merror[0m: [1mT
+he datasource property 
+`url` is no longer supp
+orted in schema files. 
+Move connection URLs fo
+r Migrate to `prisma.co
+nfig.ts` and pass eithe
+r `adapter` for a direc
+t database connection o
+r `accelerateUrl` for A
+ccelerate to the `Prism
+aClient` constructor. S
+ee https://pris.ly/d/co
+nfig-datasource and htt
+ps://pris.ly/d/prisma7-
+client-config[0m
+  [1;94m-->[0m  [4mp
+risma\schema.prisma:7[
+0m
+[1;94m   | [0m
+[1;94m 6 | [0m  provi
+der = "sqlite"
+[1;94m 7 | [0m  [1;9
+1murl      = "file:./de
+v.db"[0m
+[1;94m   | [0m
+
+Validation Error Count:
+ 1
+[Context: validate]
+
+Prisma CLI Version : 7.
+5.0

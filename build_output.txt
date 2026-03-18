@@ -1,0 +1,53 @@
+﻿鈻?Next.js 16.1.6 (Turbopack)
+- Environments: .env
+
+  Creating an optimized production build ...
+鉁?Compiled successfully in 11.6s
+  Skipping validation of types
+  Collecting page data using 5 workers ...
+  Generating static pages using 5 workers (0/9) ...
+  Generating static pages using 5 workers (2/9) 
+  Generating static pages using 5 workers (4/9) 
+  Generating static pages using 5 workers (6/9) 
+鉁?Generating static pages using 5 workers (9/9) in 501.3ms
+  Finalizing page optimization ...
+
+Route (app)
+鈹?鈼?/
+鈹?鈼?/_not-found
+鈹?茠 /api/chat
+鈹?茠 /api/chats
+鈹?茠 /api/chats/[id]
+鈹?茠 /api/models
+鈹?茠 /api/search
+鈹?茠 /api/settings
+鈹?茠 /chat/[id]
+
+
+鈼? (Static)   prerendered as static content
+茠  (Dynamic)  server-rendered on demand
+
+node.exe : npm notice
+所在位置 行:1 字符: 1
++ & "D:\nodejs/node.exe" "D:\n
+odejs/node_modules/npm/bin/npx
+-cli.js" ne ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~
+    + CategoryInfo          : 
+    NotSpecified: (npm notic  
+  e:String) [], RemoteExcep   
+ tion
+    + FullyQualifiedErrorId : 
+    NativeCommandError
+ 
+npm notice New minor version o
+f npm available! 11.9.0 -> 11.
+11.1
+npm notice Changelog: https://
+github.com/npm/cli/releases/ta
+g/v11.11.1
+npm notice To update run: npm 
+install -g npm@11.11.1
+npm notice

@@ -1,0 +1,82 @@
+﻿node : Invalid hook cal
+l. Hooks can only be ca
+lled inside of the body
+ of a function componen
+t. This could happen fo
+r one of the following 
+reasons:
+所在位置 行:1 字符: 1
++ node -e "const m=requ
+ire('@ai-sdk/react');co
+nst h=m.useChat({fetch:
+() ...
++ ~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~
+~~
+    + CategoryInfo     
+         : NotSpecifi  
+  ed: (Invalid hook    
+ ca...lowing reason    
+s::String) [], Rem    o
+teException
+    + FullyQualifiedEr 
+   rorId : NativeComm  
+  andError
+ 
+1. You might have misma
+tching versions of Reac
+t and the renderer (suc
+h as React DOM)
+2. You might be breakin
+g the Rules of Hooks
+3. You might have more 
+than one copy of React 
+in the same app
+See https://react.dev/l
+ink/invalid-hook-call f
+or tips about how to de
+bug and fix this proble
+m.
+D:\ClosedUI\node_module
+s\react\cjs\react.devel
+opment.js:1260
+      return resolveDis
+patcher().useRef(initia
+lValue);
+                       
+         ^
+
+TypeError: Cannot read 
+properties of null (rea
+ding 'useRef')
+    at process.env.NODE
+_ENV.exports.useRef (D:
+\ClosedUI\node_modules\
+react\cjs\react.develop
+ment.js:1260:33)
+    at Object.useChat (
+D:\ClosedUI\node_module
+s\@ai-sdk\react\dist\in
+dex.js:179:48)
+    at [eval]:1:44
+    at runScriptInThisC
+ontext (node:internal/v
+m:219:10)
+    at node:internal/pr
+ocess/execution:451:12
+    at [eval]-wrapper:6
+:24
+    at runScriptInConte
+xt (node:internal/proce
+ss/execution:449:60)
+    at evalFunction (no
+de:internal/process/exe
+cution:283:30)
+    at evalTypeScript (
+node:internal/process/e
+xecution:295:3)
+    at node:internal/ma
+in/eval_string:71:3
+
+Node.js v24.14.0

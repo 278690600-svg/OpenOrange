@@ -1,0 +1,10 @@
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": "Summarize DeepSeek-V3 technical specs."
+    }
+  ],
+  "model": "ollama::llama3",
+  "webSearch": true
+}

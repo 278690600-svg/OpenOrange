@@ -1,0 +1,42 @@
+2026-03-13T16:52:35.934Z - Chat POST started, model: lmstudio::qwen3-4b-thinking-2507
+2026-03-13T16:52:35.949Z - Provider resolved: qwen3-4b-thinking-2507
+2026-03-13T16:52:35.950Z - Persisting to DB...
+2026-03-13T16:52:35.962Z - DB persistence complete, activeChatId: cmmp4xgxd000k3m4gih10h3eu
+2026-03-13T16:52:35.963Z - FINAL MESSAGES TO PROVIDER: [
+  {
+    "role": "user",
+    "content": "ping"
+  }
+]
+2026-03-13T16:52:35.963Z - Starting streamText...
+2026-03-13T16:52:35.969Z - streamText call returned result object
+2026-03-13T16:56:13.169Z - Chat POST started, model: lmstudio::qwen3-4b-thinking-2507
+2026-03-13T16:56:13.170Z - Probing bases for lmstudio::qwen3-4b-thinking-2507: http://127.0.0.1:1234/v1, http://localhost:1234/v1
+2026-03-13T16:56:13.178Z - Base confirmed: http://127.0.0.1:1234/v1
+2026-03-13T16:56:13.179Z - Provider resolved: qwen3-4b-thinking-2507
+2026-03-13T16:56:13.179Z - Persisting to DB...
+2026-03-13T16:56:13.190Z - DB persistence complete, activeChatId: cmmp524jh000m3m4gswydi1ly
+2026-03-13T16:56:13.191Z - FINAL MESSAGES TO PROVIDER: [
+  {
+    "role": "user",
+    "content": "ping"
+  }
+]
+2026-03-13T16:56:13.191Z - Starting streamText...
+2026-03-13T16:56:13.197Z - streamText call returned result object
+2026-03-13T16:56:42.270Z - Chat POST started, model: llama3
+2026-03-13T16:56:42.270Z - Probing bases for llama3: http://127.0.0.1:11434/v1, http://localhost:11434/v1
+2026-03-13T16:56:42.282Z - Probe failed for http://127.0.0.1:11434/v1: TypeError: fetch failed
+2026-03-13T16:56:42.287Z - Probe failed for http://localhost:11434/v1: TypeError: fetch failed
+2026-03-13T16:56:42.288Z - Provider resolved: llama3
+2026-03-13T16:56:42.288Z - Persisting to DB...
+2026-03-13T16:56:42.305Z - DB persistence complete, activeChatId: cmmp52r03000o3m4gouqgqhcv
+2026-03-13T16:56:42.305Z - FINAL MESSAGES TO PROVIDER: [
+  {
+    "role": "user",
+    "content": "你好"
+  }
+]
+2026-03-13T16:56:42.306Z - Starting streamText...
+2026-03-13T16:56:42.307Z - streamText call returned result object
+2026-03-13T16:58:29.914Z - Stream finished, length: 0
