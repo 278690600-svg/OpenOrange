@@ -70,11 +70,10 @@ export function useSSEChat() {
       }
 
       // Dynamic speed: if queue is large, drain faster
-      // This solves the problem of falling behind too much
-      let charsToTake = 1
-      if (queueLen > 100) charsToTake = 8
-      else if (queueLen > 50) charsToTake = 4
-      else if (queueLen > 10) charsToTake = 2
+      let charsToTake = 2
+      if (queueLen > 100) charsToTake = 12
+      else if (queueLen > 50) charsToTake = 6
+      else if (queueLen > 10) charsToTake = 3
 
       const nextChars = typewriterQueue.current.slice(0, charsToTake)
       typewriterQueue.current = typewriterQueue.current.slice(charsToTake)
@@ -85,8 +84,8 @@ export function useSSEChat() {
       ))
 
       // Fixed interval for smooth visual flow
-      // 15ms per step feels very natural
-      setTimeout(pump, 15)
+      // 33ms gives ~30fps which is smooth and saves massive CPU vs 15ms
+      setTimeout(pump, 33)
     }
 
     pump()
@@ -110,6 +109,7 @@ export function useSSEChat() {
       chatId: string | null
       webSearch: boolean | 'auto'
       deepThink: boolean
+      kbId?: string | null
     }
   ) => {
     const userMsg: ChatMessage = {
@@ -158,6 +158,7 @@ export function useSSEChat() {
           chatId: options.chatId,
           webSearch: options.webSearch,
           deepThink: options.deepThink,
+          kbId: options.kbId,
         }),
         signal: abortController.signal,
       })

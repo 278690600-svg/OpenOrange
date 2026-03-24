@@ -35,3 +35,32 @@ model Settings {
   searchEngine   String @default("duckduckgo")
   searchKey      String @default("")
 }
+
+model KnowledgeBase {
+  id            String   @id @default(cuid())
+  name          String
+  sourceType    String   // local, api
+  engine        String   // directory, json-api
+  path          String?
+  config        String   @default("{}") // JSON string
+  stats         String   @default("{}") // JSON string
+  status        String   @default("idle") // idle, indexing, ready, error
+  lastError     String   @default("")
+  lastIndexedAt DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  chunks        KnowledgeChunk[]
+}
+
+model KnowledgeChunk {
+  id              String        @id @default(cuid())
+  knowledgeBaseId String
+  knowledgeBase   KnowledgeBase @relation(fields: [knowledgeBaseId], references: [id], onDelete: Cascade)
+  sourceUri       String
+  title           String
+  chunkIndex      Int
+  content         String
+  keywords        String
+  metadata        String        @default("{}") // JSON
+  embedding       String?       // JSON array of floats for sqlite
+}

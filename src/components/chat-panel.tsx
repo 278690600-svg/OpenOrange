@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
-import { SendHorizonal, StopCircle, Globe, Brain, ChevronDown, Search } from "lucide-react"
+import { SendHorizonal, StopCircle, Globe, Brain, ChevronDown, Search, Database } from "lucide-react"
 import { useEffect, useState } from "react"
 
 type Model = { id: string; name: string; provider: string }
@@ -26,6 +26,8 @@ interface ChatPanelProps {
   setWebSearch: (v: boolean | 'auto') => void;
   deepThink: boolean;
   setDeepThink: (v: boolean) => void;
+  kbId?: string | null;
+  setKbId?: (v: string | null) => void;
 }
 
 export function ChatPanel({
@@ -33,15 +35,21 @@ export function ChatPanel({
   selectedModel, setSelectedModel,
   webSearch, setWebSearch,
   deepThink, setDeepThink,
+  kbId, setKbId
 }: ChatPanelProps) {
   const [models, setModels] = useState<Model[]>([])
   const [modelDropdownOpen, setModelDropdownOpen] = useState(false)
+  const [kbs, setKbs] = useState<any[]>([])
+  const [kbDropdownOpen, setKbDropdownOpen] = useState(false)
+
+  const refreshKbs = () => fetch('/api/kb').then(res => res.json()).then(data => { if(Array.isArray(data)) setKbs(data) }).catch(() => {})
 
   useEffect(() => {
     fetch('/api/models')
       .then(res => res.json())
       .then(data => { if (data.models) setModels(data.models) })
       .catch(console.error)
+    refreshKbs()
   }, [])
 
   const refreshModels = () => {
@@ -143,6 +151,69 @@ export function ChatPanel({
           <Search className="size-3" />
           <span>Search: {webSearch === 'auto' ? 'Auto' : webSearch ? 'On' : 'Off'}</span>
         </button>
+
+        {/* KB Selection */}
+        {setKbId && (
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => { setKbDropdownOpen(!kbDropdownOpen); if (!kbDropdownOpen) refreshKbs() }}
+              className={`flex items-center gap-1.5 h-8 px-2.5 rounded-full text-xs border transition-all font-medium ${
+                kbId
+                  ? 'bg-indigo-100 text-indigo-700 border-indigo-300 dark:bg-indigo-900/40 dark:text-indigo-300 dark:border-indigo-700 shadow-sm'
+                  : 'border-zinc-200 dark:border-zinc-700 text-zinc-500 dark:text-zinc-400 hover:border-zinc-300'
+              }`}
+            >
+              <Database className={`size-3 ${kbId ? 'text-indigo-500' : 'text-zinc-400'}`} />
+              {kbId ? (
+                <span className="max-w-[120px] truncate">
+                  {kbs.find(k => k.id === kbId)?.name}
+                  {kbs.find(k => k.id === kbId)?.chunkCount ? (
+                    <span className="opacity-60 ml-1 font-normal">· {kbs.find(k => k.id === kbId)?.chunkCount}</span>
+                  ) : null}
+                </span>
+              ) : (
+                <span>知识库</span>
+              )}
+            </button>
+            {kbDropdownOpen && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setKbDropdownOpen(false)} />
+                <div className="absolute bottom-full left-0 mb-2 w-56 max-h-64 overflow-y-auto bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-xl shadow-xl z-50 py-1.5">
+                  <div className="px-3 pb-1 pt-0.5">
+                    <span className="text-[10px] uppercase tracking-wider font-semibold text-zinc-400">选择知识库</span>
+                  </div>
+                  <button
+                    onClick={() => { setKbId(null); setKbDropdownOpen(false) }}
+                    className={`w-full flex items-center justify-between px-3 py-2 hover:bg-zinc-50 dark:hover:bg-zinc-800 text-left text-sm transition-colors ${!kbId ? 'text-indigo-600 dark:text-indigo-400 font-medium' : 'text-zinc-600 dark:text-zinc-400'}`}
+                  >
+                    <span>不使用知识库</span>
+                    {!kbId && <span className="text-[11px] font-bold text-indigo-500">✓</span>}
+                  </button>
+                  {kbs.length > 0 && <div className="mx-3 my-1 border-t border-zinc-100 dark:border-zinc-800" />}
+                  {kbs.map(kb => (
+                    <button
+                      key={kb.id}
+                      onClick={() => { setKbId(kb.id); setKbDropdownOpen(false) }}
+                      className={`w-full flex items-center justify-between px-3 py-2 hover:bg-zinc-50 dark:hover:bg-zinc-800 text-left text-sm transition-colors ${kb.id === kbId ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50/50 dark:bg-indigo-900/20 font-medium' : 'text-zinc-700 dark:text-zinc-300'}`}
+                    >
+                      <div className="min-w-0">
+                        <div className="truncate text-sm">{kb.name}</div>
+                        {kb.chunkCount > 0 && (
+                          <div className="text-[11px] text-zinc-400 font-normal">{kb.chunkCount} 个片段</div>
+                        )}
+                      </div>
+                      {kb.id === kbId && <span className="text-[11px] font-bold text-indigo-500 shrink-0 ml-2">✓</span>}
+                    </button>
+                  ))}
+                  {kbs.length === 0 && (
+                    <div className="px-3 py-3 text-xs text-zinc-400 text-center">暂无知识库</div>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+        )}
 
         {/* Deep Think Toggle */}
         <button

@@ -57,9 +57,7 @@ function ActiveChat({ initialMessages, chatId, selectedModel, setSelectedModel }
 }) {
   const [webSearch, setWebSearch] = useState<boolean | 'auto'>('auto')
   const [deepThink, setDeepThink] = useState(false)
-  const [knowledgeBaseId, setKnowledgeBaseId] = useState<string | null>(null)
-  const [dataFileId, setDataFileId] = useState<string | null>(null)
-  const [dataSourceId, setDataSourceId] = useState<string | null>(null)
+  const [kbId, setKbId] = useState<string | null>(null)
   const [inputValue, setInputValue] = useState("")
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
@@ -98,9 +96,7 @@ function ActiveChat({ initialMessages, chatId, selectedModel, setSelectedModel }
       chatId: chatIdRef.current,
       webSearch,
       deepThink,
-      knowledgeBaseId,
-      dataFileId,
-      dataSourceId,
+      kbId,
     })
     setInputValue("")
   }
@@ -194,12 +190,8 @@ function ActiveChat({ initialMessages, chatId, selectedModel, setSelectedModel }
             setWebSearch={setWebSearch}
             deepThink={deepThink}
             setDeepThink={setDeepThink}
-            knowledgeBaseId={knowledgeBaseId}
-            setKnowledgeBaseId={setKnowledgeBaseId}
-            dataFileId={dataFileId}
-            setDataFileId={setDataFileId}
-            dataSourceId={dataSourceId}
-            setDataSourceId={setDataSourceId}
+            kbId={kbId}
+            setKbId={setKbId}
           />
         </div>
       </div>

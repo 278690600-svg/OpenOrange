@@ -1,6 +1,7 @@
 import { streamText, generateText } from 'ai'
 import { createOpenAI } from '@ai-sdk/openai'
 import prisma from '@/lib/db'
+import { buildKnowledgeContext } from '@/lib/knowledge'
 
 type SearchResult = { title: string; snippet: string; url: string }
 
@@ -245,7 +246,7 @@ export async function POST(req: Request) {
     const body = await req.json()
     const reqUrl = new URL(req.url)
     const baseUrl = `${reqUrl.protocol}//${reqUrl.host}`
-    let { messages, model, chatId, deepThink, webSearch } = body
+    let { messages, model, chatId, deepThink, webSearch, kbId } = body
 
     const settings = await prisma.settings.findUnique({ where: { id: 'default' } })
     const defaultModel = settings?.defaultModel || 'ollama::llama3'
@@ -268,11 +269,38 @@ export async function POST(req: Request) {
     // Start processing in the background
     ;(async () => {
       try {
-        // --- Web Search ---
+        // --- Web Search & Knowledge Base ---
         let searchResults: SearchResult[] = []
         let systemInjection = ''
+        let kbInjection = ''
+        
         const lastUserMsg = messages?.length > 0 ? messages[messages.length - 1] : null
         const originalQuery = extractContent(lastUserMsg)
+        
+        // 1. Local Knowledge Base Retrieval
+        if (kbId && originalQuery) {
+           await write(sseEvent('status', { type: 'search', stage: 'searching', message: '正在检索本地知识库...' }))
+           try {
+             const kbContext = await buildKnowledgeContext(kbId, originalQuery)
+             if (kbContext && kbContext.context) {
+               kbInjection = kbContext.context
+               
+               if (kbContext.citations?.length) {
+                 await write(sseEvent('citations', {
+                   results: kbContext.citations
+                 }))
+               }
+               await write(sseEvent('status', { type: 'search', stage: 'done', message: '知识库检索完成' }))
+             } else {
+               await write(sseEvent('status', { type: 'search', stage: 'skip', message: '知识库无相关内容' }))
+             }
+           } catch (e: any) {
+             console.error('[KB] Retrieval error:', e)
+             await write(sseEvent('status', { type: 'search', stage: 'error', message: '知识库检索失败' }))
+           }
+        }
+
+        // 2. Web Search
         let searchQuery = originalQuery
 
         const forceSearch = webSearch === true
@@ -395,6 +423,7 @@ ${contextBlock}
         // --- Build System Prompt ---
         const systemParts: string[] = []
         if (deepThink) systemParts.push(DEEP_THINK_SYSTEM_PROMPT)
+        if (kbInjection) systemParts.push(kbInjection)
         if (systemInjection) systemParts.push(systemInjection)
         const systemPrompt = systemParts.join('\n\n---\n\n') || undefined
 

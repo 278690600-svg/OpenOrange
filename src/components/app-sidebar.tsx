@@ -9,6 +9,8 @@ import { useEffect, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { SettingsDialog } from "@/components/settings-dialog"
+import { KnowledgeDialog } from "@/components/knowledge-dialog"
+import { Database } from "lucide-react"
 
 type Chat = { id: string; title: string; updatedAt: string }
 
@@ -38,6 +40,7 @@ function groupByDate(chats: Chat[]) {
 export function AppSidebar() {
   const [chats, setChats] = useState<Chat[]>([])
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [kbOpen, setKbOpen] = useState(false)
   const router = useRouter()
 
   const fetchChats = () => {
@@ -122,17 +125,25 @@ export function AppSidebar() {
         </SidebarContent>
 
         {/* Footer */}
-        <SidebarFooter className="px-3 py-3 border-t border-zinc-200 dark:border-zinc-800">
+        <SidebarFooter className="px-3 py-3 border-t border-zinc-200 dark:border-zinc-800 space-y-1">
+          <SidebarMenuButton
+            onClick={() => setKbOpen(true)}
+            className="w-full justify-start gap-2.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 px-3"
+          >
+            <Database className="size-4 text-indigo-500" />
+            <span className="text-sm text-zinc-600 dark:text-zinc-400">本地知识库</span>
+          </SidebarMenuButton>
           <SidebarMenuButton
             onClick={() => setSettingsOpen(true)}
             className="w-full justify-start gap-2.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 px-3"
           >
             <Settings className="size-4 text-zinc-500" />
-            <span className="text-sm text-zinc-600 dark:text-zinc-400">Settings</span>
+            <span className="text-sm text-zinc-600 dark:text-zinc-400">设置</span>
           </SidebarMenuButton>
         </SidebarFooter>
       </Sidebar>
       <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
+      <KnowledgeDialog open={kbOpen} onOpenChange={setKbOpen} />
     </>
   )
 }

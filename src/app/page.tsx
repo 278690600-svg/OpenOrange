@@ -20,6 +20,7 @@ export default function Home() {
   const [selectedModel, setSelectedModel] = useState("ollama::llama3")
   const [webSearch, setWebSearch] = useState<boolean | 'auto'>('auto')
   const [deepThink, setDeepThink] = useState(false)
+  const [kbId, setKbId] = useState<string | null>(null)
   const [inputValue, setInputValue] = useState("")
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
@@ -49,6 +50,7 @@ export default function Home() {
       chatId: chatIdRef.current,
       webSearch,
       deepThink,
+      kbId,
     })
     setInputValue("")
   }
@@ -172,6 +174,8 @@ export default function Home() {
             setWebSearch={setWebSearch}
             deepThink={deepThink}
             setDeepThink={setDeepThink}
+            kbId={kbId}
+            setKbId={setKbId}
           />
         </div>
       </div>
