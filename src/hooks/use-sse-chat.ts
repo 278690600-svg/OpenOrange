@@ -26,6 +26,7 @@ export interface ChatMessage {
   thinkContent?: string
   searchSteps?: StatusEvent[]
   isThinking?: boolean
+  attachments?: Array<{ name: string; type: string; dataUrl?: string }>
 }
 
 let messageIdCounter = 0
@@ -110,15 +111,22 @@ export function useSSEChat() {
       webSearch: boolean | 'auto'
       deepThink: boolean
       kbId?: string | null
-    }
+      files?: any[]
+    },
+    editMessageId?: string
   ) => {
+    
+    const targetIdx = editMessageId ? messages.findIndex(m => m.id === editMessageId) : -1
+    const baseMessages = targetIdx !== -1 ? messages.slice(0, targetIdx) : messages
+
     const userMsg: ChatMessage = {
       id: generateId(),
       role: 'user',
       content: text,
+      attachments: options.files?.map(f => ({ name: f.name, type: f.type, dataUrl: f.dataUrl })),
     }
 
-    setMessages(prev => [...prev, userMsg])
+    setMessages([...baseMessages, userMsg])
     setStatus('submitted')
     setError(null)
     setCurrentSearch([])
@@ -138,13 +146,13 @@ export function useSSEChat() {
       citations: [],
     }
 
-    setMessages(prev => [...prev, assistantMsg])
+    setMessages([...baseMessages, userMsg, assistantMsg])
 
     const abortController = new AbortController()
     abortRef.current = abortController
 
     try {
-      const allMessages = [...messages, userMsg].map(m => ({
+      const allMessages = [...baseMessages, userMsg].map(m => ({
         role: m.role,
         content: m.content,
       }))
@@ -159,6 +167,7 @@ export function useSSEChat() {
           webSearch: options.webSearch,
           deepThink: options.deepThink,
           kbId: options.kbId,
+          files: options.files,
         }),
         signal: abortController.signal,
       })
@@ -273,6 +282,23 @@ export function useSSEChat() {
     assistantIdRef.current = null
   }, [])
 
+  const regenerate = useCallback(async (options: Omit<Parameters<typeof sendMessage>[1], 'files' | 'chatId'>) => {
+    if (status === 'submitted' || status === 'streaming') return
+    const lastUserIdx = [...messages].reverse().findIndex(m => m.role === 'user')
+    if (lastUserIdx === -1) return
+    const trueIdx = messages.length - 1 - lastUserIdx
+    const userMsg = messages[trueIdx]
+    
+    // Copy attachments for resend
+    const files = userMsg.attachments?.map(a => ({ name: a.name, type: a.type, dataUrl: a.dataUrl }))
+    
+    await sendMessage(userMsg.content, {
+      ...options,
+      chatId: chatIdRef.current,
+      files
+    }, userMsg.id)
+  }, [messages, status, sendMessage])
+
   return {
     messages,
     status,
@@ -281,6 +307,7 @@ export function useSSEChat() {
     currentSearch,
     chatIdRef,
     sendMessage,
+    regenerate,
     stop,
     reset,
     setMessages,

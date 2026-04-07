@@ -1,4 +1,4 @@
-import { indexKnowledgeBaseStream } from '@/lib/knowledge'
+import { indexKnowledgeBaseStream, indexDatabaseSourceStream, getKnowledgeBase } from '@/lib/knowledge'
 
 export async function POST(
   req: Request,
@@ -19,7 +19,12 @@ export async function POST(
   // Start indexing in background, stream progress events
   ;(async () => {
     try {
-      for await (const event of indexKnowledgeBaseStream(id)) {
+      // Dispatch to appropriate indexer based on sourceType
+      const kb = await getKnowledgeBase(id)
+      const generator = kb?.sourceType === 'database'
+        ? indexDatabaseSourceStream(id)
+        : indexKnowledgeBaseStream(id)
+      for await (const event of generator) {
         await write(event)
       }
     } catch (err: any) {

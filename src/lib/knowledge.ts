@@ -22,18 +22,19 @@ type ChunkCandidate = {
 }
 
 export type IndexProgressEvent = {
-  stage: 'scan' | 'file' | 'embed' | 'save' | 'done' | 'error'
+  stage: 'scan' | 'file' | 'embed' | 'save' | 'done' | 'error' | 'connect' | 'fetch_table' | 'table'
   file?: string
+  table?: string
   done?: number
   total?: number
   chunkCount?: number
-  stats?: { documentCount: number; chunkCount: number; semanticIndexed: boolean }
+  stats?: { documentCount: number; chunkCount: number; semanticIndexed: boolean; sourceType?: string }
   error?: string
 }
 
 type KnowledgeBaseRecord = Awaited<ReturnType<typeof prisma.knowledgeBase.findFirst>>
 
-const TEXT_EXTENSIONS = new Set([
+export const TEXT_EXTENSIONS = new Set([
   '.txt', '.md', '.mdx', '.json', '.csv',
   '.ts', '.tsx', '.js', '.jsx',
   '.css', '.scss', '.html', '.xml',
@@ -47,7 +48,7 @@ const TEXT_EXTENSIONS = new Set([
 ])
 
 const SKIP_DIRS = new Set(['.git', '.next', 'node_modules', 'dist', 'build', 'coverage', 'tmp', '.cache', 'out', '.svn'])
-const MAX_FILE_SIZE_BYTES = 8 * 1024 * 1024
+const MAX_FILE_SIZE_BYTES = 20 * 1024 * 1024 // Increased to 20MB to support larger PPTX/PDF files
 const MAX_API_RECORDS = 50
 const MAX_CHUNKS_PER_KB = 20000
 const CHUNK_SIZE = 1500
@@ -172,7 +173,7 @@ function sanitizeKnowledgeBaseConfig(sourceType: string, config: JsonObject): Js
 
 // ── file parsing ──────────────────────────────────────────────────────────────
 
-async function extractFileText(filePath: string): Promise<string> {
+export async function extractFileText(filePath: string): Promise<string> {
   const ext = path.extname(filePath).toLowerCase()
 
   try {
@@ -185,26 +186,43 @@ async function extractFileText(filePath: string): Promise<string> {
       return normalizeText(result.text || '')
     }
 
-    if (ext === '.docx') {
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const OfficeParser = require('officeparser')
-      const text = await OfficeParser.parseOfficeAsync(filePath)
-      return normalizeText(typeof text === 'string' ? text : '')
+    if (ext === '.docx' || ext === '.pptx') {
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        const OfficeParser = require('officeparser')
+        // officeparser v6.0+ returns an AST object with a .toText() method
+        const ast = await OfficeParser.parseOffice(filePath)
+        const text = (ast && typeof ast.toText === 'function') ? ast.toText() : String(ast || '')
+        if (!text || typeof text !== 'string') {
+          return ''
+        }
+        return normalizeText(text)
+      } catch (err: any) {
+        console.error(`[Knowledge] Failed to parse ${ext} file at ${filePath}:`, err.message)
+        return ''
+      }
     }
 
     if (ext === '.xlsx' || ext === '.xls') {
-      const workbook = xlsx.readFile(filePath)
-      return normalizeText(
-        workbook.SheetNames.map((name) =>
-          `Sheet: ${name}\n${xlsx.utils.sheet_to_csv(workbook.Sheets[name])}`
-        ).join('\n\n')
-      )
+      try {
+        const workbook = xlsx.readFile(filePath)
+        return normalizeText(
+          workbook.SheetNames.map((name) =>
+            `Sheet: ${name}\n${xlsx.utils.sheet_to_csv(workbook.Sheets[name])}`
+          ).join('\n\n')
+        )
+      } catch (err: any) {
+        console.error(`[Knowledge] Failed to parse Excel file at ${filePath}:`, err.message)
+        return ''
+      }
     }
 
     if (!TEXT_EXTENSIONS.has(ext)) return ''
-    return normalizeText(fs.readFileSync(filePath, 'utf8'))
-  } catch {
-    return '' // skip unparseable files silently
+    const content = fs.readFileSync(filePath, 'utf8')
+    return normalizeText(content)
+  } catch (err: any) {
+    console.error(`[Knowledge] Critical error extracting text from ${filePath}:`, err.message)
+    return '' // skip unparseable files
   }
 }
 
@@ -226,7 +244,7 @@ function walkDirectory(rootPath: string): string[] {
       const ext = path.extname(entry.name).toLowerCase()
       const isExplicitFile = ['dockerfile', 'makefile', '.gitignore'].includes(entry.name.toLowerCase()) || entry.name.toLowerCase().startsWith('.env.')
 
-      if (!isExplicitFile && !TEXT_EXTENSIONS.has(ext) && !['.pdf', '.docx', '.xlsx', '.xls'].includes(ext)) {
+      if (!isExplicitFile && !TEXT_EXTENSIONS.has(ext) && !['.pdf', '.docx', '.pptx', '.xlsx', '.xls', '.csv'].includes(ext)) {
         continue
       }
       try {
@@ -451,6 +469,141 @@ export async function* indexKnowledgeBaseStream(
   }
 }
 
+// ── Database source indexer ────────────────────────────────────────────────────
+
+export async function* indexDatabaseSourceStream(
+  knowledgeBaseId: string
+): AsyncGenerator<IndexProgressEvent> {
+  await prisma.knowledgeBase.update({ where: { id: knowledgeBaseId }, data: { status: 'indexing', lastError: '' } })
+  const kb = await prisma.knowledgeBase.findUnique({ where: { id: knowledgeBaseId } })
+  if (!kb) { yield { stage: 'error', error: 'Knowledge base not found' }; return }
+
+  try {
+    const config = safeJsonParse<JsonObject>(kb.config, {})
+    const dbType = String(config.dbType || 'sqlite')
+    const selectedTables = Array.isArray(config.tables) ? (config.tables as string[]) : []
+
+    yield { stage: 'connect', total: 0 }
+
+    // Open connection
+    let queryFn: (sql: string) => Promise<Record<string, unknown>[]>
+    let closeFn: () => Promise<void> = async () => {}
+
+    if (dbType === 'sqlite') {
+      const Database = (await import('better-sqlite3')).default
+      const db = new Database(String(config.filePath || ''))
+      queryFn = async (sql: string) => db.prepare(sql).all() as Record<string, unknown>[]
+      closeFn = async () => { db.close() }
+    } else if (dbType === 'mysql') {
+      const mysql = await import('mysql2/promise')
+      const csStr = String(config.connectionString || '')
+      const conn = csStr
+        ? await mysql.createConnection(csStr)
+        : await mysql.createConnection({
+            host: String(config.host || 'localhost'), port: Number(config.port || 3306),
+            user: String(config.user || ''), password: String(config.password || ''),
+            database: String(config.database || ''),
+          })
+      queryFn = async (sql: string) => { const [rows] = await conn.execute(sql); return rows as Record<string, unknown>[] }
+      closeFn = async () => { await conn.end() }
+    } else if (dbType === 'postgresql') {
+      const { Client } = await import('pg')
+      const csStr = String(config.connectionString || '')
+      const client = csStr
+        ? new Client(csStr)
+        : new Client({
+            host: String(config.host || 'localhost'), port: Number(config.port || 5432),
+            user: String(config.user || ''), password: String(config.password || ''),
+            database: String(config.database || ''),
+          })
+      await client.connect()
+      queryFn = async (sql: string) => { const res = await client.query(sql); return res.rows }
+      closeFn = async () => { await client.end() }
+    } else {
+      yield { stage: 'error', error: `Unsupported DB type: ${dbType}` }; return
+    }
+
+    // Determine tables to import
+    let tables = selectedTables
+    if (tables.length === 0) {
+      // Auto-discover all tables
+      let discoverSql = 'SHOW TABLES'
+      if (dbType === 'sqlite') discoverSql = `SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'`
+      if (dbType === 'postgresql') discoverSql = `SELECT table_name as name FROM information_schema.tables WHERE table_schema='public'`
+      const rows = await queryFn(discoverSql)
+      tables = rows.map(r => String(Object.values(r)[0] || ''))
+    }
+
+    const allDocs: KnowledgeDocument[] = []
+    yield { stage: 'fetch_table', total: tables.length, done: 0 }
+
+    for (let ti = 0; ti < tables.length; ti++) {
+      const tableName = tables[ti]
+      yield { stage: 'table', table: tableName, done: ti + 1, total: tables.length }
+      try {
+        const customSql = config.customSql ? String(config.customSql) : null
+        const sql = customSql ? customSql.replace(/\{table\}/g, `"${tableName}"`) : `SELECT * FROM "${tableName}" LIMIT 5000`
+        const rows = await queryFn(sql)
+        if (rows.length > 0) {
+          const headers = Object.keys(rows[0])
+          const header = `Table: ${tableName}\nColumns: ${headers.join(', ')}\n\n`
+          const rowsText = rows.map((row, idx) =>
+            `Row ${idx + 1}:\n${headers.map(h => `  ${h}: ${row[h] ?? ''}`).join('\n')}`
+          ).join('\n\n')
+          allDocs.push({
+            title: `[DB] ${kb.name} -> ${tableName}`,
+            sourceUri: `db://${dbType}/${tableName}`,
+            content: header + rowsText,
+            metadata: { tableName, dbType, rowCount: rows.length },
+          })
+        }
+      } catch (tableErr: any) {
+        console.warn(`[KB-DB] Failed to query table ${tableName}:`, tableErr.message)
+      }
+    }
+
+    await closeFn()
+
+    // Chunk + embed + save using the shared pipeline
+    const chunks: ChunkCandidate[] = []
+    for (const doc of allDocs) {
+      for (const [ci, content] of chunkText(doc.content).entries()) {
+        chunks.push({ sourceUri: doc.sourceUri, title: doc.title, chunkIndex: ci, content, keywords: tokenize(`${doc.title}\n${content}`).join(' '), metadata: doc.metadata || {} })
+        if (chunks.length >= MAX_CHUNKS_PER_KB) break
+      }
+      if (chunks.length >= MAX_CHUNKS_PER_KB) break
+    }
+
+    yield { stage: 'embed' }
+    const settings = await prisma.settings.findUnique({ where: { id: 'default' } })
+    let embeddings: number[][] | null = null
+    if (chunks.length > 0) {
+      try { embeddings = await createEmbeddings(chunks.map(c => c.content), settings || {}) } catch { }
+    }
+
+    yield { stage: 'save' }
+    await prisma.$transaction([
+      prisma.knowledgeChunk.deleteMany({ where: { knowledgeBaseId } }),
+      ...(chunks.length > 0 ? [prisma.knowledgeChunk.createMany({
+        data: chunks.map((chunk, idx) => ({
+          knowledgeBaseId, sourceUri: chunk.sourceUri, title: chunk.title,
+          chunkIndex: chunk.chunkIndex, content: chunk.content, keywords: chunk.keywords,
+          metadata: JSON.stringify(chunk.metadata || {}),
+          embedding: embeddings?.[idx] ? JSON.stringify(embeddings[idx]) : null,
+        })),
+      })] : []),
+    ])
+
+    const stats = { documentCount: allDocs.length, chunkCount: chunks.length, semanticIndexed: Boolean(embeddings?.length), sourceType: 'database' }
+    await prisma.knowledgeBase.update({ where: { id: knowledgeBaseId }, data: { status: 'ready', lastError: '', lastIndexedAt: new Date(), stats: JSON.stringify(stats) } })
+    yield { stage: 'done', stats }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Database indexing failed'
+    await prisma.knowledgeBase.update({ where: { id: knowledgeBaseId }, data: { status: 'error', lastError: message } }).catch(() => {})
+    yield { stage: 'error', error: message }
+  }
+}
+
 // ── legacy compat: used by createKnowledgeBase ─────────────────────────────────
 
 export async function indexKnowledgeBase(knowledgeBaseId: string) {
@@ -526,11 +679,28 @@ export async function createKnowledgeBase(input: {
     try { new URL(url) } catch { throw new Error('API URL is invalid') }
   }
 
+  if (sourceType === 'database') {
+    const dbType = String(config.dbType || '')
+    if (!['mysql', 'postgresql', 'sqlite'].includes(dbType)) {
+      throw new Error('Unsupported database type. Use mysql, postgresql, or sqlite.')
+    }
+    if (dbType === 'sqlite' && !config.filePath) {
+      throw new Error('SQLite file path is required')
+    }
+    if (dbType !== 'sqlite' && !config.host && !config.connectionString) {
+      throw new Error('Database host or connection string is required')
+    }
+  }
+
   const kb = await prisma.knowledgeBase.create({
     data: {
       name: input.name.trim(),
       sourceType,
-      engine: input.engine || (sourceType === 'api' ? 'json-api' : 'directory'),
+      engine: input.engine || (
+        sourceType === 'api' ? 'json-api' 
+        : sourceType === 'database' ? 'database'
+        : 'directory'
+      ),
       path: normalizedPath,
       config: JSON.stringify(config),
       stats: JSON.stringify({}),

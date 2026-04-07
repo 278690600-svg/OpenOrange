@@ -4,6 +4,9 @@ import React, { useState, useEffect, useRef, useCallback } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import rehypeHighlight from 'rehype-highlight'
+import remarkMath from 'remark-math'
+import rehypeKatex from 'rehype-katex'
+import 'katex/dist/katex.min.css'
 import {
   ChevronDown, ChevronRight, Brain, Copy, Check, FileCode2,
   Play, Code, Download, Maximize2, Minimize2, WrapText,
@@ -370,6 +373,15 @@ function ThinkingBlock({ content, isActive }: { content: string; isActive?: bool
   )
 }
 
+function preprocessLaTeX(content: string) {
+  let processed = content
+  // replace \[ ... \] with $$ ... $$
+  processed = processed.replace(/\\\[([\s\S]*?)\\\]/g, '$$$$$1$$$$')
+  // replace \( ... \) with $ ... $
+  processed = processed.replace(/\\\(([\s\S]*?)\\\)/g, '$$$1$$')
+  return processed
+}
+
 export const MessageRenderer = React.memo(function MessageRenderer({ content, role, isStreaming, isThinking }: MessageRendererProps) {
   const [msgCopied, setMsgCopied] = useState(false)
 
@@ -398,6 +410,9 @@ export const MessageRenderer = React.memo(function MessageRenderer({ content, ro
     cleanContent = cleanContent.replace(/<think>[\s\S]*$/, '').trim()
   }
 
+  // Before rendering, normalize LaTeX formatting for AI models
+  cleanContent = preprocessLaTeX(cleanContent)
+
   const showCursor = isStreaming && !isThinking && cleanContent.length > 0
 
   return (
@@ -413,7 +428,8 @@ export const MessageRenderer = React.memo(function MessageRenderer({ content, ro
       {cleanContent && (
         <div className="prose-container">
           <ReactMarkdown
-            remarkPlugins={[remarkGfm]}
+            remarkPlugins={[remarkGfm, remarkMath]}
+            rehypePlugins={[rehypeKatex as any]}
             components={{
               pre: ({ children }) => <>{children}</>,
               code: ({ className, children }) => {

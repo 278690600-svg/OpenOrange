@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState, useRef, use } from "react"
-import { Bot } from "lucide-react"
+import { Bot, Copy, RotateCcw, Pencil, Check } from "lucide-react"
 import { ChatPanel } from "@/components/chat-panel"
 import { MessageRenderer } from "@/components/message-renderer"
 import { SearchProgress } from "@/components/search-progress"
@@ -59,7 +59,11 @@ function ActiveChat({ initialMessages, chatId, selectedModel, setSelectedModel }
   const [deepThink, setDeepThink] = useState(false)
   const [kbId, setKbId] = useState<string | null>(null)
   const [inputValue, setInputValue] = useState("")
+  const [uploadedFiles, setUploadedFiles] = useState<any[]>([])
   const messagesEndRef = useRef<HTMLDivElement>(null)
+
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null)
+  const [copiedId, setCopiedId] = useState<string | null>(null)
 
   const {
     messages,
@@ -69,6 +73,7 @@ function ActiveChat({ initialMessages, chatId, selectedModel, setSelectedModel }
     currentSearch,
     chatIdRef,
     sendMessage,
+    regenerate,
     stop,
     setMessages,
   } = useSSEChat()
@@ -90,15 +95,18 @@ function ActiveChat({ initialMessages, chatId, selectedModel, setSelectedModel }
   const handleSendMessage = (e?: any) => {
     e?.preventDefault?.()
     const text = inputValue.trim()
-    if (!text || isLoading) return
-    sendMessage(text, {
+    if ((!text && uploadedFiles.length === 0) || isLoading) return
+    const finalText = text || (uploadedFiles.some((f: any) => f.dataUrl) ? '请分析这些图片' : '请分析这些文件')
+    sendMessage(finalText, {
       model: selectedModel,
       chatId: chatIdRef.current,
       webSearch,
       deepThink,
       kbId,
+      files: uploadedFiles,
     })
     setInputValue("")
+    setUploadedFiles([])
   }
 
   return (
@@ -129,15 +137,95 @@ function ActiveChat({ initialMessages, chatId, selectedModel, setSelectedModel }
                     />
                   )}
 
-                  <div className={`message-bubble ${
+                  <div className={`message-bubble relative ${
                     m.role === 'user' ? 'message-user' : 'message-assistant'
                   }`}>
-                    <MessageRenderer
-                      content={m.content}
-                      role={m.role}
-                      isStreaming={isLoading && m === messages[messages.length - 1] && m.role === 'assistant'}
-                      isThinking={m.isThinking}
-                    />
+                    {/* Show attachments in user message */}
+                    {m.role === 'user' && m.attachments && m.attachments.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mb-2">
+                        {m.attachments.map((a, i) => a.dataUrl ? (
+                          <img key={i} src={a.dataUrl} alt={a.name} title={a.name}
+                            className="max-h-36 max-w-[240px] rounded-lg border border-zinc-200 dark:border-zinc-700 object-contain"
+                          />
+                        ) : (
+                          <div key={i} className="flex items-center gap-1.5 text-[11px] px-2 py-1 rounded-md bg-zinc-200 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-300">
+                            📎 {a.name}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {editingMessageId === m.id ? (
+                      <div className="flex flex-col gap-2 min-w-[280px] w-full bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 p-3 rounded-lg shadow-sm">
+                        <textarea 
+                          id={`edit-input-${m.id}`}
+                          className="w-full bg-transparent resize-none outline-none text-sm text-zinc-800 dark:text-zinc-200" 
+                          defaultValue={m.content} 
+                          rows={Math.max(3, m.content.split('\n').length)}
+                          autoFocus
+                        />
+                        <div className="flex justify-end gap-2 mt-2">
+                          <button onClick={() => setEditingMessageId(null)} className="px-3 py-1.5 text-xs rounded-md bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-700 dark:hover:bg-zinc-600 text-zinc-600 dark:text-zinc-300 font-medium transition-colors">
+                            取消
+                          </button>
+                          <button 
+                            onClick={() => {
+                              const val = (document.getElementById(`edit-input-${m.id}`) as HTMLTextAreaElement).value
+                              setEditingMessageId(null)
+                              sendMessage(val, { model: selectedModel, chatId: chatIdRef.current, webSearch, deepThink, kbId, files: m.attachments }, m.id)
+                            }} 
+                            className="px-3 py-1.5 text-xs rounded-md bg-indigo-600 hover:bg-indigo-700 text-white font-medium transition-colors shadow-sm"
+                          >
+                            发送
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <MessageRenderer
+                        content={m.content}
+                        role={m.role}
+                        isStreaming={isLoading && m === messages[messages.length - 1] && m.role === 'assistant'}
+                        isThinking={m.isThinking}
+                      />
+                    )}
+
+                    {/* User Edit Button */}
+                    {m.role === 'user' && !m.isThinking && editingMessageId !== m.id && (
+                      <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute top-1/2 -translate-y-1/2 -left-10 flex items-center">
+                        <button 
+                          onClick={() => setEditingMessageId(m.id)} 
+                          className="p-1.5 rounded-full text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 bg-white dark:bg-zinc-900 shadow-sm border border-zinc-200 dark:border-zinc-700 transition-colors"
+                          title="编辑消息"
+                        >
+                          <Pencil className="size-3.5" />
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Assistant Action Bar */}
+                    {m.role === 'assistant' && (
+                      <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute -bottom-7 left-1 flex items-center gap-1">
+                        <button 
+                          onClick={() => {
+                            navigator.clipboard.writeText(m.content)
+                            setCopiedId(m.id)
+                            setTimeout(() => setCopiedId(null), 2000)
+                          }} 
+                          className="p-1 rounded text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors" 
+                          title="复制回答"
+                        >
+                          {copiedId === m.id ? <Check className="size-3.5 text-green-500" /> : <Copy className="size-3.5" />}
+                        </button>
+                        {m === messages[messages.length - 1] && !isLoading && (
+                          <button 
+                            onClick={() => regenerate({ model: selectedModel, webSearch, deepThink, kbId })} 
+                            className="p-1 rounded text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors" 
+                            title="重新生成"
+                          >
+                            <RotateCcw className="size-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -192,6 +280,8 @@ function ActiveChat({ initialMessages, chatId, selectedModel, setSelectedModel }
             setDeepThink={setDeepThink}
             kbId={kbId}
             setKbId={setKbId}
+            uploadedFiles={uploadedFiles}
+            setUploadedFiles={setUploadedFiles}
           />
         </div>
       </div>

@@ -515,7 +515,7 @@
 }
 
 .content-blockquote {
-  @apply border-l-4 border-indigo-300 dark:border-indigo-700 pl-4 my-4 text-zinc-600 dark:text-zinc-400 italic;
+  @apply border-l-[3px] border-indigo-400 dark:border-indigo-500 pl-4 pr-2 py-2 my-5 text-zinc-600 dark:text-zinc-400 italic bg-indigo-50/40 dark:bg-indigo-900/10 rounded-r-lg;
 }
 
 .content-hr {
@@ -523,7 +523,7 @@
 }
 
 .table-block-wrapper {
-  @apply relative my-4 rounded-xl border border-zinc-200 dark:border-zinc-700 overflow-hidden;
+  @apply relative my-5 rounded-xl border border-zinc-200 dark:border-zinc-700 overflow-hidden shadow-sm;
 }
 
 .table-wrapper {
@@ -531,15 +531,15 @@
 }
 
 .table-wrapper table {
-  @apply w-full text-sm border-collapse;
+  @apply w-full text-sm border-collapse bg-white dark:bg-zinc-900/50;
 }
 
 .table-wrapper th {
-  @apply px-4 py-3 text-left font-semibold bg-zinc-100/50 dark:bg-zinc-800/50 text-zinc-700 dark:text-zinc-300 border-b border-zinc-200 dark:border-zinc-700;
+  @apply px-4 py-3 text-left font-semibold bg-zinc-50 dark:bg-zinc-800/80 text-zinc-800 dark:text-zinc-200 border-b border-zinc-200 dark:border-zinc-700 whitespace-nowrap;
 }
 
 .table-wrapper td {
-  @apply px-4 py-2.5 border-b border-zinc-100/50 dark:border-zinc-800/50;
+  @apply px-4 py-2.5 border-b border-zinc-100 dark:border-zinc-800/80 transition-colors;
 }
 
 .table-wrapper tr:last-child td {
@@ -547,7 +547,7 @@
 }
 
 .table-wrapper tr:hover td {
-  @apply bg-zinc-50/50 dark:bg-zinc-800/30;
+  @apply bg-zinc-50/80 dark:bg-zinc-800/40;
 }
 
 .element-copy-btn {

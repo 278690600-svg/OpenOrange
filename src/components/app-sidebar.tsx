@@ -11,6 +11,7 @@ import { useRouter } from "next/navigation"
 import { SettingsDialog } from "@/components/settings-dialog"
 import { KnowledgeDialog } from "@/components/knowledge-dialog"
 import { Database } from "lucide-react"
+import { useI18n } from "@/lib/i18n"
 
 type Chat = { id: string; title: string; updatedAt: string }
 
@@ -42,6 +43,7 @@ export function AppSidebar() {
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [kbOpen, setKbOpen] = useState(false)
   const router = useRouter()
+  const { t } = useI18n()
 
   const fetchChats = () => {
     fetch('/api/chats')
@@ -55,7 +57,7 @@ export function AppSidebar() {
   const deleteChat = async (id: string, e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
-    if (!confirm('Delete this chat?')) return
+    if (!confirm(t('Delete this chat?'))) return
     await fetch(`/api/chats/${id}`, { method: 'DELETE' })
     fetchChats()
     router.push('/')
@@ -80,7 +82,7 @@ export function AppSidebar() {
             render={<Link href="/" onClick={fetchChats} />}
           >
             <Plus className="size-4" />
-            New Chat
+            {t('New Chat')}
           </SidebarMenuButton>
         </SidebarHeader>
 
@@ -89,7 +91,7 @@ export function AppSidebar() {
           {Object.entries(grouped).map(([group, items]) =>
             items.length === 0 ? null : (
               <SidebarGroup key={group}>
-                <SidebarGroupLabel className="text-xs text-zinc-400 uppercase tracking-wider px-2">{group}</SidebarGroupLabel>
+                <SidebarGroupLabel className="text-xs text-zinc-400 uppercase tracking-wider px-2">{t(group)}</SidebarGroupLabel>
                 <SidebarGroupContent>
                   <SidebarMenu>
                     {items.map((chat) => (
@@ -105,7 +107,7 @@ export function AppSidebar() {
                           <button
                             onClick={(e) => deleteChat(chat.id, e)}
                             className="absolute right-1 opacity-0 group-hover:opacity-100 p-1.5 rounded-md hover:bg-red-100 dark:hover:bg-red-900/30 transition-all z-10"
-                            title="Delete chat"
+                            title={t('Delete this chat?')}
                           >
                             <Trash2 className="size-3.5 text-red-500" />
                           </button>
@@ -119,7 +121,7 @@ export function AppSidebar() {
           )}
           {chats.length === 0 && (
             <div className="px-4 py-8 text-center text-xs text-zinc-400">
-              No chats yet. Start a new conversation!
+              {t("No chats yet. Start a new conversation!")}
             </div>
           )}
         </SidebarContent>
@@ -131,14 +133,14 @@ export function AppSidebar() {
             className="w-full justify-start gap-2.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 px-3"
           >
             <Database className="size-4 text-indigo-500" />
-            <span className="text-sm text-zinc-600 dark:text-zinc-400">本地知识库</span>
+            <span className="text-sm text-zinc-600 dark:text-zinc-400">{t("Knowledge Base")}</span>
           </SidebarMenuButton>
           <SidebarMenuButton
             onClick={() => setSettingsOpen(true)}
             className="w-full justify-start gap-2.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 px-3"
           >
             <Settings className="size-4 text-zinc-500" />
-            <span className="text-sm text-zinc-600 dark:text-zinc-400">设置</span>
+            <span className="text-sm text-zinc-600 dark:text-zinc-400">{t("Settings")}</span>
           </SidebarMenuButton>
         </SidebarFooter>
       </Sidebar>

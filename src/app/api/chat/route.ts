@@ -246,7 +246,7 @@ export async function POST(req: Request) {
     const body = await req.json()
     const reqUrl = new URL(req.url)
     const baseUrl = `${reqUrl.protocol}//${reqUrl.host}`
-    let { messages, model, chatId, deepThink, webSearch, kbId } = body
+    let { messages, model, chatId, deepThink, webSearch, kbId, files } = body
 
     const settings = await prisma.settings.findUnique({ where: { id: 'default' } })
     const defaultModel = settings?.defaultModel || 'ollama::llama3'
@@ -273,6 +273,7 @@ export async function POST(req: Request) {
         let searchResults: SearchResult[] = []
         let systemInjection = ''
         let kbInjection = ''
+        let fileInjection = ''
         
         const lastUserMsg = messages?.length > 0 ? messages[messages.length - 1] : null
         const originalQuery = extractContent(lastUserMsg)
@@ -420,9 +421,40 @@ ${contextBlock}
           }
         }
 
+        // 2. Uploaded Files & Images (Session Context)
+        type UploadedFile = { name: string; content?: string; dataUrl?: string; type: string }
+        const uploadedFiles = (files || []) as UploadedFile[]
+        const imageFiles = uploadedFiles.filter(f => f.dataUrl && f.type.startsWith('image/'))
+        const docFiles = uploadedFiles.filter(f => f.content !== undefined && !f.dataUrl)
+
+        console.log(`[Chat] uploadedFiles=${uploadedFiles.length} images=${imageFiles.length} docs=${docFiles.length}`)
+
+        // Build file context injection
+        if (docFiles.length > 0) {
+          const docBlocks = docFiles.map(f => {
+            const preview = f.content && f.content.length > 0 ? f.content : '[Empty file or unsupported format]'
+            return `### File: ${f.name}\n\`\`\`\n${preview}\n\`\`\`\n`
+          }).join('\n')
+          fileInjection = [
+            '# 📎 UPLOADED FILES',
+            '**CRITICAL INSTRUCTION: The user has attached the following files. You MUST read and analyze this content before answering. This is the primary source of truth for any question related to these files.**',
+            '',
+            docBlocks,
+            '',
+            'When answering, reference the specific file names and quote relevant sections from the content above.'
+          ].join('\n')
+        }
+
+        if (imageFiles.length > 0) {
+          const imgList = imageFiles.map(f => `- ${f.name}`).join('\n')
+          const imgNote = `\n\n# 🖼️ UPLOADED IMAGES\n${imageFiles.length} image(s) are attached as visual content to the latest message:\n${imgList}\nAnalyze these images carefully when responding.`
+          fileInjection = fileInjection + imgNote
+        }
+
         // --- Build System Prompt ---
         const systemParts: string[] = []
         if (deepThink) systemParts.push(DEEP_THINK_SYSTEM_PROMPT)
+        if (fileInjection.trim()) systemParts.push(fileInjection)
         if (kbInjection) systemParts.push(kbInjection)
         if (systemInjection) systemParts.push(systemInjection)
         const systemPrompt = systemParts.join('\n\n---\n\n') || undefined
@@ -454,13 +486,27 @@ ${contextBlock}
           await write(sseEvent('status', { type: 'thinking', stage: 'start', message: '正在深度思考...' }))
         }
 
-        // --- Build core messages for the model ---
-        const coreMessages: Array<{ role: string; content: string }> = (messages || [])
-          .map((m: any) => ({
-            role: m.role || 'user',
-            content: extractContent(m),
-          }))
-          .filter((m: { role: string; content: string }) => m.content !== '')
+        // --- Build core messages for the model (AI SDK multimodal format) ---
+        const coreMessages = (messages || []).map((m: any, idx: number) => {
+          const role = m.role || 'user'
+          const text = extractContent(m)
+
+          // Attach images to the LAST user message as AI SDK image content parts
+          if (idx === messages.length - 1 && role === 'user' && imageFiles.length > 0) {
+            const contentParts: any[] = []
+            if (text) contentParts.push({ type: 'text', text })
+            for (const img of imageFiles) {
+              // AI SDK accepts { type: 'image', image: URL | Buffer | DataURL }
+              contentParts.push({ type: 'image', image: img.dataUrl })
+            }
+            return { role, content: contentParts }
+          }
+
+          return { role, content: text }
+        }).filter((m: any) => {
+          if (Array.isArray(m.content)) return m.content.length > 0
+          return m.content !== ''
+        })
 
         // --- Stream from the model ---
         const result = streamText({
