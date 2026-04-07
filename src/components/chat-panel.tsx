@@ -332,7 +332,7 @@ export function ChatPanel({
             value={input}
             onChange={e => setInput(e.target.value)}
             onKeyDown={onKeyDown}
-            placeholder={uploadedFiles.length > 0 ? t("Describe or ask questions about these files...") : t("Message {{modelName}}...", { modelName: currentModel?.name || 'ClosedUI' })}
+            placeholder={uploadedFiles.length > 0 ? t("Describe or ask questions about these files...") : t("Message {{modelName}}...", { modelName: currentModel?.name || 'OpenOrangeAI' })}
             className="min-h-[56px] max-h-64 w-full resize-none border-0 bg-transparent px-2 pt-4 pb-3 pr-14 focus-visible:ring-0 text-base leading-relaxed"
             rows={1}
           />

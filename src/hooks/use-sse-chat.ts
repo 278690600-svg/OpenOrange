@@ -2,16 +2,20 @@
 
 import { useState, useRef, useCallback, useEffect } from 'react'
 
-export type SearchStage = 'intent' | 'skip' | 'rewrite' | 'rewrite_done' | 'searching' | 'found' | 'read_page' | 'reading' | 'done' | 'error'
+export type SearchStage = 'intent' | 'skip' | 'rewrite' | 'rewrite_done' | 'searching' | 'found' | 'read_page' | 'reading' | 'done' | 'error' | 'loading' | 'call'
 export type ThinkingStage = 'start' | 'done'
 
 export interface StatusEvent {
-  type: 'search' | 'thinking'
+  type: 'search' | 'thinking' | 'mcp'
   stage: SearchStage | ThinkingStage
   message: string
   results?: Array<{ title: string; url: string }>
   pageIndex?: number
+  tool?: string
+  args?: any
 }
+
+// ... unchanged until handle status event
 
 export interface Citation {
   title: string
@@ -211,7 +215,7 @@ export function useSSEChat() {
 
                 case 'status': {
                   const statusEvt = data as StatusEvent
-                  if (statusEvt.type === 'search') {
+                  if (statusEvt.type === 'search' || statusEvt.type === 'mcp') {
                     accSearchSteps = [...accSearchSteps, statusEvt]
                     setCurrentSearch([...accSearchSteps])
                     setMessages(prev => prev.map(m =>

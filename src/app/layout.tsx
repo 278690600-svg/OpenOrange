@@ -5,8 +5,8 @@ import { AppSidebar } from "@/components/app-sidebar";
 import { I18nProvider } from "@/lib/i18n";
 
 export const metadata: Metadata = {
-  title: "ClosedUI",
-  description: "A local and web AI chat application",
+  title: "OpenOrangeAI",
+  description: "强大的私有智能。本地优先的搜索与推理。",
 };
 
 export default function RootLayout({

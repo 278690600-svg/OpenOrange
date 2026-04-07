@@ -35,6 +35,35 @@ const en: Translations = {
   "Save changes": "Save changes",
   "Working!": "Working!",
   "Failed": "Failed",
+  "MCP Servers": "MCP Servers",
+  "MCP Server": "MCP Server",
+  "Add Server": "Add Server",
+  "Server Name": "Server Name",
+  "Type": "Type",
+  "Command": "Command",
+  "Arguments (JSON array)": "Arguments (JSON array)",
+  "URL (for SSE)": "URL (for SSE)",
+  "Environment Variables (JSON)": "Environment Variables (JSON)",
+  "Enabled": "Enabled",
+  "Market": "Market",
+  "My Servers": "My Servers",
+  "Search Servers": "Search Servers",
+  "Install": "Install",
+  "Visit Homepage": "Visit Homepage",
+  "Registry": "Registry",
+  "Installing...": "Installing...",
+  "Installed": "Installed",
+  "Add to My Servers": "Add to My Servers",
+  "Source": "Source",
+  "GitHub": "GitHub",
+  "ModelScope": "ModelScope",
+  "Smithery": "Smithery",
+  "Glama": "Glama",
+  "Edit": "Edit",
+  "Delete": "Delete",
+  "Save Server": "Save Server",
+  "No MCP servers configured.": "No MCP servers configured.",
+
 
   // Knowledge Base
   "Knowledge Base Management": "Knowledge Base Management",
@@ -60,7 +89,7 @@ const en: Translations = {
   "Confirm": "Confirm",
   
   // Chat
-  "Message ClosedUI...": "Message ClosedUI...",
+  "Message OpenOrangeAI...": "Message OpenOrangeAI...",
   "Search Web": "Search Web",
   "Think": "Think",
   "Stop": "Stop",
@@ -96,6 +125,34 @@ const zh: Translations = {
   "Save changes": "保存更改",
   "Working!": "正常工作！",
   "Failed": "彻底失败",
+  "MCP Servers": "MCP 服务器",
+  "MCP Server": "MCP 服务",
+  "Add Server": "添加服务器",
+  "Server Name": "服务器名称",
+  "Type": "类型",
+  "Command": "命令",
+  "Arguments (JSON array)": "参数 (JSON 数组)",
+  "URL (for SSE)": "URL (适用于 SSE)",
+  "Environment Variables (JSON)": "环境变量 (JSON)",
+  "Enabled": "已启用",
+  "Market": "市场",
+  "My Servers": "我的服务",
+  "Search Servers": "搜索服务",
+  "Install": "安装",
+  "Visit Homepage": "访问主页",
+  "Registry": "注册表",
+  "Installing...": "安装中...",
+  "Installed": "已安装",
+  "Add to My Servers": "添加到我的服务",
+  "Source": "来源",
+  "GitHub": "GitHub",
+  "ModelScope": "魔搭社区",
+  "Smithery": "Smithery",
+  "Edit": "编辑",
+  "Delete": "删除",
+  "Save Server": "保存服务器",
+  "No MCP servers configured.": "未配置 MCP 服务器。",
+
 
   // Knowledge Base
   "Knowledge Base Management": "知识库管理",
@@ -121,7 +178,7 @@ const zh: Translations = {
   "Confirm": "确认",
   
   // Chat
-  "Message ClosedUI...": "发送消息...",
+  "Message OpenOrangeAI...": "发送消息...",
   "Search Web": "联网搜索",
   "Think": "深度思考",
   "Stop": "停止",
@@ -148,7 +205,7 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     // Note: To avoid hydration mismatch, we only use the local storage on the client
-    const saved = localStorage.getItem("closedui_lang") as Language
+    const saved = localStorage.getItem("openorange_lang") as Language
     if (saved && (saved === "en" || saved === "zh")) {
       setLanguageState(saved)
     }

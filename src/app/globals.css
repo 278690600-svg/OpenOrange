@@ -550,9 +550,6 @@
   @apply bg-zinc-50/80 dark:bg-zinc-800/40;
 }
 
-.element-copy-btn {
-  @apply absolute top-2 right-2 p-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white/90 dark:bg-zinc-800/90 text-zinc-500 hover:text-indigo-500 hover:border-indigo-500 dark:text-zinc-400 dark:hover:text-indigo-400 transition-all opacity-0 group-hover:opacity-100 shadow-sm z-10 backdrop-blur-sm;
-}
 
 /* ========================================
    Streaming Cursor

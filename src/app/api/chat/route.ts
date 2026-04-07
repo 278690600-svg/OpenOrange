@@ -2,6 +2,7 @@ import { streamText, generateText } from 'ai'
 import { createOpenAI } from '@ai-sdk/openai'
 import prisma from '@/lib/db'
 import { buildKnowledgeContext } from '@/lib/knowledge'
+import { mcpManager } from '@/lib/mcp'
 
 type SearchResult = { title: string; snippet: string; url: string }
 
@@ -47,6 +48,7 @@ async function getSmartProvider(modelId: string, settings: any) {
   const openAiKey = settings?.openaiKey || ''
   const deepseekKey = settings?.deepseekKey || ''
   const minimaxKey = settings?.minimaxKey || ''
+  const openrouterKey = (settings as any)?.openrouterKey || ''
 
   if (modelId.startsWith('openai::')) {
     return {
@@ -148,6 +150,22 @@ async function getSmartProvider(modelId: string, settings: any) {
     }
   }
 
+
+  if (modelId.startsWith('openrouter::')) {
+    const openrouterProvider = (createOpenAI as any)({
+      apiKey: openrouterKey,
+      baseURL: 'https://openrouter.ai/api/v1',
+      compatibility: 'compatible', // Force compatibility for SSE streaming
+      headers: {
+        'HTTP-Referer': 'https://github.com/OpenOrangeAI', 
+        'X-Title': 'OpenOrangeAI'
+      }
+    })
+    return {
+      provider: openrouterProvider.chat,
+      resolvedId: modelId.replace('openrouter::', ''),
+    }
+  }
 
   const isLms = modelId.startsWith('lmstudio::')
   const defaultBase = isLms ? `${lmstudioUrl}/v1` : `${ollamaUrl}/v1`
@@ -278,6 +296,40 @@ export async function POST(req: Request) {
         const lastUserMsg = messages?.length > 0 ? messages[messages.length - 1] : null
         const originalQuery = extractContent(lastUserMsg)
         
+        // Check for MCP command trigger
+        const useMcp = /\/mcp|@mcp/i.test(originalQuery)
+        if (useMcp) {
+          // Remove the trigger word so the model doesn't get confused
+          const strippedQuery = originalQuery.replace(/\/mcp|@mcp/gi, '').trim()
+          if (messages.length > 0 && typeof messages[messages.length - 1].content === 'string') {
+             messages[messages.length - 1].content = strippedQuery
+          } else if (messages.length > 0 && Array.isArray(messages[messages.length - 1].content)) {
+             for (let i = 0; i < messages[messages.length - 1].content.length; i++) {
+               if (messages[messages.length - 1].content[i].type === 'text') {
+                 messages[messages.length - 1].content[i].text = strippedQuery
+               }
+             }
+          }
+        }
+        
+        // 0. MCP Tools Resolution
+        let mcpTools: any = undefined
+        if (useMcp) {
+          try {
+            await write(sseEvent('status', { type: 'mcp', stage: 'loading', message: '正在加载 MCP 工具...' }))
+            mcpTools = await mcpManager.getTools()
+            const toolCount = Object.keys(mcpTools).length
+            if (toolCount > 0) {
+              await write(sseEvent('status', { type: 'mcp', stage: 'done', message: `已加载 ${toolCount} 个 MCP 工具` }))
+            } else {
+              await write(sseEvent('status', { type: 'mcp', stage: 'skip', message: '未发现可用 MCP 工具' }))
+            }
+          } catch (e) {
+            console.error('[MCP] Tool loading error:', e)
+            await write(sseEvent('status', { type: 'mcp', stage: 'error', message: 'MCP 工具加载失败' }))
+          }
+        }
+
         // 1. Local Knowledge Base Retrieval
         if (kbId && originalQuery) {
            await write(sseEvent('status', { type: 'search', stage: 'searching', message: '正在检索本地知识库...' }))
@@ -454,7 +506,6 @@ ${contextBlock}
         // --- Build System Prompt ---
         const systemParts: string[] = []
         if (deepThink) systemParts.push(DEEP_THINK_SYSTEM_PROMPT)
-        if (fileInjection.trim()) systemParts.push(fileInjection)
         if (kbInjection) systemParts.push(kbInjection)
         if (systemInjection) systemParts.push(systemInjection)
         const systemPrompt = systemParts.join('\n\n---\n\n') || undefined
@@ -462,13 +513,18 @@ ${contextBlock}
         // --- Persist user message to DB ---
         let activeChatId = chatId
         const lastMsg = messages?.length > 0 ? messages[messages.length - 1] : null
-        const actualContent = extractContent(lastMsg) || ''
+        let actualContent = extractContent(lastMsg) || ''
+        
+        // Enrich content with file text if available
+        if (fileInjection.trim()) {
+          actualContent = `${fileInjection}\n\nUSER QUESTION:\n${actualContent}`
+        }
 
         if (!activeChatId) {
-          const firstContent = actualContent ? actualContent.substring(0, 60) : 'New Chat'
+          const firstTitle = extractContent(lastMsg).substring(0, 60) || 'OpenOrangeAI'
           const newChat = await prisma.chat.create({
             data: {
-              title: firstContent,
+              title: firstTitle,
               messages: { create: { role: 'user', content: actualContent } },
             },
           })
@@ -489,14 +545,15 @@ ${contextBlock}
         // --- Build core messages for the model (AI SDK multimodal format) ---
         const coreMessages = (messages || []).map((m: any, idx: number) => {
           const role = m.role || 'user'
-          const text = extractContent(m)
+          
+          // Use enriched content for the last message
+          const text = (idx === messages.length - 1 && role === 'user') ? actualContent : extractContent(m)
 
-          // Attach images to the LAST user message as AI SDK image content parts
+          // Attach images back to the LAST user message
           if (idx === messages.length - 1 && role === 'user' && imageFiles.length > 0) {
             const contentParts: any[] = []
             if (text) contentParts.push({ type: 'text', text })
             for (const img of imageFiles) {
-              // AI SDK accepts { type: 'image', image: URL | Buffer | DataURL }
               contentParts.push({ type: 'image', image: img.dataUrl })
             }
             return { role, content: contentParts }
@@ -513,7 +570,24 @@ ${contextBlock}
           model: provider(resolvedId),
           system: systemPrompt,
           messages: coreMessages as any,
+          tools: mcpTools,
+          // @ts-ignore
+          maxSteps: 5,
           maxRetries: 0,
+          onStepFinish: async (step) => {
+            if (step.toolCalls?.length) {
+              for (const tc of step.toolCalls) {
+                await write(sseEvent('status', { 
+                  type: 'mcp', 
+                  stage: 'call', 
+                  message: `调用工具: ${tc.toolName}`,
+                  tool: tc.toolName,
+                  // @ts-ignore
+                  args: tc.arguments
+                }))
+              }
+            }
+          }
         })
 
         let fullText = ''

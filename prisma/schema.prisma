@@ -25,15 +25,18 @@ model Message {
 }
 
 model Settings {
-  id             String @id @default("default")
-  ollamaUrl      String @default("http://127.0.0.1:11434")
-  lmstudioUrl    String @default("http://127.0.0.1:1234")
-  openaiKey      String @default("")
-  minimaxKey     String @default("")
-  deepseekKey    String @default("")
-  defaultModel   String @default("llama3")
-  searchEngine   String @default("duckduckgo")
-  searchKey      String @default("")
+  id                   String  @id @default("default")
+  ollamaUrl            String  @default("http://127.0.0.1:11434")
+  lmstudioUrl          String  @default("http://127.0.0.1:1234")
+  openaiKey            String  @default("")
+  minimaxKey           String  @default("")
+  deepseekKey          String  @default("")
+  openrouterKey        String  @default("")
+  defaultModel         String  @default("llama3")
+  searchEngine         String  @default("duckduckgo")
+  searchKey            String  @default("")
+  embeddingModel       String  @default("text-embedding-3-small")
+  hybridSearchEnabled  Boolean @default(true)
 }
 
 model KnowledgeBase {
@@ -64,3 +67,17 @@ model KnowledgeChunk {
   metadata        String        @default("{}") // JSON
   embedding       String?       // JSON array of floats for sqlite
 }
+
+model McpServer {
+  id        String   @id @default(cuid())
+  name      String
+  type      String   @default("stdio") // stdio, sse
+  command   String?
+  args      String?  // JSON array of strings
+  url       String?
+  env       String?  // JSON object string
+  enabled   Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+

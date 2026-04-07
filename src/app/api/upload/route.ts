@@ -35,20 +35,24 @@ export async function POST(req: NextRequest) {
         continue
       }
 
-      // ── 2. Documents → Text Extraction ────────────────────────────────────
-      const tempDir = path.join(os.tmpdir(), 'closedui-uploads')
+      const tempDir = path.join(os.tmpdir(), 'openorange-uploads')
       if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true })
-      const tempPath = path.join(tempDir, `${Date.now()}-${fileName.replace(/[^a-zA-Z0-9._-]/g, '_')}`)
+      
+      const fileExt = path.extname(fileName).toLowerCase()
+      const tempId = Math.random().toString(36).substring(7) + Date.now()
+      const tempPath = path.join(tempDir, `upload_${tempId}${fileExt}`)
 
       fs.writeFileSync(tempPath, buffer)
 
       try {
+        const ext = path.extname(fileName).toLowerCase()
         let content = await extractFileText(tempPath)
         
+        const isExcel = ext === '.xlsx' || ext === '.xls'
+        
         if (!content || content.trim().length === 0) {
-          // fallback: try reading as utf8 if recognized extension
-          const ext = path.extname(fileName).toLowerCase()
-          if (TEXT_EXTENSIONS.has(ext) || TEXT_EXTENSIONS.has('.' + fileName.split('.').pop()?.toLowerCase())) {
+          // fallback: try reading as utf8 if recognized extension or excel
+          if (isExcel || TEXT_EXTENSIONS.has(ext)) {
             try { content = buffer.toString('utf-8') } catch {}
           }
         }
@@ -58,10 +62,17 @@ export async function POST(req: NextRequest) {
           content = content.substring(0, MAX_TEXT_LENGTH) + '\n\n[... FILE TRUNCATED DUE TO LENGTH ...]'
         }
 
+        console.log(`[Upload] Result for ${fileName}: contentLen=${content?.length || 0}`)
+        if (!content || content.trim().length === 0) {
+           console.warn(`[Upload] WARNING: Extracted content is EMPTY for ${fileName}`)
+        }
+
         results.push({ name: fileName, type: mimeType, size: file.size, content: content || '' })
-        console.log(`[Upload] Text extracted: ${fileName} (${content?.length || 0} chars)`)
+      } catch (err: any) {
+        console.error(`[Upload] Error during extraction for ${fileName}:`, err.message)
       } finally {
-        try { if (fs.existsSync(tempPath)) fs.unlinkSync(tempPath) } catch {}
+        // Keep file for a moment for debugging if extraction failed
+        // try { if (fs.existsSync(tempPath)) fs.unlinkSync(tempPath) } catch {}
       }
     }
 

@@ -1,6 +1,6 @@
 "use client"
 
-import { ExternalLink, Globe, Search, ChevronDown, ChevronUp, Check, Loader2, BookOpen, Sparkles, AlertCircle } from "lucide-react"
+import { ExternalLink, Globe, Search, ChevronDown, ChevronUp, Check, Loader2, BookOpen, Sparkles, AlertCircle, Wrench } from "lucide-react"
 import { useState, useEffect } from "react"
 import type { StatusEvent, Citation } from "@/hooks/use-sse-chat"
 
@@ -10,7 +10,7 @@ interface SearchProgressProps {
   isActive: boolean
 }
 
-const STAGE_CONFIG: Record<string, { icon: typeof Search; label: string; color: string }> = {
+const STAGE_CONFIG: Record<string, { icon: any; label: string; color: string }> = {
   'intent': { icon: Sparkles, label: '分析搜索意图', color: 'text-amber-500' },
   'skip': { icon: Check, label: '无需搜索', color: 'text-zinc-400' },
   'rewrite': { icon: Sparkles, label: '优化搜索关键词', color: 'text-blue-500' },
@@ -19,8 +19,10 @@ const STAGE_CONFIG: Record<string, { icon: typeof Search; label: string; color: 
   'found': { icon: Check, label: '找到结果', color: 'text-emerald-500' },
   'reading': { icon: BookOpen, label: '阅读网页', color: 'text-violet-500' },
   'read_page': { icon: BookOpen, label: '已阅读', color: 'text-violet-500' },
-  'done': { icon: Check, label: '搜索完成', color: 'text-emerald-500' },
-  'error': { icon: AlertCircle, label: '搜索出错', color: 'text-red-500' },
+  'done': { icon: Check, label: '操作完成', color: 'text-emerald-500' },
+  'error': { icon: AlertCircle, label: '发生错误', color: 'text-red-500' },
+  'loading': { icon: Loader2, label: '正在加载工具...', color: 'text-zinc-500' },
+  'call': { icon: Wrench, label: '调用工具', color: 'text-indigo-500' },
 }
 
 export function SearchProgress({ steps, citations, isActive }: SearchProgressProps) {

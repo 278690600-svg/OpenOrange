@@ -10,8 +10,10 @@ import 'katex/dist/katex.min.css'
 import {
   ChevronDown, ChevronRight, Brain, Copy, Check, FileCode2,
   Play, Code, Download, Maximize2, Minimize2, WrapText,
-  Terminal, Globe, Braces, FileJson, Hash
+  Terminal, Globe, Braces, FileJson, Hash, FileDown
 } from 'lucide-react'
+import { asBlob } from 'html-docx-js-typescript'
+import { saveAs } from 'file-saver'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism'
 
@@ -324,14 +326,45 @@ function TableBlock({ children }: { children: React.ReactNode }) {
     setTimeout(() => setCopied(false), 2000)
   }
 
+  const downloadCsv = () => {
+    if (!tableRef.current) return
+    const table = tableRef.current.querySelector('table')
+    if (!table) return
+    let csv = '\uFEFF' // BOM for Excel UTF-8 support
+    table.querySelectorAll('tr').forEach(row => {
+      const cells = Array.from(row.querySelectorAll('th, td')).map(c => {
+        let text = c.textContent?.trim() ?? ''
+        text = text.replace(/"/g, '""')
+        if (/[",\n]/.test(text)) {
+          text = `"${text}"`
+        }
+        return text
+      })
+      csv += cells.join(',') + '\n'
+    })
+    
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `table_${Date.now()}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
   return (
-    <div className="table-block-wrapper group">
+    <div className="table-block-wrapper group relative">
       <div className="table-wrapper app-scrollbar" ref={tableRef}>
         <table>{children}</table>
       </div>
-      <button onClick={copyTable} className="element-copy-btn" title="复制表格">
-        {copied ? <Check className="size-3.5 text-green-500" /> : <Copy className="size-3.5" />}
-      </button>
+      <div className="absolute top-2 right-2 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+        <button onClick={downloadCsv} className="p-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white/90 dark:bg-zinc-800/90 text-zinc-500 hover:text-indigo-500 hover:border-indigo-500 dark:text-zinc-400 dark:hover:text-indigo-400 shadow-sm backdrop-blur-sm transition-all" title="下载为 CSV (Excel支持)">
+          <Download className="size-3.5" />
+        </button>
+        <button onClick={copyTable} className="p-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white/90 dark:bg-zinc-800/90 text-zinc-500 hover:text-indigo-500 hover:border-indigo-500 dark:text-zinc-400 dark:hover:text-indigo-400 shadow-sm backdrop-blur-sm transition-all" title="复制表格">
+          {copied ? <Check className="size-3.5 text-green-500" /> : <Copy className="size-3.5" />}
+        </button>
+      </div>
     </div>
   )
 }
@@ -392,6 +425,36 @@ export const MessageRenderer = React.memo(function MessageRenderer({ content, ro
     setTimeout(() => setMsgCopied(false), 2000)
   }
 
+  const exportToWord = async () => {
+    const container = document.getElementById(`msg-container-${content.substring(0, 10)}`)
+    const html = container?.innerHTML || ''
+    
+    // Add basic styles for Word compatibility
+    const fullHtml = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <style>
+            body { font-family: 'Times New Roman', serif; line-height: 1.6; }
+            table { border-collapse: collapse; width: 100%; border: 1px solid #ccc; margin-bottom: 20px; }
+            th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+            th { background-color: #f2f2f2; }
+            pre { background-color: #f4f4f4; padding: 10px; border: 1px solid #ddd; }
+            code { font-family: Consolas, monospace; }
+            h1, h2, h3 { color: #333; }
+          </style>
+        </head>
+        <body>
+          ${html}
+        </body>
+      </html>
+    `
+    
+    const blob = await asBlob(fullHtml)
+    saveAs(blob as Blob, `OpenOrangeAI_Export_${Date.now()}.docx`)
+  }
+
   if (role === 'user') {
     return <div className="whitespace-pre-wrap leading-relaxed">{content}</div>
   }
@@ -426,7 +489,7 @@ export const MessageRenderer = React.memo(function MessageRenderer({ content, ro
       )}
 
       {cleanContent && (
-        <div className="prose-container">
+        <div className="prose-container" id={`msg-container-${content.substring(0, 10)}`}>
           <ReactMarkdown
             remarkPlugins={[remarkGfm, remarkMath]}
             rehypePlugins={[rehypeKatex as any]}
@@ -477,13 +540,22 @@ export const MessageRenderer = React.memo(function MessageRenderer({ content, ro
       )}
 
       {cleanContent && !isStreaming && (
-        <button
-          onClick={copyMessage}
-          className="absolute -bottom-2 -right-2 p-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-400 hover:text-indigo-500 hover:border-indigo-500 transition-all opacity-0 group-hover/msg:opacity-100 shadow-sm z-20 backdrop-blur-sm"
-          title="复制回答"
-        >
-          {msgCopied ? <Check className="size-3.5 text-green-500" /> : <Copy className="size-3.5" />}
-        </button>
+        <div className="absolute -bottom-2 -right-2 flex items-center gap-1 opacity-0 group-hover/msg:opacity-100 transition-all z-20">
+          <button
+            onClick={exportToWord}
+            className="p-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-400 hover:text-indigo-500 hover:border-indigo-500 transition-all shadow-sm backdrop-blur-sm"
+            title="导出为 Word"
+          >
+            <FileDown className="size-3.5" />
+          </button>
+          <button
+            onClick={copyMessage}
+            className="p-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-400 hover:text-indigo-500 hover:border-indigo-500 transition-all shadow-sm backdrop-blur-sm"
+            title="复制回答"
+          >
+            {msgCopied ? <Check className="size-3.5 text-green-500" /> : <Copy className="size-3.5" />}
+          </button>
+        </div>
       )}
     </div>
   )

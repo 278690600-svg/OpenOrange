@@ -175,54 +175,99 @@ function sanitizeKnowledgeBaseConfig(sourceType: string, config: JsonObject): Js
 
 export async function extractFileText(filePath: string): Promise<string> {
   const ext = path.extname(filePath).toLowerCase()
+  console.log(`[Knowledge] Extracting text from ${ext} file: ${path.basename(filePath)}`)
 
   try {
     if (ext === '.pdf') {
-      // Lazy-load pdf-parse to avoid init overhead
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const pdfParse = require('pdf-parse') as (buf: Buffer) => Promise<{ text: string }>
-      const buf = fs.readFileSync(filePath)
-      const result = await pdfParse(buf)
-      return normalizeText(result.text || '')
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        const PDFParser = require('pdf2json')
+        const pdfParser = new PDFParser(null, 1) // 1 means text-only format
+
+        return new Promise<string>((resolve, reject) => {
+          pdfParser.on('pdfParser_dataError', (errData: any) => reject(errData.parserError))
+          pdfParser.on('pdfParser_dataReady', (pdfData: any) => {
+            let fullText = ''
+            try {
+              // Extract text cleanly from the text-only output format
+              fullText = pdfParser.getRawTextContent()
+            } catch (e: any) {
+              console.error(`[Knowledge] Error extracting raw text from pdf2json:`, e.message)
+            }
+            const normalized = normalizeText(fullText)
+            console.log(`[Knowledge] PDF extraction (pdf2json) success: ${normalized.length} characters`)
+            resolve(normalized)
+          })
+
+          const buf = fs.readFileSync(filePath)
+          pdfParser.parseBuffer(buf)
+        })
+      } catch (err: any) {
+        console.error(`[Knowledge] PDF parse error:`, err.message)
+        return ''
+      }
     }
 
-    if (ext === '.docx' || ext === '.pptx') {
+    if (ext === '.docx' || ext === '.pptx' || ext === '.odt' || ext === '.odp' || ext === '.ods') {
       try {
         // eslint-disable-next-line @typescript-eslint/no-require-imports
         const OfficeParser = require('officeparser')
-        // officeparser v6.0+ returns an AST object with a .toText() method
-        const ast = await OfficeParser.parseOffice(filePath)
-        const text = (ast && typeof ast.toText === 'function') ? ast.toText() : String(ast || '')
-        if (!text || typeof text !== 'string') {
-          return ''
+        const result = await OfficeParser.parseOffice(filePath)
+        
+        // officeparser v6.0+ might return an object with toText() or just a string
+        let text = ''
+        if (typeof result === 'string') {
+          text = result
+        } else if (result && typeof result.toText === 'function') {
+          text = result.toText()
+        } else if (result && typeof result.text === 'string') {
+          text = result.text
+        } else {
+          text = String(result || '')
         }
-        return normalizeText(text)
+
+        const normalized = normalizeText(text)
+        console.log(`[Knowledge] Office extraction success (${ext}): ${normalized.length} characters`)
+        return normalized
       } catch (err: any) {
-        console.error(`[Knowledge] Failed to parse ${ext} file at ${filePath}:`, err.message)
+        console.error(`[Knowledge] Office parse error (${ext}):`, err.message)
         return ''
       }
     }
 
     if (ext === '.xlsx' || ext === '.xls') {
       try {
-        const workbook = xlsx.readFile(filePath)
-        return normalizeText(
-          workbook.SheetNames.map((name) =>
-            `Sheet: ${name}\n${xlsx.utils.sheet_to_csv(workbook.Sheets[name])}`
-          ).join('\n\n')
+        const buf = fs.readFileSync(filePath)
+        const workbook = xlsx.read(buf, { type: 'buffer', cellFormula: false, cellHTML: false, cellText: true })
+        const text = normalizeText(
+          workbook.SheetNames.map((name) => {
+            const sheet = workbook.Sheets[name]
+            // Skip empty sheets
+            const csv = xlsx.utils.sheet_to_csv(sheet).trim()
+            if (!csv) return ''
+            return `--- SHEET: ${name} ---\n${csv}`
+          }).filter(Boolean).join('\n\n')
         )
+        console.log(`[Knowledge] Excel extraction (Deep mode) success: ${text.length} characters`)
+        return text
       } catch (err: any) {
-        console.error(`[Knowledge] Failed to parse Excel file at ${filePath}:`, err.message)
+        console.error(`[Knowledge] Excel parse error:`, err.message)
         return ''
       }
     }
 
-    if (!TEXT_EXTENSIONS.has(ext)) return ''
+    if (!TEXT_EXTENSIONS.has(ext)) {
+      console.warn(`[Knowledge] Extension ${ext} not in text whitelist, skip.`)
+      return ''
+    }
+    
     const content = fs.readFileSync(filePath, 'utf8')
-    return normalizeText(content)
+    const normalized = normalizeText(content)
+    console.log(`[Knowledge] Text extraction success: ${normalized.length} characters`)
+    return normalized
   } catch (err: any) {
     console.error(`[Knowledge] Critical error extracting text from ${filePath}:`, err.message)
-    return '' // skip unparseable files
+    return ''
   }
 }
 

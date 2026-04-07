@@ -71,10 +71,10 @@ export function AppSidebar() {
         {/* Header */}
         <SidebarHeader className="px-3 py-4">
           <div className="flex items-center gap-2.5 mb-3">
-            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center">
-              <Bot className="size-4 text-white" />
+            <div className="w-7 h-7 rounded-lg overflow-hidden border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
+              <img src="/logo.png" alt="Logo" className="size-full object-cover" />
             </div>
-            <span className="font-bold text-zinc-900 dark:text-zinc-100 text-base">ClosedUI</span>
+            <span className="font-bold text-zinc-900 dark:text-zinc-100 text-base">OpenOrangeAI</span>
           </div>
           <SidebarMenuButton 
             size="lg" 

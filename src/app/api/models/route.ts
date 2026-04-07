@@ -48,7 +48,7 @@ async function fetchJsonCandidates(baseUrl: string, paths: string[], init?: Requ
   return null
 }
 
-function toOpenAICompatibleModels(payload: unknown, provider: string, prefix: string) {
+function toOpenAICompatibleModels(payload: unknown, provider: string, prefix: string, filter?: (id: string) => boolean) {
   if (!payload || typeof payload !== 'object' || !Array.isArray((payload as { data?: unknown[] }).data)) {
     return [] as ModelOption[]
   }
@@ -56,6 +56,7 @@ function toOpenAICompatibleModels(payload: unknown, provider: string, prefix: st
   return ((payload as { data: Array<{ id?: string }> }).data || [])
     .map((item) => item.id?.trim())
     .filter((id): id is string => Boolean(id))
+    .filter((id) => (filter ? filter(id) : true))
     .map((id) => ({
       id: `${prefix}${id}`,
       name: id,
@@ -103,7 +104,12 @@ async function discoverApiModels(baseUrl: string, apiKey: string, provider: stri
     }
   )
 
-  return toOpenAICompatibleModels(payload, provider, prefix)
+  return toOpenAICompatibleModels(payload, provider, prefix, (id) => {
+    if (provider === 'openrouter') {
+      return id.endsWith(':free')
+    }
+    return true
+  })
 }
 
 function fallbackModels(settings: {
@@ -136,6 +142,15 @@ function fallbackModels(settings: {
     )
   }
 
+  if ((settings as any).openrouterKey) {
+    models.push(
+      { id: 'openrouter::qwen/qwen3.6-plus:free', name: 'Qwen 3.6 Plus (Free)', provider: 'openrouter' },
+      { id: 'openrouter::deepseek/deepseek-chat-v3-0324:free', name: 'DeepSeek V3 (Free)', provider: 'openrouter' },
+      { id: 'openrouter::minimax/minimax-m2.5:free', name: 'MiniMax M2.5 (Free)', provider: 'openrouter' },
+      { id: 'openrouter::stepfun/step-3.5-flash:free', name: 'Step 3.5 Flash (Free)', provider: 'openrouter' },
+      { id: 'openrouter::nvidia/nemotron-3-super-120b-a12b:free', name: 'Nemotron 3 Super 120B (Free)', provider: 'openrouter' }
+    )
+  }
   return models
 }
 
@@ -146,11 +161,12 @@ export async function GET() {
     const ollamaUrl = normalizeBaseUrl(settings?.ollamaUrl, 'http://127.0.0.1:11434')
     const lmstudioUrl = normalizeBaseUrl(settings?.lmstudioUrl, 'http://127.0.0.1:1234')
 
-    const [localModels, openaiModels, deepseekModels, minimaxModels] = await Promise.all([
+    const [localModels, openaiModels, deepseekModels, minimaxModels, openrouterModels] = await Promise.all([
       discoverLocalModels(ollamaUrl, lmstudioUrl),
       discoverApiModels('https://api.openai.com', settings?.openaiKey || '', 'openai', 'openai::'),
       discoverApiModels('https://api.deepseek.com', settings?.deepseekKey || '', 'deepseek', 'deepseek::'),
       discoverApiModels('https://api.minimaxi.com', settings?.minimaxKey || '', 'minimax', 'minimax::'),
+      discoverApiModels('https://openrouter.ai/api', (settings as any)?.openrouterKey || '', 'openrouter', 'openrouter::'),
     ])
 
     let models = dedupeModels([
@@ -158,6 +174,7 @@ export async function GET() {
       ...openaiModels,
       ...deepseekModels,
       ...minimaxModels,
+      ...openrouterModels,
     ])
 
     if (models.length === 0) {

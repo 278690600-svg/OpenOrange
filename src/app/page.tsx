@@ -71,10 +71,10 @@ export default function Home() {
       <div className="flex-1 overflow-y-auto app-scrollbar">
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center min-h-full px-4 py-16">
-            <div className="welcome-icon">
-              <Sparkles className="size-8 text-white" />
+            <div className="welcome-icon overflow-hidden bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800">
+              <img src="/logo.png" alt="OpenOrangeAI" className="size-full object-cover" />
             </div>
-            <h1 className="text-4xl font-extrabold tracking-tight mb-3">ClosedUI</h1>
+            <h1 className="text-4xl font-extrabold tracking-tight mb-3">OpenOrangeAI</h1>
             <p className="text-zinc-500 dark:text-zinc-400 mb-12 text-center max-w-sm">
               强大的私有智能。本地优先的搜索与推理。
             </p>
