@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState } from "react"
 
-type Language = "en" | "zh"
+type Language = "en" | "zh" | "es" | "fr" | "de" | "ja" | "ko"
 
 type Translations = Record<string, string>
 
@@ -23,6 +23,7 @@ const en: Translations = {
   "Models": "Models",
   "Search": "Search",
   "General": "General",
+  "Appearance": "Appearance",
   "Language": "Language",
   "Ollama URL": "Ollama URL",
   "LM Studio URL": "LM Studio URL",
@@ -46,6 +47,8 @@ const en: Translations = {
   "Environment Variables (JSON)": "Environment Variables (JSON)",
   "Enabled": "Enabled",
   "Market": "Market",
+  "Model Market": "Model Market",
+  "Search Models": "Search Models",
   "My Servers": "My Servers",
   "Search Servers": "Search Servers",
   "Install": "Install",
@@ -63,6 +66,37 @@ const en: Translations = {
   "Delete": "Delete",
   "Save Server": "Save Server",
   "No MCP servers configured.": "No MCP servers configured.",
+  "Local GGUF Models": "Local GGUF Models",
+  "To use local models, place your .gguf files in the following directory. They will appear in the model list automatically.": "To use local models, place your .gguf files in the following directory. They will appear in the model list automatically.",
+  "Supports pure CPU inference. GPU acceleration is handled automatically.": "Supports pure CPU inference. GPU acceleration is handled automatically.",
+  "Providers": "Providers",
+  "Local GGUF": "Local GGUF",
+  "Force Eject from VRAM": "Force Eject from VRAM",
+  "Releasing...": "Releasing...",
+  "Standby": "Standby",
+  "Loaded in VRAM": "Loaded in VRAM",
+  "Current Status": "Current Status",
+  "Engine Status": "Engine Status",
+  "Inference Parameters": "Inference Parameters",
+  "Context Size": "Context Size",
+  "Max Tokens": "Max Tokens",
+  "Temperature": "Temperature",
+  "Global Temperature": "Global Temperature",
+  "Repeat Penalty": "Repeat Penalty",
+  "Model Parameters": "Model Parameters",
+  "Context Length": "Context Length",
+  "Tools": "Tools",
+  "Resources": "Resources",
+  "Prompts": "Prompts",
+  "Are you sure you want to delete this model?": "Are you sure you want to delete this model?",
+  "No local models found": "No local models found",
+  "No servers added yet": "No servers added yet",
+  "Browse Market": "Browse Market",
+  "Downloaded Models": "Downloaded Models",
+  "Search for models on Hugging Face": "Search for models on Hugging Face",
+  "No relevant content found.": "No relevant content found.",
+  "Failed to load details": "Failed to load details",
+
 
 
   // Knowledge Base
@@ -77,7 +111,6 @@ const en: Translations = {
   "fragments": "fragments",
   "Updated": "Updated",
   "Search in KB": "Search in KB...",
-  "No relevant content found.": "No relevant content found.",
   "Add Knowledge Base": "Add Knowledge Base",
   "Name (Required)": "Name (Required)",
   "Source Type": "Source Type",
@@ -113,6 +146,7 @@ const zh: Translations = {
   "Models": "模型",
   "Search": "搜索",
   "General": "通用",
+  "Appearance": "外观设置",
   "Language": "语言",
   "Ollama URL": "Ollama URL",
   "LM Studio URL": "LM Studio URL",
@@ -136,6 +170,8 @@ const zh: Translations = {
   "Environment Variables (JSON)": "环境变量 (JSON)",
   "Enabled": "已启用",
   "Market": "市场",
+  "Model Market": "模型市场",
+  "Search Models": "搜索模型",
   "My Servers": "我的服务",
   "Search Servers": "搜索服务",
   "Install": "安装",
@@ -152,6 +188,39 @@ const zh: Translations = {
   "Delete": "删除",
   "Save Server": "保存服务器",
   "No MCP servers configured.": "未配置 MCP 服务器。",
+  "Local GGUF Models": "本地 GGUF 模型",
+  "To use local models, place your .gguf files in the following directory. They will appear in the model list automatically.": "要使用本地模型，请将您的 .gguf 文件放入以下目录中。它们将自动出现在模型列表中。",
+  "Supports pure CPU inference. GPU acceleration is handled automatically.": "支持纯 CPU 推理。GPU 加速会自动处理。",
+  "Enable Local GGUF Engine": "启用本地 GGUF 引擎 (实验性)",
+  "Disable this to save memory and speed up development.": "关闭此项可释放内存并大幅提升构建速度。",
+  "Providers": "服务商",
+  "Local GGUF": "本地 GGUF",
+  "Force Eject from VRAM": "强制释放显存",
+  "Releasing...": "释放中...",
+  "Standby": "待命中",
+  "Loaded in VRAM": "已读入显存",
+  "Current Status": "当前状态",
+  "Engine Status": "引擎状态",
+  "Inference Parameters": "推理参数",
+  "Context Size": "上下文长度",
+  "Max Tokens": "最大 Token",
+  "Temperature": "温度 (Temperature)",
+  "Global Temperature": "全局温度 (Temperature)",
+  "Repeat Penalty": "重复惩罚 (Repeat Penalty)",
+  "Model Parameters": "模型参数设置",
+  "Context Length": "上下文限制 (Context)",
+  "Tools": "工具",
+  "Resources": "资源",
+  "Prompts": "提示词",
+  "Are you sure you want to delete this model?": "确定要删除这个模型吗？",
+  "No local models found": "未找到本地模型",
+  "No servers added yet": "尚未添加服务器",
+  "Browse Market": "前往市场浏览",
+  "Downloaded Models": "已下载模型",
+  "Search for models on Hugging Face": "从 Hugging Face 搜寻模型",
+  "No relevant content found.": "未找到相关内容。",
+  "Failed to load details": "加载详情失败",
+
 
 
   // Knowledge Base
@@ -166,7 +235,6 @@ const zh: Translations = {
   "fragments": "个片段",
   "Updated": "更新于",
   "Search in KB": "在知识库中搜索...",
-  "No relevant content found.": "没有找到相关内容。",
   "Add Knowledge Base": "添加知识库",
   "Name (Required)": "名称 (必填)",
   "Source Type": "来源类型",
@@ -185,7 +253,13 @@ const zh: Translations = {
   "Clear chat": "清空对话",
 }
 
-const dictionaries: Record<Language, Translations> = { en, zh }
+const es: Translations = { "New Chat": "Nuevo Chat", "Settings": "Ajustes", "Language": "Idioma", "Appearance": "Apariencia", "Save changes": "Guardar cambios", "General": "General" }
+const fr: Translations = { "New Chat": "Nouveau Chat", "Settings": "Paramètres", "Language": "Langue", "Appearance": "Apparence", "Save changes": "Enregistrer", "General": "Général" }
+const de: Translations = { "New Chat": "Neuer Chat", "Settings": "Einstellungen", "Language": "Sprache", "Appearance": "Erscheinungsbild", "Save changes": "Speichern", "General": "Allgemein" }
+const ja: Translations = { "New Chat": "新しいチャット", "Settings": "設定", "Language": "言語", "Appearance": "外観", "Save changes": "変更を保存", "General": "一般" }
+const ko: Translations = { "New Chat": "새 채팅", "Settings": "설정", "Language": "언어", "Appearance": "모양", "Save changes": "변경 사항 저장", "General": "일반" }
+
+const dictionaries: Record<Language, Translations> = { en, zh, es, fr, de, ja, ko }
 
 interface I18nContextType {
   language: Language
@@ -194,19 +268,19 @@ interface I18nContextType {
 }
 
 const I18nContext = createContext<I18nContextType>({
-  language: "zh", // default to Chinese as per user global rule
+  language: "en", 
   setLanguage: () => {},
   t: (key: string) => key,
 })
 
 export function I18nProvider({ children }: { children: React.ReactNode }) {
-  const [language, setLanguageState] = useState<Language>("zh")
+  const [language, setLanguageState] = useState<Language>("en")
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
-    // Note: To avoid hydration mismatch, we only use the local storage on the client
-    const saved = localStorage.getItem("openorange_lang") as Language
-    if (saved && (saved === "en" || saved === "zh")) {
+    const saved = localStorage.getItem("closedui_lang") as Language
+    const supported = ["en", "zh", "es", "fr", "de", "ja", "ko"]
+    if (saved && supported.includes(saved)) {
       setLanguageState(saved)
     }
     setMounted(true)

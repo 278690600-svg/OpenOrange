@@ -19,6 +19,7 @@ export async function GET() {
           searchKey: "",
           embeddingModel: "text-embedding-3-small",
           hybridSearchEnabled: true,
+          theme: "zinc",
         }
       })
     }
@@ -46,7 +47,18 @@ export async function POST(req: Request) {
         searchKey: data.searchKey,
         embeddingModel: data.embeddingModel,
         hybridSearchEnabled: data.hybridSearchEnabled,
-      },
+        localGgufEnabled: data.localGgufEnabled,
+        localGgufContextSize: data.localGgufContextSize,
+        localGgufTemperature: data.localGgufTemperature,
+        localGgufTopP: data.localGgufTopP,
+        localGgufRepeatPenalty: data.localGgufRepeatPenalty,
+        localGgufMaxTokens: data.localGgufMaxTokens,
+        apiTemperature: data.apiTemperature,
+        apiTopP: data.apiTopP,
+        apiMaxTokens: data.apiMaxTokens,
+        apiContextSize: data.apiContextSize,
+        theme: data.theme,
+      } as any,
       create: {
         id: "default",
         ollamaUrl: data.ollamaUrl || "http://127.0.0.1:11434",
@@ -60,7 +72,18 @@ export async function POST(req: Request) {
         searchKey: data.searchKey || "",
         embeddingModel: data.embeddingModel || "text-embedding-3-small",
         hybridSearchEnabled: data.hybridSearchEnabled ?? true,
-      }
+        localGgufEnabled: data.localGgufEnabled ?? false,
+        localGgufContextSize: data.localGgufContextSize ?? 4096,
+        localGgufTemperature: data.localGgufTemperature ?? 0.7,
+        localGgufTopP: data.localGgufTopP ?? 0.95,
+        localGgufRepeatPenalty: data.localGgufRepeatPenalty ?? 1.1,
+        localGgufMaxTokens: data.localGgufMaxTokens ?? 1024,
+        apiTemperature: data.apiTemperature ?? 0.7,
+        apiTopP: data.apiTopP ?? 0.9,
+        apiMaxTokens: data.apiMaxTokens ?? 2048,
+        apiContextSize: data.apiContextSize ?? 8192,
+        theme: data.theme || "zinc",
+      } as any,
     })
     return NextResponse.json(settings)
   } catch (error) {

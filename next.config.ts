@@ -5,7 +5,10 @@ const nextConfig: NextConfig = {
   output: 'standalone',
   typescript: {
     ignoreBuildErrors: true,
-  }
+  },
+  serverExternalPackages: ["node-llama-cpp"],
+  // @ts-ignore - Turbopack compatibility
+  turbopack: {},
 };
 
 export default nextConfig;

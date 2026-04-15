@@ -13,6 +13,7 @@ const PROVIDER_COLORS: Record<string, string> = {
   ollama: 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300',
   lmstudio: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
   openai: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300',
+  'local-gguf': 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300',
 }
 
 interface ChatPanelProps {
@@ -52,17 +53,20 @@ export function ChatPanel({
   const refreshKbs = () => fetch('/api/kb').then(res => res.json()).then(data => { if(Array.isArray(data)) setKbs(data) }).catch(() => {})
 
   useEffect(() => {
-    fetch('/api/models')
-      .then(res => res.json())
-      .then(data => { if (data.models) setModels(data.models) })
-      .catch(console.error)
     refreshKbs()
+    refreshModels()
   }, [])
 
   const refreshModels = () => {
     fetch('/api/models')
       .then(res => res.json())
-      .then(data => { if (data.models) setModels(data.models) })
+      .then(data => { 
+        const fetchedModels = Array.isArray(data) ? data : (data.models || [])
+        setModels(fetchedModels)
+        if (fetchedModels.length > 0 && !fetchedModels.find((m: { id: string }) => m.id === selectedModel)) {
+          setSelectedModel(fetchedModels[0].id)
+        }
+      })
       .catch(console.error)
   }
 
@@ -79,7 +83,12 @@ export function ChatPanel({
     acc[m.provider].push(m)
     return acc
   }, {} as Record<string, Model[]>)
-  const providerLabel: Record<string, string> = { ollama: 'Ollama', lmstudio: 'LM Studio', openai: 'OpenAI' }
+  const providerLabel: Record<string, string> = { 
+    ollama: 'Ollama', 
+    lmstudio: 'LM Studio', 
+    openai: 'OpenAI',
+    'local-gguf': 'Local GGUF'
+  }
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
@@ -118,15 +127,17 @@ export function ChatPanel({
       <div className="flex items-center gap-1.5 flex-wrap">
         {/* Model Picker - custom dropdown (no asChild) */}
         <div className="relative">
-          <button
-            type="button"
-            onClick={() => { setModelDropdownOpen(!modelDropdownOpen); if (!modelDropdownOpen) refreshModels() }}
-            className="flex items-center gap-2 h-8 px-2.5 rounded-full text-xs font-medium border border-zinc-200 dark:border-zinc-700 hover:border-zinc-400 bg-transparent transition-colors"
+          <button 
+            onClick={() => {
+              setModelDropdownOpen(!modelDropdownOpen)
+              if (!modelDropdownOpen) refreshModels()
+            }}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-all shadow-sm"
           >
             {currentModel ? (
               <>
                 <span className={`inline-block rounded-full px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${PROVIDER_COLORS[currentModel.provider] || 'bg-zinc-100'}`}>
-                  {currentModel.provider === 'lmstudio' ? 'LMS' : currentModel.provider.toUpperCase()}
+                  {currentModel.provider === 'lmstudio' ? 'LMS' : currentModel.provider === 'local-gguf' ? 'GGUF' : currentModel.provider.toUpperCase()}
                 </span>
                 <span className="max-w-[140px] truncate">{currentModel.name}</span>
               </>
@@ -152,17 +163,19 @@ export function ChatPanel({
                         className="w-full flex items-center gap-2 px-3 py-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-left transition-colors"
                       >
                         <span className={`shrink-0 rounded px-1 py-0.5 text-[10px] font-bold ${PROVIDER_COLORS[m.provider] || ''}`}>
-                          {m.provider === 'lmstudio' ? 'LMS' : m.provider.toUpperCase()}
+                          {m.provider === 'lmstudio' ? 'LMS' : m.provider === 'local-gguf' ? 'GGUF' : m.provider.toUpperCase()}
                         </span>
                         <span className="truncate text-sm text-zinc-700 dark:text-zinc-300">{m.name}</span>
-                        {m.id === selectedModel && <span className="ml-auto text-xs text-indigo-500">✓</span>}
+                        {m.id === selectedModel && <span className="ml-auto text-xs text-primary font-bold">✓</span>}
                       </button>
                     ))}
-                    <div className="border-b border-zinc-100 dark:border-zinc-800 my-0.5" />
+                    <div className="border-b border-border my-0.5" />
                   </div>
                 ))}
                 {models.length === 0 && (
-                  <div className="px-3 py-2 text-xs text-zinc-400">{t("No models found. Start Ollama or LM Studio.")}</div>
+                   <div className="px-3 py-2 text-xs text-muted-foreground">
+                     {t("No models found. Put .gguf files in /models folder or start Ollama/LM Studio.")}
+                   </div>
                 )}
               </div>
             </>
@@ -178,12 +191,12 @@ export function ChatPanel({
             else setWebSearch('auto')
           }}
           title={t("Search Mode: Auto (AI Decides), On (Always), Off (Never)")}
-          className={`flex items-center gap-1.5 h-8 px-2.5 rounded-full text-xs border transition-all ${
+          className={`flex items-center gap-1.5 h-8 px-3 rounded-full text-xs border transition-all ${
             webSearch === 'auto'
               ? 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800'
               : webSearch === true
-              ? 'bg-sky-100 text-sky-700 border-sky-300 dark:bg-sky-900/40 dark:text-sky-300 dark:border-sky-700'
-              : 'border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400'
+              ? 'bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-900/20 dark:text-sky-300 dark:border-sky-800'
+              : 'border-border text-muted-foreground'
           }`}
         >
           <Search className="size-3" />
@@ -196,13 +209,13 @@ export function ChatPanel({
             <button
               type="button"
               onClick={() => { setKbDropdownOpen(!kbDropdownOpen); if (!kbDropdownOpen) refreshKbs() }}
-              className={`flex items-center gap-1.5 h-8 px-2.5 rounded-full text-xs border transition-all font-medium ${
+              className={`flex items-center gap-1.5 h-8 px-3 rounded-full text-xs border transition-all font-medium ${
                 kbId
-                  ? 'bg-indigo-100 text-indigo-700 border-indigo-300 dark:bg-indigo-900/40 dark:text-indigo-300 dark:border-indigo-700 shadow-sm'
-                  : 'border-zinc-200 dark:border-zinc-700 text-zinc-500 dark:text-zinc-400 hover:border-zinc-300'
+                  ? 'bg-primary/10 text-primary border-primary/20 shadow-sm'
+                  : 'border-border text-muted-foreground hover:border-zinc-300'
               }`}
             >
-              <Database className={`size-3 ${kbId ? 'text-indigo-500' : 'text-zinc-400'}`} />
+              <Database className={`size-3 ${kbId ? 'text-primary' : 'text-zinc-400'}`} />
               {kbId ? (
                 <span className="max-w-[120px] truncate">
                   {kbs.find(k => k.id === kbId)?.name}
@@ -217,35 +230,35 @@ export function ChatPanel({
             {kbDropdownOpen && (
               <>
                 <div className="fixed inset-0 z-40" onClick={() => setKbDropdownOpen(false)} />
-                <div className="absolute bottom-full left-0 mb-2 w-56 max-h-64 overflow-y-auto bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-xl shadow-xl z-50 py-1.5">
+                <div className="absolute bottom-full left-0 mb-2 w-56 max-h-64 overflow-y-auto bg-white dark:bg-zinc-900 border border-border rounded-xl shadow-xl z-50 py-1.5">
                   <div className="px-3 pb-1 pt-0.5">
-                    <span className="text-[10px] uppercase tracking-wider font-semibold text-zinc-400">{t("Select Knowledge Base")}</span>
+                    <span className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">{t("Select Knowledge Base")}</span>
                   </div>
                   <button
                     onClick={() => { setKbId(null); setKbDropdownOpen(false) }}
-                    className={`w-full flex items-center justify-between px-3 py-2 hover:bg-zinc-50 dark:hover:bg-zinc-800 text-left text-sm transition-colors ${!kbId ? 'text-indigo-600 dark:text-indigo-400 font-medium' : 'text-zinc-600 dark:text-zinc-400'}`}
+                    className={`w-full flex items-center justify-between px-3 py-2 hover:bg-zinc-50 dark:hover:bg-zinc-800 text-left text-sm transition-colors ${!kbId ? 'text-primary font-bold' : 'text-muted-foreground'}`}
                   >
                     <span>{t("Do not use knowledge base")}</span>
-                    {!kbId && <span className="text-[11px] font-bold text-indigo-500">✓</span>}
+                    {!kbId && <span className="text-[11px] font-bold text-primary">✓</span>}
                   </button>
-                  {kbs.length > 0 && <div className="mx-3 my-1 border-t border-zinc-100 dark:border-zinc-800" />}
+                  {kbs.length > 0 && <div className="mx-3 my-1 border-t border-border" />}
                   {kbs.map(kb => (
                     <button
                       key={kb.id}
                       onClick={() => { setKbId(kb.id); setKbDropdownOpen(false) }}
-                      className={`w-full flex items-center justify-between px-3 py-2 hover:bg-zinc-50 dark:hover:bg-zinc-800 text-left text-sm transition-colors ${kb.id === kbId ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50/50 dark:bg-indigo-900/20 font-medium' : 'text-zinc-700 dark:text-zinc-300'}`}
+                      className={`w-full flex items-center justify-between px-3 py-2 hover:bg-zinc-50 dark:hover:bg-zinc-800 text-left text-sm transition-colors ${kb.id === kbId ? 'text-primary bg-primary/5 font-bold' : 'text-foreground'}`}
                     >
                       <div className="min-w-0">
                         <div className="truncate text-sm">{kb.name}</div>
                         {kb.chunkCount > 0 && (
-                          <div className="text-[11px] text-zinc-400 font-normal">{kb.chunkCount} {t("segments")}</div>
+                          <div className="text-[11px] text-muted-foreground font-normal">{kb.chunkCount} {t("segments")}</div>
                         )}
                       </div>
-                      {kb.id === kbId && <span className="text-[11px] font-bold text-indigo-500 shrink-0 ml-2">✓</span>}
+                      {kb.id === kbId && <span className="text-[11px] font-bold text-primary shrink-0 ml-2">✓</span>}
                     </button>
                   ))}
                   {kbs.length === 0 && (
-                    <div className="px-3 py-3 text-xs text-zinc-400 text-center">{t("No knowledge base yet")}</div>
+                    <div className="px-3 py-3 text-xs text-muted-foreground text-center">{t("No knowledge base yet")}</div>
                   )}
                 </div>
               </>
@@ -258,10 +271,10 @@ export function ChatPanel({
           type="button"
           onClick={() => setDeepThink(!deepThink)}
           title={t("Deep Think: Forces step-by-step reasoning")}
-          className={`flex items-center gap-1.5 h-8 px-2.5 rounded-full text-xs border transition-colors ${
+          className={`flex items-center gap-1.5 h-8 px-3 rounded-full text-xs border transition-colors ${
             deepThink
-              ? 'bg-violet-100 text-violet-700 border-violet-300 dark:bg-violet-900/40 dark:text-violet-300 dark:border-violet-700'
-              : 'border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400'
+              ? 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-900/20 dark:text-purple-300 dark:border-purple-800'
+              : 'border-border text-muted-foreground'
           }`}
         >
           <Brain className="size-3.5" />
@@ -275,29 +288,29 @@ export function ChatPanel({
           {uploadedFiles.map((file, i) => (
             <div 
               key={i} 
-              className="group flex items-center gap-1.5 pl-1.5 pr-1 py-1 rounded-lg bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-xs animate-in fade-in slide-in-from-bottom-1"
+              className="group flex items-center gap-1.5 pl-1.5 pr-1 py-1 rounded-xl bg-white dark:bg-zinc-900 border border-border text-xs animate-in fade-in slide-in-from-bottom-1 shadow-sm"
             >
               {file.dataUrl ? (
-                <div className="size-5 rounded overflow-hidden border border-zinc-200 dark:border-zinc-700">
+                <div className="size-5 rounded-md overflow-hidden border border-border">
                   <img src={file.dataUrl} alt="" className="size-full object-cover" />
                 </div>
               ) : (
-                <FileText className="size-3 text-zinc-400 ml-0.5" />
+                <FileText className="size-3 text-muted-foreground ml-0.5" />
               )}
-              <span className="max-w-[120px] truncate text-zinc-600 dark:text-zinc-300 font-medium">
+              <span className="max-w-[120px] truncate text-foreground font-medium">
                 {file.name}
               </span>
               <button
                 type="button"
                 onClick={() => removeFile(i)}
-                className="p-0.5 rounded-full hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-400 group-hover:text-zinc-600 dark:group-hover:text-zinc-200 transition-colors"
+                className="p-0.5 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 text-muted-foreground hover:text-destructive transition-colors"
               >
                 <X className="size-3" />
               </button>
             </div>
           ))}
           {isUploading && (
-            <div className="flex items-center gap-2 px-3 py-1 rounded-lg bg-zinc-50 dark:bg-zinc-900/50 border border-dashed border-zinc-300 dark:border-zinc-700 text-[10px] text-zinc-400">
+            <div className="flex items-center gap-2 px-3 py-1 rounded-xl bg-white/50 dark:bg-zinc-900/50 border border-dashed border-border text-[10px] text-muted-foreground">
               <Loader2 className="size-3 animate-spin" />
               {t("Parsing...")}
             </div>
@@ -306,7 +319,7 @@ export function ChatPanel({
       )}
 
       {/* Input Form */}
-      <div className="relative flex w-full flex-col overflow-hidden rounded-2xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 transition-all focus-within:ring-2 focus-within:ring-zinc-900 dark:focus-within:ring-zinc-400">
+      <div className="relative flex w-full flex-col overflow-hidden rounded-[1.5rem] bg-white dark:bg-zinc-900 border border-border transition-all focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary shadow-sm hover:shadow-md">
         <form
           onSubmit={(e) => { e.preventDefault(); onSubmit(e) }}
           className="relative flex items-end"
@@ -322,7 +335,7 @@ export function ChatPanel({
             type="button"
             disabled={isUploading}
             onClick={() => fileInputRef.current?.click()}
-            className="ml-2 mb-2 p-2 rounded-xl text-zinc-500 hover:text-indigo-500 hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-all disabled:opacity-50"
+            className="ml-3 mb-3 p-2 rounded-xl text-muted-foreground hover:text-primary hover:bg-primary/5 transition-all disabled:opacity-50"
             title={t("Upload file")}
           >
             {isUploading ? <Loader2 className="size-5 animate-spin" /> : <Paperclip className="size-5" />}
@@ -333,14 +346,14 @@ export function ChatPanel({
             onChange={e => setInput(e.target.value)}
             onKeyDown={onKeyDown}
             placeholder={uploadedFiles.length > 0 ? t("Describe or ask questions about these files...") : t("Message {{modelName}}...", { modelName: currentModel?.name || 'OpenOrangeAI' })}
-            className="min-h-[56px] max-h-64 w-full resize-none border-0 bg-transparent px-2 pt-4 pb-3 pr-14 focus-visible:ring-0 text-base leading-relaxed"
+            className="min-h-[64px] max-h-64 w-full resize-none border-0 bg-transparent px-2 pt-5 pb-4 pr-16 focus-visible:ring-0 text-base leading-relaxed"
             rows={1}
           />
-          <div className="absolute right-2 bottom-2">
+          <div className="absolute right-3 bottom-3">
             {isLoading ? (
               <Button
                 size="icon" variant="ghost" type="button"
-                className="rounded-full size-9 bg-red-100 text-red-600 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50 transition-colors"
+                className="rounded-full size-10 bg-destructive/10 text-destructive hover:bg-destructive/20 transition-colors shadow-sm"
                 onClick={stop}
                 title="停止生成"
               >
@@ -350,16 +363,16 @@ export function ChatPanel({
               <Button
                 type="submit" size="icon" variant="default"
                 disabled={!input.trim() && uploadedFiles.length === 0}
-                className="rounded-full size-9 bg-zinc-900 text-white hover:bg-zinc-700 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200 disabled:opacity-30 transition-all"
+                className="rounded-full size-10 bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-30 transition-all shadow-md active:scale-95"
               >
-                <SendHorizonal className="size-4" />
+                <SendHorizonal className="size-5" />
               </Button>
             )}
           </div>
         </form>
       </div>
 
-      <p className="text-center text-[10px] text-zinc-400 mt-1 flex items-center justify-center gap-1.5 opacity-80">
+      <p className="text-center text-[10px] text-muted-foreground mt-2 flex items-center justify-center gap-1.5 opacity-70">
         {webSearch !== false && <><Search className="size-2.5" />Search {webSearch === 'auto' ? 'Auto' : 'On'} · </>}
         {deepThink && <><Brain className="size-2.5" />Deep think On · </>}
         AI can make mistakes. Verify important information.

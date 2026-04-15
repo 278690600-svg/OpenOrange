@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/lib/db'
+import { scanLocalGgufModels } from '@/lib/models'
 
 type ModelOption = {
   id: string
@@ -27,21 +28,16 @@ function dedupeModels(models: ModelOption[]) {
 }
 
 async function fetchJsonCandidates(baseUrl: string, paths: string[], init?: RequestInit) {
-  const variants = Array.from(new Set([baseUrl, baseUrl.replace('127.0.0.1', 'localhost')]))
-
-  for (const variant of variants) {
-    for (const routePath of paths) {
-      const url = joinUrl(variant, routePath)
-      try {
-        console.log(`[Models] probing ${url}`)
-        const res = await fetch(url, {
-          ...init,
-          signal: AbortSignal.timeout(4000),
-        })
-        if (res.ok) return await res.json()
-      } catch {
-        // try next endpoint
-      }
+  for (const routePath of paths) {
+    const url = joinUrl(baseUrl, routePath)
+    try {
+      const res = await fetch(url, {
+        ...init,
+        signal: AbortSignal.timeout(1000), // 再次缩短超时时间到 1秒
+      })
+      if (res.ok) return await res.json()
+    } catch {
+      // try next endpoint
     }
   }
 
@@ -154,14 +150,26 @@ function fallbackModels(settings: {
   return models
 }
 
-export async function GET() {
+let modelsCache: { data: any; timestamp: number } | null = null
+const MODELS_CACHE_TTL = 15000
+
+export async function GET(req: Request) {
   try {
-    const settings = await prisma.settings.findUnique({ where: { id: 'default' } })
+    const { searchParams } = new URL(req.url)
+    const refresh = searchParams.get('refresh') === 'true'
+    
+    const now = Date.now()
+    if (!refresh && modelsCache && (now - modelsCache.timestamp < MODELS_CACHE_TTL)) {
+      return NextResponse.json(modelsCache.data)
+    }
+
+    const settings = (await prisma.settings.findUnique({ where: { id: 'default' } })) as any
 
     const ollamaUrl = normalizeBaseUrl(settings?.ollamaUrl, 'http://127.0.0.1:11434')
     const lmstudioUrl = normalizeBaseUrl(settings?.lmstudioUrl, 'http://127.0.0.1:1234')
 
-    const [localModels, openaiModels, deepseekModels, minimaxModels, openrouterModels] = await Promise.all([
+    const results = await Promise.allSettled([
+      settings?.localGgufEnabled ? scanLocalGgufModels(refresh) : Promise.resolve([]),
       discoverLocalModels(ollamaUrl, lmstudioUrl),
       discoverApiModels('https://api.openai.com', settings?.openaiKey || '', 'openai', 'openai::'),
       discoverApiModels('https://api.deepseek.com', settings?.deepseekKey || '', 'deepseek', 'deepseek::'),
@@ -169,25 +177,31 @@ export async function GET() {
       discoverApiModels('https://openrouter.ai/api', (settings as any)?.openrouterKey || '', 'openrouter', 'openrouter::'),
     ])
 
+    const localGgufs = (settings as any)?.localGgufEnabled && results[0].status === 'fulfilled' ? results[0].value : []
+    const localModels = results[1].status === 'fulfilled' ? results[1].value : []
+    const openaiModels = results[2].status === 'fulfilled' ? results[2].value : []
+    const deepseekModels = results[3].status === 'fulfilled' ? results[3].value : []
+    const minimaxModels = results[4].status === 'fulfilled' ? results[4].value : []
+    const openrouterModels = results[5].status === 'fulfilled' ? results[5].value : []
+
     let models = dedupeModels([
+      ...localGgufs,
       ...localModels,
       ...openaiModels,
       ...deepseekModels,
       ...minimaxModels,
       ...openrouterModels,
+      ...fallbackModels(settings || {}),
     ])
-
-    if (models.length === 0) {
-      models = dedupeModels(fallbackModels(settings || {}))
-    }
 
     if (models.length === 0) {
       models = [{ id: 'ollama::llama3', name: 'llama3 (default)', provider: 'ollama' }]
     }
 
-    return NextResponse.json({ models })
+    modelsCache = { data: models, timestamp: Date.now() }
+    return NextResponse.json(models)
   } catch (error) {
     console.error('Models GET Error:', error)
-    return NextResponse.json({ error: 'Failed to fetch models' }, { status: 500 })
+    return NextResponse.json([], { status: 500 })
   }
 }

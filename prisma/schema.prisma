@@ -37,6 +37,17 @@ model Settings {
   searchKey            String  @default("")
   embeddingModel       String  @default("text-embedding-3-small")
   hybridSearchEnabled  Boolean @default(true)
+  localGgufEnabled     Boolean @default(false)
+  localGgufContextSize Int     @default(4096)
+  localGgufTemperature Float   @default(0.7)
+  localGgufTopP        Float   @default(0.95)
+  localGgufRepeatPenalty Float @default(1.1)
+  localGgufMaxTokens   Int     @default(1024)
+  apiTemperature       Float   @default(0.7)
+  apiTopP              Float   @default(0.9)
+  apiMaxTokens         Int     @default(2048)
+  apiContextSize       Int     @default(8192)
+  theme                String  @default("zinc")
 }
 
 model KnowledgeBase {

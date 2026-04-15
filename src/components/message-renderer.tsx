@@ -16,6 +16,7 @@ import { asBlob } from 'html-docx-js-typescript'
 import { saveAs } from 'file-saver'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism'
+import { MermaidRenderer } from './mermaid-renderer'
 
 interface MessageRendererProps {
   content: string
@@ -42,8 +43,9 @@ const LANG_META: Record<string, { icon: React.ReactNode; color: string; ext: str
   sh:         { icon: <Terminal className="size-3.5" />,  color: '#89E051', ext: 'sh'   },
   sql:        { icon: <FileCode2 className="size-3.5" />, color: '#E38C00', ext: 'sql'  },
   svg:        { icon: <Globe className="size-3.5" />,     color: '#FFB13B', ext: 'svg'  },
+  mermaid:    { icon: <Code className="size-3.5" />,      color: '#00C853', ext: 'mmd'  },
 }
-const PREVIEWABLE = ['html', 'svg']
+const PREVIEWABLE = ['html', 'svg', 'mermaid']
 
 // 标准化语言名到 Prism
 function normLang(lang: string) {
@@ -115,17 +117,17 @@ const lineNumberStyle: React.CSSProperties = {
 }
 
 function CodeBlock({ children, className }: { children: string; className?: string }) {
-  const [copied,      setCopied]      = useState(false)
-  const [viewMode,    setViewMode]    = useState<'code' | 'preview'>('code')
-  const [collapsed,   setCollapsed]   = useState(false)
-  const [wordWrap,    setWordWrap]    = useState(false)
-  const [fullscreen,  setFullscreen]  = useState(false)
-
   const language   = className?.replace('language-', '') ?? 'text'
   const meta       = LANG_META[language]
   const isWebCode  = PREVIEWABLE.includes(language)
   const lineCount  = children.split('\n').length
   const longCode   = lineCount > 25
+
+  const [copied,      setCopied]      = useState(false)
+  const [viewMode,    setViewMode]    = useState<'code' | 'preview'>(language === 'mermaid' ? 'preview' : 'code')
+  const [collapsed,   setCollapsed]   = useState(false)
+  const [wordWrap,    setWordWrap]    = useState(false)
+  const [fullscreen,  setFullscreen]  = useState(false)
 
   const copy = useCallback(() => {
     navigator.clipboard.writeText(children)
@@ -166,7 +168,7 @@ function CodeBlock({ children, className }: { children: string; className?: stri
                   onClick={() => setViewMode('code')}
                   className={`flex items-center gap-1 px-2.5 py-1 text-xs transition-colors ${
                     viewMode === 'code'
-                      ? 'bg-indigo-600 text-white'
+                      ? 'bg-primary text-primary-foreground'
                       : 'text-zinc-400 hover:text-white hover:bg-zinc-700'
                   }`}
                 >
@@ -176,7 +178,7 @@ function CodeBlock({ children, className }: { children: string; className?: stri
                   onClick={() => setViewMode('preview')}
                   className={`flex items-center gap-1 px-2.5 py-1 text-xs transition-colors ${
                     viewMode === 'preview'
-                      ? 'bg-indigo-600 text-white'
+                      ? 'bg-primary text-primary-foreground'
                       : 'text-zinc-400 hover:text-white hover:bg-zinc-700'
                   }`}
                 >
@@ -194,7 +196,7 @@ function CodeBlock({ children, className }: { children: string; className?: stri
                 onClick={() => setWordWrap(v => !v)}
                 title={wordWrap ? '关闭折行' : '开启折行'}
                 className={`p-1.5 rounded text-xs transition-colors ${
-                  wordWrap ? 'text-indigo-400 bg-indigo-900/30' : 'text-zinc-500 hover:text-zinc-200 hover:bg-zinc-700'
+                  wordWrap ? 'text-primary bg-primary/10' : 'text-zinc-500 hover:text-zinc-200 hover:bg-zinc-700'
                 }`}
               >
                 <WrapText className="size-3.5" />
@@ -253,17 +255,21 @@ function CodeBlock({ children, className }: { children: string; className?: stri
 
         {/* ── 代码 / 预览区域 ── */}
         {viewMode === 'preview' && isWebCode ? (
-          /* 预览 iframe，支持拖拽调整高度 */
+          /* 预览 iframe / Mermaid，支持拖拽调整高度 */
           <div
-            className="bg-white"
-            style={{ height: '420px', resize: 'vertical', overflow: 'hidden', minHeight: '200px', maxHeight: '90vh' }}
+            className={language === 'mermaid' ? '' : 'bg-white'}
+            style={{ height: language === 'mermaid' ? 'auto' : '420px', resize: 'vertical', overflow: 'hidden', minHeight: '200px', maxHeight: '90vh' }}
           >
-            <iframe
-              srcDoc={children}
-              className="w-full h-full border-0"
-              sandbox="allow-scripts allow-modals allow-forms allow-popups"
-              title="Preview"
-            />
+            {language === 'mermaid' ? (
+              <MermaidRenderer code={children} />
+            ) : (
+              <iframe
+                srcDoc={children}
+                className="w-full h-full border-0"
+                sandbox="allow-scripts allow-modals allow-forms allow-popups"
+                title="Preview"
+              />
+            )}
           </div>
         ) : (
           /* 代码高亮区 */
@@ -296,7 +302,7 @@ function CodeBlock({ children, className }: { children: string; className?: stri
                 style={{ background: 'linear-gradient(transparent, #1e1e2e)' }}
                 onClick={() => setCollapsed(false)}
               >
-                <span className="text-xs text-indigo-400 hover:text-indigo-300 transition-colors flex items-center gap-1">
+                <span className="text-xs text-primary hover:opacity-80 transition-opacity flex items-center gap-1 font-semibold">
                   <ChevronDown className="size-3" /> 展开 {lineCount} 行代码
                 </span>
               </div>
@@ -358,10 +364,10 @@ function TableBlock({ children }: { children: React.ReactNode }) {
         <table>{children}</table>
       </div>
       <div className="absolute top-2 right-2 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-        <button onClick={downloadCsv} className="p-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white/90 dark:bg-zinc-800/90 text-zinc-500 hover:text-indigo-500 hover:border-indigo-500 dark:text-zinc-400 dark:hover:text-indigo-400 shadow-sm backdrop-blur-sm transition-all" title="下载为 CSV (Excel支持)">
+        <button onClick={downloadCsv} className="p-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white/90 dark:bg-zinc-800/90 text-zinc-500 hover:text-primary hover:border-primary dark:text-zinc-400 dark:hover:text-primary shadow-sm backdrop-blur-sm transition-all" title="下载为 CSV (Excel支持)">
           <Download className="size-3.5" />
         </button>
-        <button onClick={copyTable} className="p-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white/90 dark:bg-zinc-800/90 text-zinc-500 hover:text-indigo-500 hover:border-indigo-500 dark:text-zinc-400 dark:hover:text-indigo-400 shadow-sm backdrop-blur-sm transition-all" title="复制表格">
+        <button onClick={copyTable} className="p-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white/90 dark:bg-zinc-800/90 text-zinc-500 hover:text-primary hover:border-primary dark:text-zinc-400 dark:hover:text-primary shadow-sm backdrop-blur-sm transition-all" title="复制表格">
           {copied ? <Check className="size-3.5 text-green-500" /> : <Copy className="size-3.5" />}
         </button>
       </div>
@@ -543,14 +549,14 @@ export const MessageRenderer = React.memo(function MessageRenderer({ content, ro
         <div className="absolute -bottom-2 -right-2 flex items-center gap-1 opacity-0 group-hover/msg:opacity-100 transition-all z-20">
           <button
             onClick={exportToWord}
-            className="p-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-400 hover:text-indigo-500 hover:border-indigo-500 transition-all shadow-sm backdrop-blur-sm"
+            className="p-1.5 rounded-lg border border-border bg-background/80 text-muted-foreground hover:text-primary hover:border-primary transition-all shadow-sm backdrop-blur-md"
             title="导出为 Word"
           >
             <FileDown className="size-3.5" />
           </button>
           <button
             onClick={copyMessage}
-            className="p-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-400 hover:text-indigo-500 hover:border-indigo-500 transition-all shadow-sm backdrop-blur-sm"
+            className="p-1.5 rounded-lg border border-border bg-background/80 text-muted-foreground hover:text-primary hover:border-primary transition-all shadow-sm backdrop-blur-md"
             title="复制回答"
           >
             {msgCopied ? <Check className="size-3.5 text-green-500" /> : <Copy className="size-3.5" />}

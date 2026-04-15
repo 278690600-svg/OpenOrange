@@ -69,19 +69,19 @@ export function AppSidebar() {
     <>
       <Sidebar className="border-r border-zinc-200 dark:border-zinc-800">
         {/* Header */}
-        <SidebarHeader className="px-3 py-4">
-          <div className="flex items-center gap-2.5 mb-3">
-            <div className="w-7 h-7 rounded-lg overflow-hidden border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
-              <img src="/logo.png" alt="Logo" className="size-full object-cover" />
+        <SidebarHeader className="px-4 py-6">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="size-8 transition-transform hover:scale-105 active:scale-95">
+              <img src="/logo.png" alt="Logo" className="size-full object-contain" />
             </div>
-            <span className="font-bold text-zinc-900 dark:text-zinc-100 text-base">OpenOrangeAI</span>
+            <span className="font-bold text-foreground text-lg tracking-tight">OpenOrangeAI</span>
           </div>
           <SidebarMenuButton 
             size="lg" 
-            className="w-full gap-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg justify-center font-medium transition-colors"
+            className="w-full gap-2.5 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl justify-center font-semibold shadow-md shadow-primary/20 transition-all hover:shadow-lg hover:shadow-primary/30 active:scale-[0.98]"
             render={<Link href="/" onClick={fetchChats} />}
           >
-            <Plus className="size-4" />
+            <Plus className="size-5" />
             {t('New Chat')}
           </SidebarMenuButton>
         </SidebarHeader>

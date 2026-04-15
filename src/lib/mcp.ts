@@ -76,6 +76,33 @@ class McpManager {
     return allTools
   }
 
+  async getServerDetails(serverId: string) {
+    const server = await (prisma as any).mcpServer.findUnique({
+      where: { id: serverId }
+    })
+    if (!server) throw new Error("Server not found")
+
+    try {
+      const client = await this.initializeClient(server)
+      if (!client) return { tools: [], resources: [], prompts: [] }
+      
+      const [tools, resources, prompts] = await Promise.all([
+        client.listTools().catch(err => { console.error('listTools error', err); return { tools: [] } }),
+        client.listResources().catch(() => ({ resources: [] })),
+        client.listPrompts().catch(() => ({ prompts: [] }))
+      ])
+      
+      return {
+        tools: tools.tools || [],
+        resources: resources.resources || [],
+        prompts: prompts.prompts || []
+      }
+    } catch (error: any) {
+      console.error(`Failed to get details for server ${server.name}:`, error)
+      return { tools: [], resources: [], prompts: [] }
+    }
+  }
+
   async closeAll() {
     for (const client of this.clients.values()) {
       try { await client.close() } catch {}

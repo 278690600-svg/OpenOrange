@@ -3,6 +3,7 @@ import "./globals.css";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { I18nProvider } from "@/lib/i18n";
+import { ThemeProvider } from "@/components/theme-provider";
 
 export const metadata: Metadata = {
   title: "OpenOrangeAI",
@@ -20,7 +21,8 @@ export default function RootLayout({
         className="antialiased"
       >
         <I18nProvider>
-          <SidebarProvider>
+          <ThemeProvider>
+            <SidebarProvider>
             <AppSidebar />
             <div className="flex flex-col flex-1 w-full h-screen overflow-hidden relative">
               <header className="absolute top-0 left-0 p-4 z-10 hidden md:block">
@@ -30,7 +32,8 @@ export default function RootLayout({
                 {children}
               </main>
             </div>
-          </SidebarProvider>
+            </SidebarProvider>
+          </ThemeProvider>
         </I18nProvider>
       </body>
     </html>

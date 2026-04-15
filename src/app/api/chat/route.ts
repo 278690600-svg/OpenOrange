@@ -3,6 +3,146 @@ import { createOpenAI } from '@ai-sdk/openai'
 import prisma from '@/lib/db'
 import { buildKnowledgeContext } from '@/lib/knowledge'
 import { mcpManager } from '@/lib/mcp'
+import { resolveModelPath } from '@/lib/models'
+import path from 'path'
+
+let llamaInstance: any = null
+async function getLlamaInstance() {
+  if (!llamaInstance) {
+    const pkg = 'node-llama-cpp'
+    const { getLlama } = await import(/* webpackIgnore: true */ pkg)
+    llamaInstance = await getLlama()
+  }
+  return llamaInstance
+}
+
+async function handleLocalGgufChat({
+  modelId,
+  messages,
+  systemPrompt,
+  onToken,
+  settings,
+}: {
+  modelId: string
+  messages: any[]
+  systemPrompt?: string
+  onToken: (token: string) => Promise<void>
+  settings?: any
+}) {
+  const fileName = modelId.replace('local-gguf::', '')
+  const modelPath = resolveModelPath(fileName)
+  console.log(`[Local GGUF] Loading model from: ${modelPath}`)
+  
+  // ===== 全局缓存，防止爆内存和极慢的前期加载 =====
+  const g = globalThis as any
+  g.localGgufCache = g.localGgufCache || {
+    modelPath: null,
+    model: null,
+    context: null,
+    session: null,
+    isLoaded: false
+  }
+
+  let llama: any, model: any, context: any, session: any
+  
+  try {
+    llama = await getLlamaInstance()
+
+    if (g.localGgufCache.modelPath !== modelPath) {
+      // 需要切换或首次加载，尝试释放旧模型
+      if (g.localGgufCache.context) await g.localGgufCache.context.dispose()
+      if (g.localGgufCache.model) await g.localGgufCache.model.dispose()
+
+      await onToken(`[系统] 正在向显存加载 ${fileName}，此过程可能需要十多秒，请耐心等待...\n`)
+      model = await llama.loadModel({ modelPath })
+      
+      await onToken(`[系统] 模型加载成功，正在建立首次对话上下文...\n\n`)
+      context = await model.createContext({
+        contextSize: settings?.localGgufContextSize || 4096
+      })
+
+      const pkg = 'node-llama-cpp'
+      const { LlamaChatSession } = await import(/* webpackIgnore: true */ pkg)
+      session = new LlamaChatSession({
+        contextSequence: context.getSequence(),
+        systemPrompt
+      })
+
+      g.localGgufCache = {
+        modelPath,
+        model,
+        context,
+        session,
+        isLoaded: true
+      }
+    } else {
+      // 直接复用显存中的模型
+      model = g.localGgufCache.model
+      context = g.localGgufCache.context
+      session = g.localGgufCache.session
+    }
+  } catch (error: any) {
+    console.error('[Local GGUF] Initialization Error:', error)
+    
+    // 如果报错与 VRAM (显存) 有关，给出对普通用户友好的中文提示
+    let errorMsg = error?.message || '文件损坏或引擎不支持'
+    if (errorMsg.includes('VRAM')) {
+      errorMsg = '您的显存(VRAM)不足以加载些模型，请尝试使用更小、量化级别更高(如 Q4/Q2)的模型！'
+    }
+    
+    try {
+      const fs = require('fs')
+      fs.writeFileSync(path.join(process.cwd(), 'models', 'error.log'), String(error?.stack || error) + '\nDetails: ' + JSON.stringify(error, Object.getOwnPropertyNames(error)))
+    } catch(e) {}
+    await onToken(`\n\n[本地模型加载失败: ${errorMsg}]\n\n`)
+    return
+  }
+
+  // Convert history for node-llama-cpp
+  const history = messages.slice(0, -1).map(m => ({
+    role: m.role === 'assistant' ? 'model' : m.role,
+    content: [typeof m.content === 'string' ? m.content : JSON.stringify(m.content)]
+  }))
+  session.setChatHistory(history as any)
+
+  // Run the prompt
+  try {
+    const lastMsg = messages[messages.length - 1]
+    const promptText = typeof lastMsg.content === 'string' ? lastMsg.content : JSON.stringify(lastMsg.content)
+    
+    await session.prompt(promptText, {
+      onToken: (tokens: any) => {
+        let text = ''
+        if (typeof tokens === 'string') {
+          text = tokens
+        } else if (model && typeof model.detokenize === 'function') {
+          text = model.detokenize(tokens)
+        } else if (llama && typeof llama.detokenize === 'function') {
+          text = llama.detokenize(tokens)
+        } else {
+          text = String(tokens)
+        }
+        
+        onToken(text).catch((e: any) => {
+          if (e?.name !== 'ResponseAborted' && !String(e).includes('ResponseAborted')) {
+            console.error('[Stream Error]', e)
+          }
+        })
+      },
+      temperature: settings?.localGgufTemperature ?? 0.7,
+      topP: settings?.localGgufTopP ?? 0.95,
+      repeatPenalty: {
+        penalty: settings?.localGgufRepeatPenalty ?? 1.1
+      },
+      maxTokens: settings?.localGgufMaxTokens ?? 1024
+    })
+  } catch (error: any) {
+    console.error('[Local GGUF] Inference Error:', error)
+    await onToken(`\n\n[推理发生异常: ${error?.message || '未知错误'}]\n\n`)
+  }
+}
+
+
 
 type SearchResult = { title: string; snippet: string; url: string }
 
@@ -565,36 +705,70 @@ ${contextBlock}
           return m.content !== ''
         })
 
-        // --- Stream from the model ---
-        const result = streamText({
-          model: provider(resolvedId),
-          system: systemPrompt,
-          messages: coreMessages as any,
-          tools: mcpTools,
-          // @ts-ignore
-          maxSteps: 5,
-          maxRetries: 0,
-          onStepFinish: async (step) => {
-            if (step.toolCalls?.length) {
-              for (const tc of step.toolCalls) {
-                await write(sseEvent('status', { 
-                  type: 'mcp', 
-                  stage: 'call', 
-                  message: `调用工具: ${tc.toolName}`,
-                  tool: tc.toolName,
-                  // @ts-ignore
-                  args: tc.arguments
-                }))
-              }
-            }
-          }
-        })
+        // --- Prune core messages based on apiContextSize ---
+        const settings = (await prisma.settings.findUnique({ where: { id: "default" } })) as any
+        const maxContextTokens = settings?.apiContextSize || 8192
+        let currentContextTokens = 0
+        const prunedMessages = []
+        
+        // Always keep the system prompt if we had one (though it's passed separately in streamText)
+        // We process from newest to oldest
+        for (let i = coreMessages.length - 1; i >= 0; i--) {
+          const msg = coreMessages[i]
+          const msgContent = typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content)
+          const estimatedTokens = Math.ceil(msgContent.length / 3) 
+          if (currentContextTokens + estimatedTokens > maxContextTokens && prunedMessages.length > 0) break
+          currentContextTokens += estimatedTokens
+          prunedMessages.unshift(msg)
+        }
 
         let fullText = ''
-        for await (const chunk of result.textStream) {
-          fullText += chunk
-          // Send text chunks as SSE events
-          await write(sseEvent('text', { content: chunk }))
+
+        if (selectedModel.startsWith('local-gguf::') && settings?.localGgufEnabled) {
+          await handleLocalGgufChat({
+            modelId: selectedModel,
+            messages: prunedMessages,
+            systemPrompt,
+            settings: settings,
+            onToken: async (token) => {
+              fullText += token
+              await write(sseEvent('text', { content: token }))
+            }
+          })
+        } else {
+          // --- Stream from the model ---
+          const result = streamText({
+            model: provider(resolvedId),
+            system: systemPrompt,
+            messages: prunedMessages as any,
+            tools: mcpTools,
+            temperature: settings?.apiTemperature ?? 0.7,
+            topP: settings?.apiTopP ?? 0.9,
+            maxTokens: settings?.apiMaxTokens ?? 2048,
+            // @ts-ignore
+            maxSteps: 5,
+            maxRetries: 0,
+            onStepFinish: async (step) => {
+              if (step.toolCalls?.length) {
+                for (const tc of step.toolCalls) {
+                  await write(sseEvent('status', { 
+                    type: 'mcp', 
+                    stage: 'call', 
+                    message: `调用工具: ${tc.toolName}`,
+                    tool: tc.toolName,
+                    // @ts-ignore
+                    args: tc.arguments
+                  }))
+                }
+              }
+            }
+          })
+
+          for await (const chunk of result.textStream) {
+            fullText += chunk
+            // Send text chunks as SSE events
+            await write(sseEvent('text', { content: chunk }))
+          }
         }
 
         if (deepThink) {

@@ -71,8 +71,8 @@ export default function Home() {
       <div className="flex-1 overflow-y-auto app-scrollbar">
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center min-h-full px-4 py-16">
-            <div className="welcome-icon overflow-hidden bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800">
-              <img src="/logo.png" alt="OpenOrangeAI" className="size-full object-cover" />
+            <div className="welcome-icon">
+              <img src="/logo.png" alt="OpenOrangeAI" className="size-full object-contain" />
             </div>
             <h1 className="text-4xl font-extrabold tracking-tight mb-3">OpenOrangeAI</h1>
             <p className="text-zinc-500 dark:text-zinc-400 mb-12 text-center max-w-sm">
@@ -102,7 +102,7 @@ export default function Home() {
               <div key={m.id} className={`group flex gap-4 ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                 {m.role === 'assistant' && (
                   <div className="assistant-avatar">
-                    <Bot className="size-5 text-indigo-500" />
+                    <Bot className="size-5 text-primary" />
                   </div>
                 )}
 
@@ -152,7 +152,7 @@ export default function Home() {
                               setEditingMessageId(null)
                               sendMessage(val, { model: selectedModel, chatId: chatIdRef.current, webSearch, deepThink, kbId, files: m.attachments }, m.id)
                             }} 
-                            className="px-3 py-1.5 text-xs rounded-md bg-indigo-600 hover:bg-indigo-700 text-white font-medium transition-colors shadow-sm"
+                            className="px-4 py-2 text-xs rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-semibold transition-all shadow-md shadow-primary/20"
                           >
                             发送
                           </button>
@@ -214,7 +214,7 @@ export default function Home() {
             {status === 'submitted' && (
               <div className="flex gap-4">
                 <div className="assistant-avatar">
-                  <Bot className="size-5 text-indigo-500 animate-pulse" />
+                  <Bot className="size-5 text-primary animate-pulse" />
                 </div>
                 <div className="space-y-3 flex-1">
                   {currentSearch.length > 0 && (

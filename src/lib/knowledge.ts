@@ -1,6 +1,6 @@
 import fs from 'fs'
 import path from 'path'
-import * as xlsx from 'xlsx'
+// xlsx and other heavy parsers are lazy-loaded inside extractFileText
 import prisma from '@/lib/db'
 
 type JsonObject = Record<string, unknown>
@@ -237,10 +237,11 @@ export async function extractFileText(filePath: string): Promise<string> {
 
     if (ext === '.xlsx' || ext === '.xls') {
       try {
+        const xlsx = require('xlsx')
         const buf = fs.readFileSync(filePath)
         const workbook = xlsx.read(buf, { type: 'buffer', cellFormula: false, cellHTML: false, cellText: true })
         const text = normalizeText(
-          workbook.SheetNames.map((name) => {
+          workbook.SheetNames.map((name: string) => {
             const sheet = workbook.Sheets[name]
             // Skip empty sheets
             const csv = xlsx.utils.sheet_to_csv(sheet).trim()

@@ -15,14 +15,14 @@ const STAGE_CONFIG: Record<string, { icon: any; label: string; color: string }> 
   'skip': { icon: Check, label: '无需搜索', color: 'text-zinc-400' },
   'rewrite': { icon: Sparkles, label: '优化搜索关键词', color: 'text-blue-500' },
   'rewrite_done': { icon: Check, label: '关键词已优化', color: 'text-blue-500' },
-  'searching': { icon: Search, label: '正在搜索', color: 'text-indigo-500' },
+  'searching': { icon: Search, label: '正在搜索', color: 'text-primary' },
   'found': { icon: Check, label: '找到结果', color: 'text-emerald-500' },
-  'reading': { icon: BookOpen, label: '阅读网页', color: 'text-violet-500' },
-  'read_page': { icon: BookOpen, label: '已阅读', color: 'text-violet-500' },
+  'reading': { icon: BookOpen, label: '阅读网页内容', color: 'text-amber-500' },
+  'read_page': { icon: BookOpen, label: '已阅读', color: 'text-amber-500' },
   'done': { icon: Check, label: '操作完成', color: 'text-emerald-500' },
   'error': { icon: AlertCircle, label: '发生错误', color: 'text-red-500' },
   'loading': { icon: Loader2, label: '正在加载工具...', color: 'text-zinc-500' },
-  'call': { icon: Wrench, label: '调用工具', color: 'text-indigo-500' },
+  'call': { icon: Wrench, label: '调用工具', color: 'text-primary' },
 }
 
 export function SearchProgress({ steps, citations, isActive }: SearchProgressProps) {
@@ -162,7 +162,7 @@ export function SearchProgress({ steps, citations, isActive }: SearchProgressPro
                         />
                       </div>
                       <span className="search-citation-domain">{hostname}</span>
-                      <span className="search-citation-index">{i + 1}</span>
+                      <span className="search-citation-index bg-primary/10 text-primary font-bold">{i + 1}</span>
                     </div>
                     <div className="search-citation-title">{c.title}</div>
                     <div className="search-citation-footer">
