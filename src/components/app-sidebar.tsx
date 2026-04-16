@@ -10,8 +10,17 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { SettingsDialog } from "@/components/settings-dialog"
 import { KnowledgeDialog } from "@/components/knowledge-dialog"
-import { Database } from "lucide-react"
+import { Database, Search, X, Calendar } from "lucide-react"
 import { useI18n } from "@/lib/i18n"
+import { Input } from "@/components/ui/input"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { useDebounce } from "@/hooks/use-debounce" // Assuming this exists or I'll implement a simple one
 
 type Chat = { id: string; title: string; updatedAt: string }
 
@@ -40,19 +49,40 @@ function groupByDate(chats: Chat[]) {
 
 export function AppSidebar() {
   const [chats, setChats] = useState<Chat[]>([])
+  const [searchQuery, setSearchQuery] = useState("")
+  const [dateFilter, setDateFilter] = useState("all")
+  const [isSearching, setIsSearching] = useState(false)
+  const debouncedSearch = useDebounce(searchQuery, 300)
+
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [kbOpen, setKbOpen] = useState(false)
   const router = useRouter()
   const { t } = useI18n()
 
-  const fetchChats = () => {
-    fetch('/api/chats')
-      .then(res => res.json())
-      .then(data => Array.isArray(data) ? setChats(data) : setChats([]))
-      .catch(console.error)
+  const fetchChats = async () => {
+    setIsSearching(true)
+    try {
+      if (debouncedSearch || dateFilter !== "all") {
+        const params = new URLSearchParams()
+        if (debouncedSearch) params.append("q", debouncedSearch)
+        if (dateFilter !== "all") params.append("date", dateFilter)
+        
+        const res = await fetch(`/api/chats/search?${params.toString()}`)
+        const data = await res.json()
+        setChats(Array.isArray(data) ? data : [])
+      } else {
+        const res = await fetch('/api/chats')
+        const data = await res.json()
+        setChats(Array.isArray(data) ? data : [])
+      }
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setIsSearching(false)
+    }
   }
 
-  useEffect(() => { fetchChats() }, [])
+  useEffect(() => { fetchChats() }, [debouncedSearch, dateFilter])
 
   const deleteChat = async (id: string, e: React.MouseEvent) => {
     e.preventDefault()
@@ -77,13 +107,45 @@ export function AppSidebar() {
             <span className="font-bold text-foreground text-lg tracking-tight">OpenOrangeAI</span>
           </div>
           <SidebarMenuButton 
-            size="lg" 
-            className="w-full gap-2.5 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl justify-center font-semibold shadow-md shadow-primary/20 transition-all hover:shadow-lg hover:shadow-primary/30 active:scale-[0.98]"
-            render={<Link href="/" onClick={fetchChats} />}
+            className="w-full gap-2 h-10 bg-primary hover:brightness-125 text-primary-foreground rounded-xl justify-center font-semibold shadow-sm transition-all active:scale-[0.98] mb-4"
+            render={<Link href="/" onClick={() => { setSearchQuery(""); setDateFilter("all"); fetchChats(); }} />}
           >
-            <Plus className="size-5" />
-            {t('New Chat')}
+            <Plus className="size-4" />
+            <span className="text-sm">{t('New Chat')}</span>
           </SidebarMenuButton>
+
+          <div className="space-y-2">
+            <div className="relative group">
+              <Search className="absolute left-2.5 top-2.5 size-4 text-zinc-400" />
+              <Input
+                placeholder={t("Search chats")}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9 pr-8 h-9 bg-zinc-100/50 dark:bg-zinc-800/50 border-none rounded-lg text-sm focus-visible:ring-1 focus-visible:ring-primary/20 transition-all"
+              />
+              {searchQuery && (
+                <button 
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-2.5 top-2.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200"
+                >
+                  <X className="size-4" />
+                </button>
+              )}
+            </div>
+            <Select value={dateFilter} onValueChange={(v) => setDateFilter(v || "all")}>
+              <SelectTrigger className="h-8 text-[11px] bg-transparent border-none text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors px-1 w-fit shadow-none focus:ring-0">
+                <Calendar className="size-3 mr-1.5" />
+                <SelectValue placeholder={t("All time")} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t("All time")}</SelectItem>
+                <SelectItem value="today">{t("Today")}</SelectItem>
+                <SelectItem value="yesterday">{t("Yesterday")}</SelectItem>
+                <SelectItem value="week">{t("Last 7 Days")}</SelectItem>
+                <SelectItem value="month">{t("Last 30 Days")}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </SidebarHeader>
 
         {/* Chat List */}
