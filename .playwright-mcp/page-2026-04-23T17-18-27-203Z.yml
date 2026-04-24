@@ -1,0 +1,271 @@
+- generic [active] [ref=e1]:
+  - link "欢迎进入 百度新闻——海量中文资讯平台,盲人用户进入智能盲道请按快捷键Ctrl+Alt+R；阅读详细操作说明请按快捷键Ctrl+Alt+问号键。":
+    - /url: javascript:void(0)
+  - generic [ref=e2]:
+    - generic [ref=e3]:
+      - list:
+        - listitem [ref=e4]:
+          - link "注册" [ref=e5] [cursor=pointer]:
+            - /url: http://passport.baidu.com/v2/?reg&tpl=xw&regType=1&u=https%3A%2F%2Fnews.baidu.com%2F
+        - listitem [ref=e6]:
+          - link "登录" [ref=e7] [cursor=pointer]:
+            - /url: http://passport.baidu.com/v2/?login&tpl=xw&u=https%3A%2F%2Fnews.baidu.com%2F
+        - listitem [ref=e8]:
+          - link "百度首页" [ref=e9] [cursor=pointer]:
+            - /url: http://www.baidu.com
+    - list [ref=e10]:
+      - listitem [ref=e11]:
+        - link "网页" [ref=e12] [cursor=pointer]:
+          - /url: https://www.baidu.com/
+      - listitem [ref=e13]: 新闻
+      - listitem [ref=e14]:
+        - link "贴吧" [ref=e15] [cursor=pointer]:
+          - /url: http://tieba.baidu.com/
+      - listitem [ref=e16]:
+        - link "知道" [ref=e17] [cursor=pointer]:
+          - /url: https://zhidao.baidu.com/
+      - listitem [ref=e18]:
+        - link "音乐" [ref=e19] [cursor=pointer]:
+          - /url: https://music.taihe.com
+      - listitem [ref=e20]:
+        - link "图片" [ref=e21] [cursor=pointer]:
+          - /url: http://image.baidu.com/
+      - listitem [ref=e22]:
+        - link "视频" [ref=e23] [cursor=pointer]:
+          - /url: http://v.baidu.com/
+      - listitem [ref=e24]:
+        - link "地图" [ref=e25] [cursor=pointer]:
+          - /url: http://map.baidu.com/
+      - listitem [ref=e26]:
+        - link "文库" [ref=e27] [cursor=pointer]:
+          - /url: http://wenku.baidu.com/
+  - table [ref=e31]:
+    - rowgroup [ref=e32]:
+      - row "百度新闻 百度一下 帮助" [ref=e33]:
+        - cell "百度新闻" [ref=e34]:
+          - link "百度新闻" [ref=e36] [cursor=pointer]:
+            - /url: http://news.baidu.com/
+            - img "百度新闻" [ref=e37]
+        - cell "百度一下 帮助" [ref=e38]:
+          - table [ref=e39]:
+            - rowgroup [ref=e40]:
+              - row "百度一下 帮助" [ref=e41]:
+                - cell "百度一下" [ref=e42]:
+                  - generic [ref=e43]:
+                    - textbox [ref=e45]
+                    - button "百度一下" [ref=e47] [cursor=pointer]
+                - cell "帮助" [ref=e48]:
+                  - link "帮助" [ref=e49] [cursor=pointer]:
+                    - /url: //help.baidu.com
+  - generic [ref=e50]:
+    - generic [ref=e51]:
+      - generic [ref=e53]:
+        - list [ref=e55]:
+          - listitem [ref=e56]:
+            - link "热点要闻" [ref=e57] [cursor=pointer]:
+              - /url: javascript:void(0);
+        - generic [ref=e59]:
+          - list [ref=e61]:
+            - listitem [ref=e62]:
+              - strong [ref=e64]:
+                - link "以书为桥，习近平主席这样阐释文明交流互鉴" [ref=e65] [cursor=pointer]:
+                  - /url: http://baijiahao.baidu.com/s?id=1863186965116516542
+            - listitem [ref=e66]:
+              - strong [ref=e68]:
+                - link "总书记的关切｜“我最大的爱好就是读书”" [ref=e69] [cursor=pointer]:
+                  - /url: http://baijiahao.baidu.com/s?id=1863181204604076931
+                - link "【央视快评】把“义乌发展经验”进一步总结好运用好" [ref=e70] [cursor=pointer]:
+                  - /url: http://baijiahao.baidu.com/s?id=1863249358522705486
+                - link "共产党就是给老百姓办事的" [ref=e71] [cursor=pointer]:
+                  - /url: http://baijiahao.baidu.com/s?id=1863266279825653449
+            - listitem [ref=e72]:
+              - strong [ref=e74]:
+                - link "“立规”八载，“远亲”在母亲河畔变“近邻”" [ref=e75] [cursor=pointer]:
+                  - /url: http://baijiahao.baidu.com/s?id=1863265829869325078
+            - listitem [ref=e76]:
+              - strong [ref=e78]:
+                - link "以旧换新政策效应显现 数码智能产品增势迅猛" [ref=e79] [cursor=pointer]:
+                  - /url: http://baijiahao.baidu.com/s?id=1863266819983752176
+            - listitem [ref=e80]:
+              - strong [ref=e82]:
+                - link "相约文旅盛会｜在山东，“万物”皆可“琉璃”" [ref=e83] [cursor=pointer]:
+                  - /url: https://baijiahao.baidu.com/s?id=1863244503725480292&wfr=content
+            - listitem [ref=e84]:
+              - strong [ref=e86]:
+                - link "文化的力量｜以文润城" [ref=e87] [cursor=pointer]:
+                  - /url: http://baijiahao.baidu.com/s?id=1863252239363633860
+          - list [ref=e88]:
+            - listitem [ref=e89]:
+              - link "理响中国｜一江春水，流尽江南锦绣地" [ref=e91] [cursor=pointer]:
+                - /url: http://baijiahao.baidu.com/s?id=1863254480052797456
+            - listitem [ref=e92]:
+              - link "外交部：欢迎各国共享中国式现代化带来的发展红利" [ref=e93] [cursor=pointer]:
+                - /url: http://baijiahao.baidu.com/s?id=1863254915702458491
+            - listitem [ref=e94]:
+              - link "日本学者：解禁武器出口动摇日本战后“和平国家”定位" [ref=e95] [cursor=pointer]:
+                - /url: http://baijiahao.baidu.com/s?id=1863255573723470649
+            - listitem [ref=e96]:
+              - link "新疆霍尔果斯口岸今年通行中欧（中亚）班列突破3000列" [ref=e97] [cursor=pointer]:
+                - /url: http://baijiahao.baidu.com/s?id=1863172778804682448
+            - listitem [ref=e98]:
+              - link "网传库布其沙漠“10万头黑猪让沙漠变绿洲”不实" [ref=e99] [cursor=pointer]:
+                - /url: https://www.piyao.org.cn/20260413/0a686c813fd948fa9d2cb5807b129783/c.html
+            - listitem [ref=e100]:
+              - link "今日辟谣" [ref=e101] [cursor=pointer]:
+                - /url: http://baijiahao.baidu.com/s?id=1863259885227567488
+              - link "北京网站辟谣平台" [ref=e102] [cursor=pointer]:
+                - /url: http://www.bjjubao.org.cn/node_1606.html
+              - link "互联网联合辟谣平台" [ref=e103] [cursor=pointer]:
+                - /url: https://www.piyao.org.cn/
+          - list [ref=e104]:
+            - listitem [ref=e105]:
+              - link "\"新时代新北京·阅读的力量\"全民阅读主题活动举办" [ref=e107] [cursor=pointer]:
+                - /url: http://baijiahao.baidu.com/s?id=1863175736372324965
+            - listitem [ref=e108]:
+              - link "特朗普下令击沉任何在霍尔木兹海峡布设水雷的船只" [ref=e109] [cursor=pointer]:
+                - /url: http://baijiahao.baidu.com/s?id=1863266209182505093
+            - listitem [ref=e110]:
+              - link "伊朗:收到首笔霍尔木兹海峡通行费,已汇入伊朗中央银行账户" [ref=e111] [cursor=pointer]:
+                - /url: http://baijiahao.baidu.com/s?id=1863248785231063789
+            - listitem [ref=e112]:
+              - link "二战后首次！日本自卫队将登陆菲律宾" [ref=e113] [cursor=pointer]:
+                - /url: http://baijiahao.baidu.com/s?id=1860675761958163813
+            - listitem [ref=e114]:
+              - link "熬夜不是猝死的第一杀手" [ref=e115] [cursor=pointer]:
+                - /url: https://mbd.baidu.com/newspage/data/videolanding?nid=sv_10274584392729159381
+            - listitem [ref=e116]:
+              - link "张雪峰追悼会将于本周六举行" [ref=e117] [cursor=pointer]:
+                - /url: http://baijiahao.baidu.com/s?id=1860677084722397979
+          - list
+      - generic [ref=e118]:
+        - generic [ref=e119]:
+          - generic [ref=e120]:
+            - generic:
+              - link [ref=e121] [cursor=pointer]:
+                - /url: javascript:void(0);
+              - link [ref=e123] [cursor=pointer]:
+                - /url: javascript:void(0);
+            - link [ref=e126] [cursor=pointer]:
+              - /url: https://baijiahao.baidu.com/s?id=1863245192956580103
+              - img [ref=e127]
+            - generic [ref=e129]:
+              - link "8" [ref=e130] [cursor=pointer]:
+                - /url: javascript:void(0);
+              - link "7" [ref=e131] [cursor=pointer]:
+                - /url: javascript:void(0);
+              - link "6" [ref=e132] [cursor=pointer]:
+                - /url: javascript:void(0);
+              - link "5" [ref=e133] [cursor=pointer]:
+                - /url: javascript:void(0);
+              - link "4" [ref=e134] [cursor=pointer]:
+                - /url: javascript:void(0);
+              - link "3" [ref=e135] [cursor=pointer]:
+                - /url: javascript:void(0);
+              - link "2" [ref=e136] [cursor=pointer]:
+                - /url: javascript:void(0);
+              - link "1" [ref=e137] [cursor=pointer]:
+                - /url: javascript:void(0);
+            - link "“数纸交融”：当下年轻人为“花式阅读”买单" [ref=e139] [cursor=pointer]:
+              - /url: https://baijiahao.baidu.com/s?id=1863245192956580103
+              - strong [ref=e140]: “数纸交融”：当下年轻人为“花式阅读”买单
+          - list [ref=e141]:
+            - link [ref=e142] [cursor=pointer]:
+              - /url: http://www.qstheory.cn/zt2020/llxjj/index.htm
+        - generic [ref=e145]:
+          - generic [ref=e146]:
+            - heading "热搜新闻词HOT WORDS" [level=3] [ref=e147]
+            - text: .
+          - list [ref=e149]:
+            - listitem [ref=e150]:
+              - link "胸怀“千年大计” 奔赴“新的赶考”" [ref=e151] [cursor=pointer]:
+                - /url: https://www.baidu.com/s?wd=%E8%83%B8%E6%80%80%E2%80%9C%E5%8D%83%E5%B9%B4%E5%A4%A7%E8%AE%A1%E2%80%9D%20%E5%A5%94%E8%B5%B4%E2%80%9C%E6%96%B0%E7%9A%84%E8%B5%B6%E8%80%83%E2%80%9D
+            - listitem [ref=e152]:
+              - link "长期护理保险制度来了 与你相关" [ref=e153] [cursor=pointer]:
+                - /url: https://www.baidu.com/s?wd=%E9%95%BF%E6%9C%9F%E6%8A%A4%E7%90%86%E4%BF%9D%E9%99%A9%E5%88%B6%E5%BA%A6%E6%9D%A5%E4%BA%86%20%E4%B8%8E%E4%BD%A0%E7%9B%B8%E5%85%B3
+            - listitem [ref=e154]:
+              - link "国家对成品油价格采取临时调控措施" [ref=e155] [cursor=pointer]:
+                - /url: https://www.baidu.com/s?wd=%E5%9B%BD%E5%AE%B6%E5%AF%B9%E6%88%90%E5%93%81%E6%B2%B9%E4%BB%B7%E6%A0%BC%E9%87%87%E5%8F%96%E4%B8%B4%E6%97%B6%E8%B0%83%E6%8E%A7%E6%8E%AA%E6%96%BD
+            - listitem [ref=e156]:
+              - link "黄金重回三位数时代" [ref=e157] [cursor=pointer]:
+                - /url: https://www.baidu.com/s?wd=%E9%BB%84%E9%87%91%E9%87%8D%E5%9B%9E%E4%B8%89%E4%BD%8D%E6%95%B0%E6%97%B6%E4%BB%A3
+            - listitem [ref=e158]:
+              - link "最近少穿这三种衣服出门" [ref=e159] [cursor=pointer]:
+                - /url: https://www.baidu.com/s?wd=%E6%9C%80%E8%BF%91%E5%B0%91%E7%A9%BF%E8%BF%99%E4%B8%89%E7%A7%8D%E8%A1%A3%E6%9C%8D%E5%87%BA%E9%97%A8
+            - listitem [ref=e160]:
+              - link "“请广东人给我这个武汉人道歉”" [ref=e161] [cursor=pointer]:
+                - /url: https://www.baidu.com/s?wd=%E2%80%9C%E8%AF%B7%E5%B9%BF%E4%B8%9C%E4%BA%BA%E7%BB%99%E6%88%91%E8%BF%99%E4%B8%AA%E6%AD%A6%E6%B1%89%E4%BA%BA%E9%81%93%E6%AD%89%E2%80%9D
+            - listitem [ref=e162]:
+              - link "“成为中国人”300年前就火了" [ref=e163] [cursor=pointer]:
+                - /url: https://www.baidu.com/s?wd=%E2%80%9C%E6%88%90%E4%B8%BA%E4%B8%AD%E5%9B%BD%E4%BA%BA%E2%80%9D300%E5%B9%B4%E5%89%8D%E5%B0%B1%E7%81%AB%E4%BA%86
+            - listitem [ref=e164]:
+              - link "“崇州出命案6人遇害”系谣言" [ref=e165] [cursor=pointer]:
+                - /url: https://www.baidu.com/s?wd=%E2%80%9C%E5%B4%87%E5%B7%9E%E5%87%BA%E5%91%BD%E6%A1%886%E4%BA%BA%E9%81%87%E5%AE%B3%E2%80%9D%E7%B3%BB%E8%B0%A3%E8%A8%80
+            - listitem [ref=e166]:
+              - link "中方强烈呼吁立即停止军事行动" [ref=e167] [cursor=pointer]:
+                - /url: https://www.baidu.com/s?wd=%E4%B8%AD%E6%96%B9%E5%BC%BA%E7%83%88%E5%91%BC%E5%90%81%E7%AB%8B%E5%8D%B3%E5%81%9C%E6%AD%A2%E5%86%9B%E4%BA%8B%E8%A1%8C%E5%8A%A8
+            - listitem [ref=e168]:
+              - link "伊朗媒体：一架美国战斗机被击落" [ref=e169] [cursor=pointer]:
+                - /url: https://www.baidu.com/s?wd=%E4%BC%8A%E6%9C%97%E5%AA%92%E4%BD%93%EF%BC%9A%E4%B8%80%E6%9E%B6%E7%BE%8E%E5%9B%BD%E6%88%98%E6%96%97%E6%9C%BA%E8%A2%AB%E5%87%BB%E8%90%BD
+    - generic [ref=e170]:
+      - generic [ref=e172]:
+        - heading "北京新闻LOCAL NEWS" [level=2] [ref=e173]:
+          - generic [ref=e175]: 北京新闻
+          - text: LOCAL NEWS
+        - generic [ref=e176] [cursor=pointer]: 切换城市
+      - generic [ref=e177]:
+        - list
+      - generic [ref=e179]:
+        - heading "新闻图片" [level=3] [ref=e181]
+        - generic [ref=e185]:
+          - link [ref=e186] [cursor=pointer]:
+            - /url: ""
+          - link [ref=e187] [cursor=pointer]:
+            - /url: ""
+      - generic [ref=e189]:
+        - generic [ref=e190]:
+          - heading "新闻资讯" [level=3] [ref=e191]
+          - text: .
+        - generic:
+          - list
+    - list [ref=e192]:
+      - listitem [ref=e193] [cursor=pointer]:
+        - link:
+          - /url: javascript:void(0);
+      - listitem [ref=e194] [cursor=pointer]:
+        - link "辟谣" [ref=e195]:
+          - /url: http://www.piyao.org.cn/yybgt/index.htm
+      - listitem [ref=e196] [cursor=pointer]:
+        - link "举报" [ref=e197]:
+          - /url: http://www.12377.cn
+      - listitem [ref=e198] [cursor=pointer]:
+        - link "收藏本站" [ref=e199]:
+          - /url: javascript:void(0);
+      - listitem [ref=e200] [cursor=pointer]:
+        - link "搜索" [ref=e201]:
+          - /url: javascript:void(0);
+      - listitem [ref=e202] [cursor=pointer]:
+        - link "用户反馈" [ref=e203]:
+          - /url: javascript:void(0);
+      - listitem:
+        - paragraph:
+          - textbox [ref=e205]: 输入搜索词
+  - generic [ref=e207]:
+    - link "用户协议" [ref=e208] [cursor=pointer]:
+      - /url: //news-bos.cdn.bcebos.com/mvideo/baidu_news_protocol.html
+    - link "隐私策略" [ref=e209] [cursor=pointer]:
+      - /url: https://news-bos.cdn.bcebos.com/mvideo/privacy.html
+    - link "企业推广" [ref=e210] [cursor=pointer]:
+      - /url: http://e.baidu.com/?refer=1268
+    - link "投诉中心" [ref=e211] [cursor=pointer]:
+      - /url: //help.baidu.com/newadd?prod_id=5&category=1
+    - link "营业执照" [ref=e212] [cursor=pointer]:
+      - /url: //b.bdstatic.com/searchbox/image/gcp/20230526/3812451844.jpg
+    - text: 京ICP证030173号 京公网安备11000002000001号 《互联网新闻信息服务许可》编号：11220180008 《互联网宗教信息服务许可证》编号：京（2022）0000043 ©2026Baidu
+    - link "使用百度前必读" [ref=e213] [cursor=pointer]:
+      - /url: //www.baidu.com/duty/
+    - link [ref=e214] [cursor=pointer]:
+      - /url: https://cn.china.cn/
+    - link [ref=e215] [cursor=pointer]:
+      - /url: http://cyberpolice.mps.gov.cn/wfjb/
+    - link [ref=e216] [cursor=pointer]:
+      - /url: http://www.bjjubao.org/

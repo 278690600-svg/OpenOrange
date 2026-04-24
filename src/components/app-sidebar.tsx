@@ -1,11 +1,11 @@
 "use client"
 
-import { Bot, MessageSquare, Plus, Settings, Trash2 } from "lucide-react"
+import { Bot, MessageSquare, Plus, Settings, Trash2, CalendarDays, Bot as BotIcon } from "lucide-react"
 import {
   Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent,
   SidebarGroupLabel, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem,
 } from "@/components/ui/sidebar"
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { SettingsDialog } from "@/components/settings-dialog"
@@ -20,9 +20,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { useDebounce } from "@/hooks/use-debounce" // Assuming this exists or I'll implement a simple one
+import { useDebounce } from "@/hooks/use-debounce"
 
 type Chat = { id: string; title: string; updatedAt: string }
+
+type DateFilterType = "all" | "today" | "yesterday" | "week" | "month" | "custom"
+
+interface DateRange {
+  start: string
+  end: string
+}
 
 function groupByDate(chats: Chat[]) {
   const now = new Date()
@@ -50,14 +57,29 @@ function groupByDate(chats: Chat[]) {
 export function AppSidebar() {
   const [chats, setChats] = useState<Chat[]>([])
   const [searchQuery, setSearchQuery] = useState("")
-  const [dateFilter, setDateFilter] = useState("all")
+  const [dateFilter, setDateFilter] = useState<DateFilterType>("all")
+  const [dateRange, setDateRange] = useState<DateRange>({ start: "", end: "" })
+  const [showDatePicker, setShowDatePicker] = useState(false)
   const [isSearching, setIsSearching] = useState(false)
   const debouncedSearch = useDebounce(searchQuery, 300)
+  const datePickerRef = useRef<HTMLDivElement>(null)
 
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [kbOpen, setKbOpen] = useState(false)
   const router = useRouter()
   const { t } = useI18n()
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (datePickerRef.current && !datePickerRef.current.contains(event.target as Node)) {
+        setShowDatePicker(false)
+      }
+    }
+    if (showDatePicker) {
+      document.addEventListener('mousedown', handleClickOutside)
+      return () => document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [showDatePicker])
 
   const fetchChats = async () => {
     setIsSearching(true)
@@ -65,7 +87,12 @@ export function AppSidebar() {
       if (debouncedSearch || dateFilter !== "all") {
         const params = new URLSearchParams()
         if (debouncedSearch) params.append("q", debouncedSearch)
-        if (dateFilter !== "all") params.append("date", dateFilter)
+        if (dateFilter === "custom" && dateRange.start && dateRange.end) {
+          params.append("startDate", dateRange.start)
+          params.append("endDate", dateRange.end)
+        } else if (dateFilter !== "all") {
+          params.append("date", dateFilter)
+        }
         
         const res = await fetch(`/api/chats/search?${params.toString()}`)
         const data = await res.json()
@@ -82,7 +109,30 @@ export function AppSidebar() {
     }
   }
 
-  useEffect(() => { fetchChats() }, [debouncedSearch, dateFilter])
+  useEffect(() => { fetchChats() }, [debouncedSearch, dateFilter, dateRange])
+
+  const handleDateFilterChange = (value: string) => {
+    if (value === "custom") {
+      setShowDatePicker(true)
+      setDateFilter("custom")
+    } else {
+      setShowDatePicker(false)
+      setDateFilter(value as DateFilterType)
+    }
+  }
+
+  const handleDateRangeApply = () => {
+    if (dateRange.start && dateRange.end) {
+      setShowDatePicker(false)
+      fetchChats()
+    }
+  }
+
+  const handleDateRangeClear = () => {
+    setDateRange({ start: "", end: "" })
+    setDateFilter("all")
+    setShowDatePicker(false)
+  }
 
   const deleteChat = async (id: string, e: React.MouseEvent) => {
     e.preventDefault()
@@ -94,6 +144,15 @@ export function AppSidebar() {
   }
 
   const grouped = groupByDate(chats)
+
+  const getDateFilterLabel = () => {
+    if (dateFilter === "custom" && dateRange.start && dateRange.end) {
+      const start = new Date(dateRange.start).toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' })
+      const end = new Date(dateRange.end).toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' })
+      return `${start} - ${end}`
+    }
+    return t("All time")
+  }
 
   return (
     <>
@@ -132,19 +191,79 @@ export function AppSidebar() {
                 </button>
               )}
             </div>
-            <Select value={dateFilter} onValueChange={(v) => setDateFilter(v || "all")}>
-              <SelectTrigger className="h-8 text-[11px] bg-transparent border-none text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors px-1 w-fit shadow-none focus:ring-0">
-                <Calendar className="size-3 mr-1.5" />
-                <SelectValue placeholder={t("All time")} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{t("All time")}</SelectItem>
-                <SelectItem value="today">{t("Today")}</SelectItem>
-                <SelectItem value="yesterday">{t("Yesterday")}</SelectItem>
-                <SelectItem value="week">{t("Last 7 Days")}</SelectItem>
-                <SelectItem value="month">{t("Last 30 Days")}</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="flex items-center gap-1.5">
+              <Select value={dateFilter} onValueChange={handleDateFilterChange}>
+                <SelectTrigger className="h-8 text-[11px] bg-transparent border-none text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors px-1 w-fit shadow-none focus:ring-0">
+                  <Calendar className="size-3 mr-1.5" />
+                  <SelectValue placeholder={getDateFilterLabel()} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{t("All time")}</SelectItem>
+                  <SelectItem value="today">{t("Today")}</SelectItem>
+                  <SelectItem value="yesterday">{t("Yesterday")}</SelectItem>
+                  <SelectItem value="week">{t("Last 7 Days")}</SelectItem>
+                  <SelectItem value="month">{t("Last 30 Days")}</SelectItem>
+                  <SelectItem value="custom">
+                    <span className="flex items-center gap-1.5">
+                      <CalendarDays className="size-3" />
+                      {t("Custom Range")}
+                    </span>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+              {(dateFilter === "custom" || dateFilter !== "all") && (
+                <button
+                  onClick={handleDateRangeClear}
+                  className="text-[10px] text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors px-1"
+                  title={t("Clear filter")}
+                >
+                  <X className="size-3" />
+                </button>
+              )}
+            </div>
+            {showDatePicker && (
+              <div 
+                ref={datePickerRef}
+                className="absolute left-0 right-0 z-50 mt-1 p-3 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-xl shadow-lg"
+              >
+                <div className="text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-2">{t("Select Date Range")}</div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="text-[10px] text-zinc-500 mb-1 block">{t("Start Date")}</label>
+                    <input
+                      type="date"
+                      value={dateRange.start}
+                      onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
+                      className="w-full h-8 px-2 text-xs border border-zinc-200 dark:border-zinc-700 rounded-lg bg-zinc-50 dark:bg-zinc-800 focus:outline-none focus:ring-1 focus:ring-primary/20"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-zinc-500 mb-1 block">{t("End Date")}</label>
+                    <input
+                      type="date"
+                      value={dateRange.end}
+                      onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })}
+                      className="w-full h-8 px-2 text-xs border border-zinc-200 dark:border-zinc-700 rounded-lg bg-zinc-50 dark:bg-zinc-800 focus:outline-none focus:ring-1 focus:ring-primary/20"
+                    />
+                  </div>
+                </div>
+                <div className="flex gap-2 mt-3">
+                  <button
+                    onClick={handleDateRangeApply}
+                    disabled={!dateRange.start || !dateRange.end}
+                    className="flex-1 h-7 text-xs font-medium bg-primary text-primary-foreground rounded-lg hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                  >
+                    {t("Apply")}
+                  </button>
+                  <button
+                    onClick={() => setShowDatePicker(false)}
+                    className="flex-1 h-7 text-xs font-medium bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 rounded-lg hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-all"
+                  >
+                    {t("Cancel")}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </SidebarHeader>
 
@@ -198,12 +317,19 @@ export function AppSidebar() {
             <span className="text-sm text-zinc-600 dark:text-zinc-400">{t("Knowledge Base")}</span>
           </SidebarMenuButton>
           <SidebarMenuButton
-            onClick={() => setSettingsOpen(true)}
-            className="w-full justify-start gap-2.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 px-3"
-          >
-            <Settings className="size-4 text-zinc-500" />
-            <span className="text-sm text-zinc-600 dark:text-zinc-400">{t("Settings")}</span>
-          </SidebarMenuButton>
+        onClick={() => setSettingsOpen(true)}
+        className="w-full justify-start gap-2.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 px-3"
+      >
+        <Settings className="size-4 text-zinc-500" />
+        <span className="text-sm text-zinc-600 dark:text-zinc-400">{t("Settings")}</span>
+      </SidebarMenuButton>
+      <SidebarMenuButton
+        className="w-full justify-start gap-2.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 px-3"
+        render={<Link href="/agent" />}
+      >
+        <BotIcon className="size-4 text-amber-500" />
+        <span className="text-sm text-zinc-600 dark:text-zinc-400">{t("Agent")}</span>
+      </SidebarMenuButton>
         </SidebarFooter>
       </Sidebar>
       <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />

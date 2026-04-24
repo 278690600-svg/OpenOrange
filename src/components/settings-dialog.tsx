@@ -17,7 +17,13 @@ import { ScrollArea } from "./ui/scroll-area"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "./ui/collapsible"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "./ui/dropdown-menu"
 
+const MIN_WIDTH = 520
+const MIN_HEIGHT = 400
+const DEFAULT_WIDTH = 520
+const DEFAULT_HEIGHT = 640
+
 const SEARCH_ENGINES = [
+  { id: 'bing', label: 'Bing', free: true, desc: 'No API key required, works in China' },
   { id: 'duckduckgo', label: 'DuckDuckGo', free: true, desc: 'No API key required' },
   { id: 'wikipedia', label: 'Wikipedia', free: true, desc: 'No API key required' },
   { id: 'tavily', label: 'Tavily', free: false, desc: 'Best AI-native quality', url: 'https://tavily.com' },
@@ -45,6 +51,8 @@ export function SettingsDialog({ open, onOpenChange }: { open: boolean, onOpenCh
   const [apiMaxTokens, setApiMaxTokens] = useState(2048)
   const [apiContextSize, setApiContextSize] = useState(8192)
   const [theme, setTheme] = useState("zinc")
+  const [mcpEnabled, setMcpEnabled] = useState(true)
+  const [mcpAutoLoad, setMcpAutoLoad] = useState(false)
   const [saving, setSaving] = useState(false)
   const [testing, setTesting] = useState(false)
   const [testResult, setTestResult] = useState<'ok' | 'fail' | null>(null)
@@ -73,7 +81,7 @@ export function SettingsDialog({ open, onOpenChange }: { open: boolean, onOpenCh
   const fetchModels = async () => {
     setIsLoadingModels(true)
     try {
-      const res = await fetch('/api/models')
+      const res = await fetch('/api/models?refresh=true')
       const data = await res.json()
       setModels(Array.isArray(data) ? data : (data?.models || []))
     } catch (e) {
@@ -152,6 +160,8 @@ export function SettingsDialog({ open, onOpenChange }: { open: boolean, onOpenCh
           setApiMaxTokens(data.apiMaxTokens ?? 2048)
           setApiContextSize(data.apiContextSize ?? 8192)
           setTheme(data.theme || "zinc")
+          setMcpEnabled(data.mcpEnabled ?? true)
+          setMcpAutoLoad(data.mcpAutoLoad ?? false)
         })
         .catch(console.error)
       
@@ -162,6 +172,18 @@ export function SettingsDialog({ open, onOpenChange }: { open: boolean, onOpenCh
     }
   }, [open])
 
+  // Auto-load MCP details when toggle is enabled
+  useEffect(() => {
+    if (mcpEnabled && mcpServers.length > 0) {
+      const enabledServers = mcpServers.filter((s: any) => s.enabled)
+      enabledServers.forEach((server: any) => {
+        if (!selectedMcpDetails[server.id] && !loadingMcpDetails[server.id]) {
+          fetchMcpDetails(server.id)
+        }
+      })
+    }
+  }, [mcpEnabled, mcpServers])
+
   const saveSettings = async () => {
     setSaving(true)
     await fetch('/api/settings', {
@@ -171,10 +193,10 @@ export function SettingsDialog({ open, onOpenChange }: { open: boolean, onOpenCh
         ollamaUrl, lmstudioUrl, openaiKey, minimaxKey, deepseekKey, openrouterKey, 
         defaultModel, searchEngine, searchKey, localGgufEnabled,
         localGgufContextSize, localGgufTemperature, localGgufTopP, localGgufRepeatPenalty, localGgufMaxTokens,
-        apiTemperature, apiTopP, apiMaxTokens, apiContextSize, theme
+        apiTemperature, apiTopP, apiMaxTokens, apiContextSize, theme,
+        mcpEnabled, mcpAutoLoad
       })
     })
-    // Apply theme immediately
     document.documentElement.setAttribute('data-theme', theme)
     setSaving(false)
     onOpenChange(false)
@@ -319,9 +341,55 @@ export function SettingsDialog({ open, onOpenChange }: { open: boolean, onOpenCh
     }
   }, [mcpTab])
 
+  const [dialogSize, setDialogSize] = useState<{ width: number; height: number }>({
+    width: DEFAULT_WIDTH,
+    height: DEFAULT_HEIGHT,
+  })
+
+  useEffect(() => {
+    if (!open) {
+      setDialogSize({ width: DEFAULT_WIDTH, height: DEFAULT_HEIGHT })
+    }
+  }, [open])
+
+  const handleResizeStart = (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    const startX = e.clientX
+    const startY = e.clientY
+    const startWidth = dialogSize.width
+    const startHeight = dialogSize.height
+
+    const onMove = (ev: MouseEvent) => {
+      const dx = ev.clientX - startX
+      const dy = ev.clientY - startY
+      setDialogSize({
+        width: Math.max(MIN_WIDTH, startWidth + dx),
+        height: Math.max(MIN_HEIGHT, startHeight + dy),
+      })
+    }
+    const onUp = () => {
+      document.removeEventListener('mousemove', onMove)
+      document.removeEventListener('mouseup', onUp)
+    }
+    document.addEventListener('mousemove', onMove)
+    document.addEventListener('mouseup', onUp)
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[520px] max-h-[90vh] overflow-hidden flex flex-col p-0">
+      <DialogContent 
+        className="sm:max-w-none p-0"
+        style={{ 
+          width: dialogSize.width, 
+          maxWidth: 'calc(100vw - 2rem)',
+          height: dialogSize.height,
+          maxHeight: 'calc(100vh - 2rem)',
+          minWidth: MIN_WIDTH,
+          minHeight: MIN_HEIGHT,
+          resize: 'none',
+        }}
+      >
         <DialogHeader className="p-6 pb-0">
           <DialogTitle className="text-lg font-semibold">{t("Settings Title")}</DialogTitle>
         </DialogHeader>
@@ -646,7 +714,8 @@ export function SettingsDialog({ open, onOpenChange }: { open: boolean, onOpenCh
                             <h4 className="text-xs font-bold truncate">{model.id.split('/')[1]}</h4>
                             <Badge variant="outline" className="text-[9px] font-mono py-0 h-4">{model.author}</Badge>
                           </div>
-                          <p className="text-[9px] text-zinc-500 line-clamp-1">{model.id}</p>
+                          <p className="text-[9px] text-zinc-500 line-clamp-2 mt-1">{model.description || t("No description provided")}</p>
+                          <p className="text-[8px] text-zinc-400 mt-1 font-mono">{model.id}</p>
                         </div>
                         <div className="flex items-center gap-1.5 text-[9px] text-zinc-400 font-medium">
                           <Activity className="size-3" /> {model.downloads?.toLocaleString() || '0'}
@@ -797,12 +866,58 @@ export function SettingsDialog({ open, onOpenChange }: { open: boolean, onOpenCh
                   {t("Market")}
                 </button>
               </div>
-              {mcpTab === 'my' && !showAddForm && (
-                <Button size="sm" variant="outline" className="h-7 text-[10px] gap-1" onClick={() => { setEditingServer({ name: '', type: 'stdio', command: '', args: '[]', env: '{}', enabled: true }); setShowAddForm(true); }}>
-                  <Plus className="size-3" />
-                  {t("Add Server")}
-                </Button>
-              )}
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-zinc-500">MCP</span>
+                  <button
+                    onClick={async () => {
+                      const newEnabled = !mcpEnabled
+                      setMcpEnabled(newEnabled)
+                      await fetch('/api/settings', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ mcpEnabled: newEnabled, mcpAutoLoad })
+                      })
+                      if (newEnabled && mcpServers.length > 0) {
+                        const enabledServers = mcpServers.filter((s: any) => s.enabled)
+                        enabledServers.forEach((server: any) => {
+                          if (!selectedMcpDetails[server.id] && !loadingMcpDetails[server.id]) {
+                            fetchMcpDetails(server.id)
+                          }
+                        })
+                      }
+                    }}
+                    className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${mcpEnabled ? 'bg-indigo-600' : 'bg-zinc-300 dark:bg-zinc-600'}`}
+                  >
+                    <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${mcpEnabled ? 'translate-x-5' : 'translate-x-1'}`} />
+                  </button>
+                </div>
+                {mcpEnabled && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-zinc-500">Auto</span>
+                    <button
+                      onClick={async () => {
+                        const newAuto = !mcpAutoLoad
+                        setMcpAutoLoad(newAuto)
+                        await fetch('/api/settings', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ mcpEnabled, mcpAutoLoad: newAuto })
+                        })
+                      }}
+                      className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${mcpAutoLoad ? 'bg-indigo-600' : 'bg-zinc-300 dark:bg-zinc-600'}`}
+                    >
+                      <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${mcpAutoLoad ? 'translate-x-5' : 'translate-x-1'}`} />
+                    </button>
+                  </div>
+                )}
+                {mcpTab === 'my' && !showAddForm && (
+                  <Button size="sm" variant="outline" className="h-7 text-[10px] gap-1" onClick={() => { setEditingServer({ name: '', type: 'stdio', command: '', args: '[]', env: '{}', enabled: true }); setShowAddForm(true); }}>
+                    <Plus className="size-3" />
+                    {t("Add Server")}
+                  </Button>
+                )}
+              </div>
             </div>
 
             {showAddForm ? (
@@ -866,9 +981,9 @@ export function SettingsDialog({ open, onOpenChange }: { open: boolean, onOpenCh
                       <Button variant="link" className="text-xs text-indigo-500" onClick={() => setMcpTab('market')}>{t("Browse Market")}</Button>
                     </div>
                   ) : (
-                    mcpServers.map((server: any) => (
+                    mcpServers.map((server: any, idx: number) => (
                       <Collapsible
-                        key={server.id}
+                        key={`${server.id}-${idx}`}
                         open={expandedMcp === server.id}
                         onOpenChange={(open) => {
                           setExpandedMcp(open ? server.id : null)
@@ -884,10 +999,42 @@ export function SettingsDialog({ open, onOpenChange }: { open: boolean, onOpenCh
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2">
                                 <p className="text-sm font-bold truncate">{server.name || 'Untitled Server'}</p>
-                                <Checkbox checked={server.enabled} onCheckedChange={(v) => handleSaveServer({ ...server, enabled: !!v })} className="size-3.5" onClick={e => e.stopPropagation()} />
+                                {server.source === 'config' && (
+                                  <Badge variant="outline" className="text-[9px] py-0 h-4 bg-indigo-50/50 text-indigo-600 border-indigo-100 uppercase tracking-tighter font-bold">Config</Badge>
+                                )}
+                                {mcpEnabled && selectedMcpDetails[server.id] && (
+                                  selectedMcpDetails[server.id].error ? (
+                                    <Badge variant="outline" className="text-[9px] py-0 h-4 bg-red-50 text-red-600 border-red-100">
+                                      <XCircle className="size-2.5 mr-0.5" />Failed
+                                    </Badge>
+                                  ) : (
+                                    <Badge variant="outline" className="text-[9px] py-0 h-4 bg-green-50 text-green-600 border-green-100">
+                                      <CheckCircle2 className="size-2.5 mr-0.5" />
+                                      {selectedMcpDetails[server.id].tools?.length || 0} tools
+                                    </Badge>
+                                  )
+                                )}
+                                {mcpEnabled && loadingMcpDetails[server.id] && (
+                                  <Badge variant="outline" className="text-[9px] py-0 h-4 bg-yellow-50 text-yellow-600 border-yellow-100">
+                                    <Loader2 className="size-2.5 mr-0.5 animate-spin" />Loading
+                                  </Badge>
+                                )}
+                                {!mcpEnabled && (
+                                  <Badge variant="outline" className="text-[9px] py-0 h-4 bg-zinc-50 text-zinc-400 border-zinc-200">
+                                    Disabled
+                                  </Badge>
+                                )}
+                                <Checkbox checked={server.enabled} onCheckedChange={(v) => handleSaveServer({ ...server, enabled: !!v })} className="size-3.5" onClick={e => e.stopPropagation()} disabled={server.source === 'config'} />
                               </div>
                               <p className="text-[10px] text-zinc-400 font-mono truncate max-w-[200px]">
-                                {server.type === 'stdio' ? `${server.command}` : server.url}
+                                {server.type === 'stdio' ? (() => {
+                                  let args = server.args
+                                  if (typeof args === 'string') {
+                                    try { args = JSON.parse(args) } catch {}
+                                  }
+                                  const argsStr = Array.isArray(args) ? args.join(' ') : ''
+                                  return `${server.command} ${argsStr}`.trim()
+                                })() : server.url}
                               </p>
                             </div>
                             <div className="ml-auto">
@@ -895,17 +1042,19 @@ export function SettingsDialog({ open, onOpenChange }: { open: boolean, onOpenCh
                             </div>
                           </CollapsibleTrigger>
                           
-                          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <Button size="icon" variant="ghost" className="size-8 text-zinc-400 hover:text-indigo-600" onClick={() => {
-                              setEditingServer({ ...server, args: typeof server.args === 'string' ? server.args : JSON.stringify(server.args) });
-                              setShowAddForm(true);
-                            }}>
-                              <Edit2 className="size-3.5" />
-                            </Button>
-                            <Button size="icon" variant="ghost" className="size-8 text-zinc-400 hover:text-red-500" onClick={() => handleDeleteServer(server.id)}>
-                              <Trash2 className="size-3.5" />
-                            </Button>
-                          </div>
+                          {server.source !== 'config' && (
+                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <Button size="icon" variant="ghost" className="size-8 text-zinc-400 hover:text-indigo-600" onClick={() => {
+                                setEditingServer({ ...server, args: typeof server.args === 'string' ? server.args : JSON.stringify(server.args) });
+                                setShowAddForm(true);
+                              }}>
+                                <Edit2 className="size-3.5" />
+                              </Button>
+                              <Button size="icon" variant="ghost" className="size-8 text-zinc-400 hover:text-red-500" onClick={() => handleDeleteServer(server.id)}>
+                                <Trash2 className="size-3.5" />
+                              </Button>
+                            </div>
+                          )}
                         </div>
 
                         <CollapsibleContent className="px-3 pb-3 animate-in fade-in slide-in-from-top-1">
@@ -916,6 +1065,13 @@ export function SettingsDialog({ open, onOpenChange }: { open: boolean, onOpenCh
                               </div>
                             ) : selectedMcpDetails[server.id] ? (
                               <div className="grid gap-4">
+                                {selectedMcpDetails[server.id].error && (
+                                  <div className="text-[10px] text-red-500 bg-red-50 dark:bg-red-900/20 rounded-lg p-2">
+                                    {selectedMcpDetails[server.id].error.includes('timeout') 
+                                      ? '连接超时，请检查命令是否正确或网络是否正常' 
+                                      : selectedMcpDetails[server.id].error}
+                                  </div>
+                                )}
                                 {selectedMcpDetails[server.id].tools?.length > 0 && (
                                   <div className="space-y-1.5">
                                     <div className="flex items-center gap-1.5 text-[10px] font-bold text-zinc-400 uppercase tracking-tight">
@@ -945,6 +1101,9 @@ export function SettingsDialog({ open, onOpenChange }: { open: boolean, onOpenCh
                                       ))}
                                     </div>
                                   </div>
+                                )}
+                                {(!selectedMcpDetails[server.id].tools?.length && !selectedMcpDetails[server.id].resources?.length && !selectedMcpDetails[server.id].error) && (
+                                  <p className="text-[10px] text-zinc-400 italic text-center py-2">{t("No tools or resources available")}</p>
                                 )}
                               </div>
                             ) : (
@@ -1017,35 +1176,53 @@ export function SettingsDialog({ open, onOpenChange }: { open: boolean, onOpenCh
                                 variant={isInstalled ? "outline" : "default"}
                                 disabled={isInstalled}
                                 className={`h-7 px-3 text-[10px] ${isInstalled ? '' : 'bg-indigo-600 hover:bg-indigo-700 text-white'}`}
-                                onClick={() => {
+                                onClick={async () => {
                                   const repoUrl = server.repository?.url || server.githubUrl || ''
                                   let command = server.command || 'npx'
-                                  let args = server.args
+                                  let args: string[] = []
                                   
-                                  if (!args) {
+                                  if (!args || args.length === 0) {
                                     const pkgName = server.packageName || server.name
-                                    // Remove any spaces or invalid chars for fallback just in case
                                     const safePkgName = pkgName.toLowerCase().replace(/\s+/g, '-')
                                     
                                     if (marketSource === 'modelscope') {
                                       args = ['-y', `@modelscope/mcp-server-${safePkgName}`]
                                     } else if (marketSource === 'smithery') {
-                                      // Smithery packages are typically mapped identically to their ID/slug
                                       args = ['-y', `@smithery/mcp-server-${safePkgName}`]
                                     } else {
                                       args = ['-y', repoUrl.replace('https://github.com/', '')]
                                     }
                                   }
 
-                                  setEditingServer({
-                                    name: server.name,
-                                    type: server.transport === 'sse' ? 'sse' : 'stdio',
-                                    command: command,
-                                    args: JSON.stringify(args),
-                                    url: server.url || '',
-                                    enabled: true,
-                                  })
-                                  setShowAddForm(true)
+                                  try {
+                                    const res = await fetch('/api/settings/mcp/market', {
+                                      method: 'POST',
+                                      headers: { 'Content-Type': 'application/json' },
+                                      body: JSON.stringify({
+                                        name: server.name,
+                                        description: server.description,
+                                        transport: server.transport === 'sse' ? 'sse' : 'stdio',
+                                        command,
+                                        args: JSON.stringify(args),
+                                        url: server.url || '',
+                                        env: JSON.stringify({}),
+                                        homepage: server.homepage,
+                                        source: marketSource,
+                                      })
+                                    })
+                                    
+                                    if (res.ok) {
+                                      const saved = await res.json()
+                                      setMcpServers(prev => [saved, ...prev])
+                                      setMcpTab('my')
+                                    } else {
+                                      const err = await res.json()
+                                      alert(err.error || 'Failed to install')
+                                    }
+                                  } catch (error) {
+                                    console.error('Install MCP error:', error)
+                                    alert('Failed to install server')
+                                  }
                                 }}
                               >
                                 {isInstalled ? t("Installed") : t("Install")}
@@ -1068,6 +1245,16 @@ export function SettingsDialog({ open, onOpenChange }: { open: boolean, onOpenCh
             {t("Save changes")}
           </Button>
         </div>
+        </div>
+        
+        {/* Resize handle */}
+        <div
+          onMouseDown={handleResizeStart}
+          className="absolute bottom-0 right-0 z-50 cursor-nwse-resize w-6 h-6 flex items-center justify-center opacity-30 hover:opacity-100 transition-opacity"
+        >
+          <svg className="w-3 h-3 text-zinc-400" viewBox="0 0 10 10" fill="none">
+            <path d="M8 2V8H2" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+          </svg>
         </div>
       </DialogContent>
     </Dialog>

@@ -1,11 +1,10 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/lib/db'
+import { mcpManager } from '@/lib/mcp'
 
 export async function GET() {
   try {
-    const servers = await (prisma as any).mcpServer.findMany({
-      orderBy: { createdAt: 'desc' }
-    })
+    const servers = await mcpManager.getAllServers()
     return NextResponse.json(servers)
   } catch (error: any) {
     console.error("MCP GET Error:", error?.message || error)

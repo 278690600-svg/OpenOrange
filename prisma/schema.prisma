@@ -48,6 +48,8 @@ model Settings {
   apiMaxTokens         Int     @default(2048)
   apiContextSize       Int     @default(8192)
   theme                String  @default("zinc")
+  mcpEnabled           Boolean @default(true)
+  mcpAutoLoad          Boolean @default(false)
 }
 
 model KnowledgeBase {

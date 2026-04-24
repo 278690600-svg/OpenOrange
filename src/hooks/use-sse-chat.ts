@@ -2,17 +2,26 @@
 
 import { useState, useRef, useCallback, useEffect } from 'react'
 
-export type SearchStage = 'intent' | 'skip' | 'rewrite' | 'rewrite_done' | 'searching' | 'found' | 'read_page' | 'reading' | 'done' | 'error' | 'loading' | 'call'
+export type SearchStage = 'intent' | 'skip' | 'rewrite' | 'rewrite_done' | 'searching' | 'found' | 'read_page' | 'reading' | 'done' | 'error' | 'loading' | 'call' | 'result' | 'compiling' | 'context' | 'ready'
 export type ThinkingStage = 'start' | 'done'
 
 export interface StatusEvent {
-  type: 'search' | 'thinking' | 'mcp'
+  type: 'search' | 'thinking' | 'mcp' | 'model_load'
   stage: SearchStage | ThinkingStage
   message: string
   results?: Array<{ title: string; url: string }>
   pageIndex?: number
   tool?: string
   args?: any
+  url?: string
+  result?: string
+  rawResult?: string
+  completedUrl?: string
+  pageTitle?: string
+  status?: string
+  // model_load fields
+  progress?: number
+  modelName?: string
 }
 
 // ... unchanged until handle status event
@@ -155,6 +164,11 @@ export function useSSEChat() {
     const abortController = new AbortController()
     abortRef.current = abortController
 
+    // Add timeout to prevent hanging (10 minutes for MCP tool loading)
+    const timeoutId = setTimeout(() => {
+      abortController.abort()
+    }, 600000) // 10 minute timeout
+
     try {
       const allMessages = [...baseMessages, userMsg].map(m => ({
         role: m.role,
@@ -175,6 +189,8 @@ export function useSSEChat() {
         }),
         signal: abortController.signal,
       })
+
+      clearTimeout(timeoutId)
 
       if (!res.ok) {
         const errData = await res.json().catch(() => ({ error: 'Unknown error' }))
@@ -261,11 +277,20 @@ export function useSSEChat() {
         }
       }
     } catch (e: any) {
+      clearTimeout(timeoutId)
       if (e.name !== 'AbortError') {
         console.error('[useSSEChat] Error:', e)
         setError(e)
+      } else if (status === 'streaming') {
+        // Only set error if we were already streaming (real network error)
+        // If aborted during submitted state, it's likely a hot-reload
+        console.warn('[useSSEChat] Request aborted during streaming')
+        setError(new Error('Connection interrupted. Please try again.'))
+      } else {
+        console.warn('[useSSEChat] Request aborted (likely hot-reload in dev mode)')
       }
     } finally {
+      clearTimeout(timeoutId)
       setStatus('idle')
       setIsThinking(false)
       setCurrentSearch([])

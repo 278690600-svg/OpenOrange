@@ -4,7 +4,9 @@ import prisma from "@/lib/db"
 export async function GET(req: NextRequest) {
   const searchParams = req.nextUrl.searchParams
   const q = searchParams.get("q") || ""
-  const dateFilter = searchParams.get("date") // today, yesterday, week, month
+  const dateFilter = searchParams.get("date")
+  const startDateParam = searchParams.get("startDate")
+  const endDateParam = searchParams.get("endDate")
 
   let where: any = {}
 
@@ -15,7 +17,16 @@ export async function GET(req: NextRequest) {
     ]
   }
 
-  if (dateFilter) {
+  if (startDateParam && endDateParam) {
+    const startDate = new Date(startDateParam)
+    const endDate = new Date(endDateParam)
+    endDate.setHours(23, 59, 59, 999)
+    
+    where.createdAt = {
+      gte: startDate,
+      lte: endDate
+    }
+  } else if (dateFilter) {
     const now = new Date()
     let startDate: Date | null = null
     let endDate: Date | null = null

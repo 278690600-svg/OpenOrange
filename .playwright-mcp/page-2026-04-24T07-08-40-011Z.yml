@@ -1,0 +1,839 @@
+- generic [active] [ref=e1]:
+  - link "欢迎进入 百度一下，你就知道，盲人用户进入读屏幕模式请按快捷键Ctrl加Alt加R；阅读详细操作说明请按快捷键Ctrl加Alt加问号键。":
+    - /url: javascript:void(0)
+  - generic [ref=e2]:
+    - generic [ref=e4]:
+      - generic [ref=e5]:
+        - generic:
+          - link "到百度首页" [ref=e6] [cursor=pointer]:
+            - /url: /
+            - img "到百度首页" [ref=e7]
+          - generic [ref=e10]:
+            - textbox [ref=e12]: 今天的金价
+            - generic [ref=e14]:
+              - generic [ref=e15]:
+                - img [ref=e17] [cursor=pointer]
+                - img [ref=e28] [cursor=pointer]
+                - generic [ref=e31]:
+                  - img [ref=e35] [cursor=pointer]
+                  - img [ref=e40] [cursor=pointer]
+              - button "百度一下" [ref=e44] [cursor=pointer]
+      - generic [ref=e46]:
+        - link "百度首页" [ref=e47] [cursor=pointer]:
+          - /url: /
+        - link "设置" [ref=e48] [cursor=pointer]:
+          - /url: javascript:;
+        - link "登录" [ref=e49] [cursor=pointer]:
+          - /url: https://passport.baidu.com/v2/?login&tpl=mn&u=http%3A%2F%2Fwww.baidu.com%2F
+    - generic [ref=e52]:
+      - link [ref=e53] [cursor=pointer]:
+        - /url: https://chat.baidu.com/search?word=%E4%BB%8A%E5%A4%A9%E7%9A%84%E9%87%91%E4%BB%B7&dyTabStr=MTIsMCwzLDEsMiwxMyw3LDYsNSw5&pd=csaitab&setype=csaitab&extParamsJson=%7B%22enter_type%22%3A%22search_a_tab%22%2C%22sa%22%3A%22vs_tab%22%2C%22apagelid%22%3A%229859087639738802552%22%2C%22ori_lid%22%3A%229859087639738802552%22%7D
+        - img [ref=e54]
+      - generic [ref=e55]: 网页
+      - link "图片" [ref=e56] [cursor=pointer]:
+        - /url: http://image.baidu.com/i?tn=baiduimage&ps=1&ct=201326592&lm=-1&cl=2&nc=1&ie=utf-8&lid=88d283f900136178&dyTabStr=MTIsMCwzLDEsMiwxMyw3LDYsNSw5&word=%E4%BB%8A%E5%A4%A9%E7%9A%84%E9%87%91%E4%BB%B7
+      - link "资讯" [ref=e57] [cursor=pointer]:
+        - /url: https://www.baidu.com/s?rtt=1&bsst=1&cl=2&tn=news&ie=utf-8&word=%E4%BB%8A%E5%A4%A9%E7%9A%84%E9%87%91%E4%BB%B7
+      - link "视频" [ref=e58] [cursor=pointer]:
+        - /url: /sf/vsearch?pd=video&tn=vsearch&lid=88d283f900136178&ie=utf-8&wd=%E4%BB%8A%E5%A4%A9%E7%9A%84%E9%87%91%E4%BB%B7&rsv_spt=7&rsv_bp=1&f=8&oq=%E4%BB%8A%E5%A4%A9%E7%9A%84%E9%87%91%E4%BB%B7&rsv_pq=88d283f900136178&rsv_t=cd9awkn9Hx4KtO%2FbPn5LoD5bBBd%2FQfzNNIIQbwcHQL%2F8WmYQb8ESd8MG29o
+      - link "笔记" [ref=e59] [cursor=pointer]:
+        - /url: https://www.baidu.com/s?pd=note&rpf=pc&dyTabStr=MTIsMCwzLDEsMiwxMyw3LDYsNSw5&word=%E4%BB%8A%E5%A4%A9%E7%9A%84%E9%87%91%E4%BB%B7
+      - link "地图" [ref=e60] [cursor=pointer]:
+        - /url: https://map.baidu.com/?newmap=1&ie=utf-8&from=pstab&s=s%26wd%3D%E4%BB%8A%E5%A4%A9%E7%9A%84%E9%87%91%E4%BB%B7
+      - link "贴吧" [ref=e61] [cursor=pointer]:
+        - /url: http://tieba.baidu.com/f?fr=wwwt&ie=utf-8&dyTabStr=MTIsMCwzLDEsMiwxMyw3LDYsNSw5&kw=%E4%BB%8A%E5%A4%A9%E7%9A%84%E9%87%91%E4%BB%B7
+      - link "文库" [ref=e62] [cursor=pointer]:
+        - /url: http://wenku.baidu.com/search?lm=0&od=0&ie=utf-8&dyTabStr=MTIsMCwzLDEsMiwxMyw3LDYsNSw5&word=%E4%BB%8A%E5%A4%A9%E7%9A%84%E9%87%91%E4%BB%B7
+      - link "更多" [ref=e63] [cursor=pointer]:
+        - /url: http://www.baidu.com/more/
+      - generic [ref=e64] [cursor=pointer]: 搜索工具
+    - generic [ref=e65]:
+      - generic [ref=e66]:
+        - generic [ref=e67]:
+          - generic [ref=e74]:
+            - heading "黄金走势行情" [level=3] [ref=e76]:
+              - link "黄金走势行情" [ref=e78] [cursor=pointer]:
+                - /url: https://www.baidu.com/baidu.php?url=0s0000a360qjuYHbZ8ndGIeoVaJLXxQSFgHPHZbdfTlJR0RImXAW5U68nr2Y1MarLeDOQAcMxtIEu1z4XbBHQBSN45XYQZk0ZIVhsoSML5aoC6ZMMCPZnAEGhK7a8oP0_1dpKzMeDWrgN1xKeyBGwj5mpZI_T7IcmCfo0FFqodAgqhw9OYn5O5N646ytuzlA_aYirSdteGiUQvRssrc_CEX_zfMT.DD_NR2Ar5Od663p_HQE2qM76wKenamljLwfUqOH8LX5H8vUEZGzNvIhex1elTg2MCk_NqgkOyuvMtXKhFB1ojGuCfdnN4PhHosklr9BUqOG8hOx_3OhoYd1xEOCN1uXhrQqEOgI7MCgwuUrEUGx7oTkgYqIXFBUqOG8hOx_3OhoYd1xEOCN1uXhrQqEOgI7MCI_gexHslJO-dS9n1AHoGCHFB8HnkgdlcljZLoOgSG_3OEOJUS1Swt5O7O_4TOJeSWt5slpl8MWOoOtZLOxOeZOmhzOQO_HuUSngH3OV3tVLoS9N3en7MWseESKNNNOsnx7YxWSG8OxSNL4EgWskxVlIbgeSMWSxq8ZO_wwS5ZISOYtTAyZW7qAM_BzvI_NXMVOPgElcELeSAQ5f3mJervQqEgOv51xEq5juJBqbLeOHIPSOukOPgGohOxOfohzqnTgexS8lQ5femEvSM9dNvxSaQqOHOvcJOqIL4Evq5jSpPi_nYQZZk3qrwf.U1Yk0ZDqExZneQgDExatvsKY5fKGUHYknW6z0ZNG5yF9pywd0ZKGujY1P0KWpyfqn0KBpHYs0AuY5H00TA6qn0KET1Ys0AFL5H00UMfqn0K1XWY0ThIYmyTqn0K8IM0qna3snj0snj0sn0K-ThTqn0KYTh7buHYs0AFbpyfqnRmknjmLnj6drjuAPjDzPWFanbF7rRfzPbc1fYRYfbn0uAPWujY0IA7zuvNY5HKxn7ts0A71gv-bm1dsTzdMXh93XfKWIyfqn0KEm1Yk0ATqILP8TsKETjDqn0KsTjfqn0KzIjYzPWD0TgKGujYs0Z7Wpyfqn0K9mWYsg100TZ0qn0KVIZ0qn0KbuAqs5H00ThCqn0KYIgnqnHcvnHm1nWnznHcYnjmkrHbkPjf0mynqnfKsUWYs0ZK9I7qhUA7M5H00TyILujYs0AN1IjYs0ANYpyfqQHD0mgPsmvnqn0KdTA-8mvnqn0KhmLNY5H00mywhUA7M5HDvn16Y0ZIhThqV5fKBIjYs0A-W5H00ThNkIjYkP1TLnjDYPHDsrHm30ZPGujY3rAfzrjPhrH0snHnvnHT30AqY5H00ULFsIjYV0ZFYmy-b5fKopHYs0AdY5H61njn0Uynqn0KVmdqhThqV5H00uA78IyF-gLK_my4GuZnqn0KGTvP_5H00pyw-my-b5HDzrHc3nW0drHRLPfK8ugIxTAk9UWYkn16zPWTYnjDL0A4-IdqdUh-Y5HDzP16drHR3PWmY0A4-IdqGuAN95HDzrHc3nW0drHRLPfKsmgP1TAqzIjYs0AF9pywdpyfqnRmknjmLnj6drjuAPjDzPWFanbF7rRfzPbc1fYRYfbn0ULPGujYs0A7bgLPEIgFWuHYsczn0mLFW5HD4PHfv&us=newvui&word=&ck=0.0.0.0.0.0.0.0&shh=www.baidu.com
+            - link [ref=e80] [cursor=pointer]:
+              - /url: https://www.baidu.com/baidu.php?url=0s0000a360qjuYHbZ8ndGIeoVaJLXxQSFgHPHZbdfTlJR0RImXAW5U68nr2Y1MarLeDOQAcMxtIEu1z4XbBHQBSN45XYQZk0ZIVhsoSML5aoC6ZMMCPZnAEGhK7a8oP0_1dpKzMeDWrgN1xKeyBGwj5mpZI_T7IcmCfo0FFqodAgqhw9OYn5O5N646ytuzlA_aYirSdteGiUQvRssrc_CEX_zfMT.DD_NR2Ar5Od663p_HQE2qM76wKenamljLwfUqOH8LX5H8vUEZGzNvIhex1elTg2MCk_NqgkOyuvMtXKhFB1ojGuCfdnN4PhHosklr9BUqOG8hOx_3OhoYd1xEOCN1uXhrQqEOgI7MCgwuUrEUGx7oTkgYqIXFBUqOG8hOx_3OhoYd1xEOCN1uXhrQqEOgI7MCI_gexHslJO-dS9n1AHoGCHFB8HnkgdlcljZLoOgSG_3OEOJUS1Swt5O7O_4TOJeSWt5slpl8MWOoOtZLOxOeZOmhzOQO_HuUSngH3OV3tVLoS9N3en7MWseESKNNNOsnx7YxWSG8OxSNL4EgWskxVlIbgeSMWSxq8ZO_wwS5ZISOYtTAyZW7qAM_BzvI_NXMVOPgElcELeSAQ5f3mJervQqEgOv51xEq5juJBqbLeOHIPSOukOPgGohOxOfohzqnTgexS8lQ5femEvSM9dNvxSaQqOHOvcJOqIL4Evq5jSpPi_nYQZZk3qrwf.U1Yk0ZDqExZneQgDExatvsKY5fKGUHYknW6z0ZNG5yF9pywd0ZKGujY1P0KWpyfqn0KBpHYs0AuY5H00TA6qn0KET1Ys0AFL5H00UMfqn0K1XWY0ThIYmyTqn0K8IM0qna3snj0snj0sn0K-ThTqn0KYTh7buHYs0AFbpyfqnRmknjmLnj6drjuAPjDzPWFanbF7rRfzPbc1fYRYfbn0uAPWujY0IA7zuvNY5HKxn7ts0A71gv-bm1dsTzdMXh93XfKWIyfqn0KEm1Yk0ATqILP8TsKETjDqn0KsTjfqn0KzIjYzPWD0TgKGujYs0Z7Wpyfqn0K9mWYsg100TZ0qn0KVIZ0qn0KbuAqs5H00ThCqn0KYIgnqnHcvnHm1nWnznHcYnjmkrHbkPjf0mynqnfKsUWYs0ZK9I7qhUA7M5H00TyILujYs0AN1IjYs0ANYpyfqQHD0mgPsmvnqn0KdTA-8mvnqn0KhmLNY5H00mywhUA7M5HDvn16Y0ZIhThqV5fKBIjYs0A-W5H00ThNkIjYkP1TLnjDYPHDsrHm30ZPGujY3rAfzrjPhrH0snHnvnHT30AqY5H00ULFsIjYV0ZFYmy-b5fKopHYs0AdY5H61njn0Uynqn0KVmdqhThqV5H00uA78IyF-gLK_my4GuZnqn0KGTvP_5H00pyw-my-b5HDzrHc3nW0drHRLPfK8ugIxTAk9UWYkn16zPWTYnjDL0A4-IdqdUh-Y5HDzP16drHR3PWmY0A4-IdqGuAN95HDzrHc3nW0drHRLPfKsmgP1TAqzIjYs0AF9pywdpyfqnRmknjmLnj6drjuAPjDzPWFanbF7rRfzPbc1fYRYfbn0ULPGujYs0A7bgLPEIgFWuHYsczn0mLFW5HD4PHfv&us=newvui&word=&ck=0.0.0.0.0.0.0.0&shh=www.baidu.com
+              - img [ref=e81]
+            - link "金荣中国-16年炒黄金正规大品牌,充$200得$500可提现！开户领取30000美元赠金，0元开户，点差每手低至20美元，10美元即可起投。香港黄金..." [ref=e84] [cursor=pointer]:
+              - /url: https://www.baidu.com/baidu.php?url=0s0000a360qjuYHbZ8ndGIeoVaJLXxQSFgHPHZbdfTlJR0RImXAW5U68nr2Y1MarLeDOQAcMxtIEu1z4XbBHQBSN45XYQZk0ZIVhsoSML5aoC6ZMMCPZnAEGhK7a8oP0_1dpKzMeDWrgN1xKeyBGwj5mpZI_T7IcmCfo0FFqodAgqhw9OYn5O5N646ytuzlA_aYirSdteGiUQvRssrc_CEX_zfMT.DD_NR2Ar5Od663p_HQE2qM76wKenamljLwfUqOH8LX5H8vUEZGzNvIhex1elTg2MCk_NqgkOyuvMtXKhFB1ojGuCfdnN4PhHosklr9BUqOG8hOx_3OhoYd1xEOCN1uXhrQqEOgI7MCgwuUrEUGx7oTkgYqIXFBUqOG8hOx_3OhoYd1xEOCN1uXhrQqEOgI7MCI_gexHslJO-dS9n1AHoGCHFB8HnkgdlcljZLoOgSG_3OEOJUS1Swt5O7O_4TOJeSWt5slpl8MWOoOtZLOxOeZOmhzOQO_HuUSngH3OV3tVLoS9N3en7MWseESKNNNOsnx7YxWSG8OxSNL4EgWskxVlIbgeSMWSxq8ZO_wwS5ZISOYtTAyZW7qAM_BzvI_NXMVOPgElcELeSAQ5f3mJervQqEgOv51xEq5juJBqbLeOHIPSOukOPgGohOxOfohzqnTgexS8lQ5femEvSM9dNvxSaQqOHOvcJOqIL4Evq5jSpPi_nYQZZk3qrwf.U1Yk0ZDqExZneQgDExatvsKY5fKGUHYknW6z0ZNG5yF9pywd0ZKGujY1P0KWpyfqn0KBpHYs0AuY5H00TA6qn0KET1Ys0AFL5H00UMfqn0K1XWY0ThIYmyTqn0K8IM0qna3snj0snj0sn0K-ThTqn0KYTh7buHYs0AFbpyfqnRmknjmLnj6drjuAPjDzPWFanbF7rRfzPbc1fYRYfbn0uAPWujY0IA7zuvNY5HKxn7ts0A71gv-bm1dsTzdMXh93XfKWIyfqn0KEm1Yk0ATqILP8TsKETjDqn0KsTjfqn0KzIjYzPWD0TgKGujYs0Z7Wpyfqn0K9mWYsg100TZ0qn0KVIZ0qn0KbuAqs5H00ThCqn0KYIgnqnHcvnHm1nWnznHcYnjmkrHbkPjf0mynqnfKsUWYs0ZK9I7qhUA7M5H00TyILujYs0AN1IjYs0ANYpyfqQHD0mgPsmvnqn0KdTA-8mvnqn0KhmLNY5H00mywhUA7M5HDvn16Y0ZIhThqV5fKBIjYs0A-W5H00ThNkIjYkP1TLnjDYPHDsrHm30ZPGujY3rAfzrjPhrH0snHnvnHT30AqY5H00ULFsIjYV0ZFYmy-b5fKopHYs0AdY5H61njn0Uynqn0KVmdqhThqV5H00uA78IyF-gLK_my4GuZnqn0KGTvP_5H00pyw-my-b5HDzrHc3nW0drHRLPfK8ugIxTAk9UWYkn16zPWTYnjDL0A4-IdqdUh-Y5HDzP16drHR3PWmY0A4-IdqGuAN95HDzrHc3nW0drHRLPfKsmgP1TAqzIjYs0AF9pywdpyfqnRmknjmLnj6drjuAPjDzPWFanbF7rRfzPbc1fYRYfbn0ULPGujYs0A7bgLPEIgFWuHYsczn0mLFW5HD4PHfv&us=newvui&word=&ck=0.0.0.0.0.0.0.0&shh=www.baidu.com
+              - generic [ref=e86]: 金荣中国-16年炒黄金正规大品牌,充$200得$500可提现！开户领取30000美元赠金，0元开户，点差每手低至20美元，10美元即可起投。香港黄金...
+            - generic [ref=e89]:
+              - link "官方官网" [ref=e92] [cursor=pointer]:
+                - /url: https://www.baidu.com/baidu.php?url=0s0000a360qjuYHbZWBKMqOC3kRt0Ykawv9K9ecf2ID8--7SOVeATjfbzOj8GFvqcXIpLkzLNdhtReF0mcojVUwM0_CtHY4oK2fLd0p7HrIBPzab5G4mSNW6hKkKRqsIK1IywoJUttI1yQ6YkvwY-2kFAN5ctHKALntAr_XAHARh0w4gzlG4DPpS-7Zbwmrd_FfH-4aM48tSOLnAX7-p2fArzEVj.7D_NR2Ar5Od663rj6t__vyuDZxKfYt_U_DY2yQvTyjk4XA5wY2N9h9mePLHvU-0.U1Yk0ZDqExZneQgDExatvsKY5fKGUHYknW6z0ZNG5yF9pywd0ZKGujY1P0KWpyfqn0KBpHYs0AuY5H00TA6qn0KET1Ys0AFL5H00UMfqn0K1XWY0ThIYmyTqn0K8IM0qna3snj0snj0sn0K-ThTqn0KYTh7buHYs0AFbpyfqnRmknjmLnj6drjuAPjDzPWFanbF7rRfzPbc1fYRYfbn0uAPWujY0IA7zuvNY5HKxn7ts0A71gv-bm1dsTzdMXh93XfKWIyfqn0KEm1Yk0ATqILP8TsKETjDqn0KsTjfqn0KzIjYzPWD0TgKGujYs0Z7Wpyfqn0K9mWYsg100TZ0qn0KVIZ0qn0KbuAqs5H00ThCqn0KYIgnqnHcvnHm1nWnznHcYnjmkrHbkPjf0mynqnfKsUWYs0ZK9I7qhUA7M5H00TyILujYs0AN1IjYs0ANYpyfqQHD0mgPsmvnqn0KdTA-8mvnqn0KhmLNY5H00mywhUA7M5HDvn16Y0ZIhThqV5fKBIjYs0A-W5H00ThNkIjYkP1TLnjDYPHDsrHm30ZPGujY3rAfzrjPhrH0snHnvnHT30AqY5H00ULFsIjYV0ZFYmy-b5fKopHYk0AdY5H61njn0Uynqn0KVmdqhThqV5H00uA78IyF-gLK_my4GuZnqn0KGTvP_5H00pyw-my-b5HDzrHc3nW0drHRLPfK8ugIxTAk9UWYkn16zPWTYnjDL0A4-IdqdUh-Y5HDzP16drHR3PWmY0A4-IdqGuAN95HDzrHc3nW0drHRLPfKsmgP1TAqzIjYs0AF9pywdpyfqnRmknjmLnj6drjuAPjDzPWFanbF7rRfzPbc1fYRYfbn0ULPGujYs0A7bgLPEIgFWuHYsczn0mLFW5Hmsn16Y&us=newvui&word=&ck=2352.1.0.0.0.937.406.0&shh=www.baidu.com
+              - link "查看更多" [ref=e95] [cursor=pointer]:
+                - /url: https://www.baidu.com/baidu.php?url=0s0000a360qjuYHbZWBKMqOC3kRt0Ykawv9K9ecf2ID8--7SOVeATjfbzOj8GFvqcXIpLkzLNdhtReF0mcojVUwM0_CtHY4oK2fLd0p7HrIBPzab5G4mSNW6hKkKRqsIK1IywoJUttI1yQ6YkvwY-2kFAN5ctHKALntAr_XAHARh0w4gzlG4DPpS-7Zbwmrd_FfH-4aM48tSOLnAX7-p2fArzEVj.7D_NR2Ar5Od663rj6t__vyuDZxKfYt_U_DY2yQvTyjk4XA5wY2N9h9mePLHvU-0.U1Yk0ZDqExZneQgDExatvsKY5fKGUHYknW6z0ZNG5yF9pywd0ZKGujY1P0KWpyfqn0KBpHYs0AuY5H00TA6qn0KET1Ys0AFL5H00UMfqn0K1XWY0ThIYmyTqn0K8IM0qna3snj0snj0sn0K-ThTqn0KYTh7buHYs0AFbpyfqnRmknjmLnj6drjuAPjDzPWFanbF7rRfzPbc1fYRYfbn0uAPWujY0IA7zuvNY5HKxn7ts0A71gv-bm1dsTzdMXh93XfKWIyfqn0KEm1Yk0ATqILP8TsKETjDqn0KsTjfqn0KzIjYzPWD0TgKGujYs0Z7Wpyfqn0K9mWYsg100TZ0qn0KVIZ0qn0KbuAqs5H00ThCqn0KYIgnqnHcvnHm1nWnznHcYnjmkrHbkPjf0mynqnfKsUWYs0ZK9I7qhUA7M5H00TyILujYs0AN1IjYs0ANYpyfqQHD0mgPsmvnqn0KdTA-8mvnqn0KhmLNY5H00mywhUA7M5HDvn16Y0ZIhThqV5fKBIjYs0A-W5H00ThNkIjYkP1TLnjDYPHDsrHm30ZPGujY3rAfzrjPhrH0snHnvnHT30AqY5H00ULFsIjYV0ZFYmy-b5fKopHYk0AdY5H61njn0Uynqn0KVmdqhThqV5H00uA78IyF-gLK_my4GuZnqn0KGTvP_5H00pyw-my-b5HDzrHc3nW0drHRLPfK8ugIxTAk9UWYkn16zPWTYnjDL0A4-IdqdUh-Y5HDzP16drHR3PWmY0A4-IdqGuAN95HDzrHc3nW0drHRLPfKsmgP1TAqzIjYs0AF9pywdpyfqnRmknjmLnj6drjuAPjDzPWFanbF7rRfzPbc1fYRYfbn0ULPGujYs0A7bgLPEIgFWuHYsczn0mLFW5Hmsn16Y&us=newvui&word=&ck=0.0.0.0.0.0.0.0&shh=www.baidu.com
+            - link "广告" [ref=e99] [cursor=pointer]:
+              - /url: https://www.baidu.com/baidu.php?url=0s0000a360qjuYHbZ8ndGIeoVaJLXxQSFgHPHZbdfTlJR0RImXAW5U68nr2Y1MarLeDOQAcMxtIEu1z4XbBHQBSN45XYQZk0ZIVhsoSML5aoC6ZMMCPZnAEGhK7a8oP0_1dpKzMeDWrgN1xKeyBGwj5mpZI_T7IcmCfo0FFqodAgqhw9OYn5O5N646ytuzlA_aYirSdteGiUQvRssrc_CEX_zfMT.DD_NR2Ar5Od663p_HQE2qM76wKenamljLwfUqOH8LX5H8vUEZGzNvIhex1elTg2MCk_NqgkOyuvMtXKhFB1ojGuCfdnN4PhHosklr9BUqOG8hOx_3OhoYd1xEOCN1uXhrQqEOgI7MCgwuUrEUGx7oTkgYqIXFBUqOG8hOx_3OhoYd1xEOCN1uXhrQqEOgI7MCI_gexHslJO-dS9n1AHoGCHFB8HnkgdlcljZLoOgSG_3OEOJUS1Swt5O7O_4TOJeSWt5slpl8MWOoOtZLOxOeZOmhzOQO_HuUSngH3OV3tVLoS9N3en7MWseESKNNNOsnx7YxWSG8OxSNL4EgWskxVlIbgeSMWSxq8ZO_wwS5ZISOYtTAyZW7qAM_BzvI_NXMVOPgElcELeSAQ5f3mJervQqEgOv51xEq5juJBqbLeOHIPSOukOPgGohOxOfohzqnTgexS8lQ5femEvSM9dNvxSaQqOHOvcJOqIL4Evq5jSpPi_nYQZZk3qrwf.U1Yk0ZDqExZneQgDExatvsKY5fKGUHYknW6z0ZNG5yF9pywd0ZKGujY1P0KWpyfqn0KBpHYs0AuY5H00TA6qn0KET1Ys0AFL5H00UMfqn0K1XWY0ThIYmyTqn0K8IM0qna3snj0snj0sn0K-ThTqn0KYTh7buHYs0AFbpyfqnRmknjmLnj6drjuAPjDzPWFanbF7rRfzPbc1fYRYfbn0uAPWujY0IA7zuvNY5HKxn7ts0A71gv-bm1dsTzdMXh93XfKWIyfqn0KEm1Yk0ATqILP8TsKETjDqn0KsTjfqn0KzIjYzPWD0TgKGujYs0Z7Wpyfqn0K9mWYsg100TZ0qn0KVIZ0qn0KbuAqs5H00ThCqn0KYIgnqnHcvnHm1nWnznHcYnjmkrHbkPjf0mynqnfKsUWYs0ZK9I7qhUA7M5H00TyILujYs0AN1IjYs0ANYpyfqQHD0mgPsmvnqn0KdTA-8mvnqn0KhmLNY5H00mywhUA7M5HDvn16Y0ZIhThqV5fKBIjYs0A-W5H00ThNkIjYkP1TLnjDYPHDsrHm30ZPGujY3rAfzrjPhrH0snHnvnHT30AqY5H00ULFsIjYV0ZFYmy-b5fKopHYs0AdY5H61njn0Uynqn0KVmdqhThqV5H00uA78IyF-gLK_my4GuZnqn0KGTvP_5H00pyw-my-b5HDzrHc3nW0drHRLPfK8ugIxTAk9UWYkn16zPWTYnjDL0A4-IdqdUh-Y5HDzP16drHR3PWmY0A4-IdqGuAN95HDzrHc3nW0drHRLPfKsmgP1TAqzIjYs0AF9pywdpyfqnRmknjmLnj6drjuAPjDzPWFanbF7rRfzPbc1fYRYfbn0ULPGujYs0A7bgLPEIgFWuHYsczn0mLFW5HD4PHfv&us=newvui&word=&ck=0.0.0.0.0.0.0.0&shh=www.baidu.com
+              - generic [ref=e100]: 广告
+          - table [ref=e101]:
+            - rowgroup [ref=e102]:
+              - row "相关搜索  黄金回收今日报价  今天的金价回收多少钱一克呢  今日金价什么价格  999千足金今日价格表  今明后三天金价预测  今日黄金价格一克多少最新    换一换 热搜榜 民生榜 财经榜  为建设航天强国建功立业 1 “一听就知道是中国制造” 新 2 “拖鞋面包”走红 有门店销量翻倍 新 3 70年三代人同一个航天梦 4 短剧“霸总”演员因戏少回家种地 新 5 机器人上岗劝阻挖婆婆丁 热 6 臭名昭著的日本“特高课”或要重现 7 一个百万亿级产业要诞生了 热 8 起猛了 看见“绿植”自己抱着盆跑了 9 演员陈丽君晋升副主任 10 美国巴士爆炸 国会大厦上空黑烟弥漫 热 11 百万网红称抓蜈蚣致失明？警方辟谣 12 演员回应脱掉和服才向观众鞠躬致谢 13 山东新娘输液昏迷92天后初现意识 14 老外再现整齐“蔚来蹲” 围观换电 15 加拿大女歌手因恐飞取消北京巡演" [ref=e103]:
+                - cell "相关搜索  黄金回收今日报价  今天的金价回收多少钱一克呢  今日金价什么价格  999千足金今日价格表  今明后三天金价预测  今日黄金价格一克多少最新    换一换 热搜榜 民生榜 财经榜  为建设航天强国建功立业 1 “一听就知道是中国制造” 新 2 “拖鞋面包”走红 有门店销量翻倍 新 3 70年三代人同一个航天梦 4 短剧“霸总”演员因戏少回家种地 新 5 机器人上岗劝阻挖婆婆丁 热 6 臭名昭著的日本“特高课”或要重现 7 一个百万亿级产业要诞生了 热 8 起猛了 看见“绿植”自己抱着盆跑了 9 演员陈丽君晋升副主任 10 美国巴士爆炸 国会大厦上空黑烟弥漫 热 11 百万网红称抓蜈蚣致失明？警方辟谣 12 演员回应脱掉和服才向观众鞠躬致谢 13 山东新娘输液昏迷92天后初现意识 14 老外再现整齐“蔚来蹲” 围观换电 15 加拿大女歌手因恐飞取消北京巡演" [ref=e104]:
+                  - generic [ref=e105]:
+                    - generic [ref=e111]:
+                      - generic [ref=e113]: 相关搜索
+                      - generic [ref=e114]:
+                        - link " 黄金回收今日报价" [ref=e117] [cursor=pointer]:
+                          - /url: /s?wd=%E9%BB%84%E9%87%91%E5%9B%9E%E6%94%B6%E4%BB%8A%E6%97%A5%E6%8A%A5%E4%BB%B7&usm=6&ie=utf-8&rsv_pq=88d283f900136178&oq=%E4%BB%8A%E5%A4%A9%E7%9A%84%E9%87%91%E4%BB%B7&rsv_t=97e2wcy0nTxgodonpRJBDKArBDZyLx%2BoBXKKwy%2BeVUQ6Uly7UxOnT08tIn4&rfqid=88d283f900136178&rsv_dl=0_prs_28616_1&rq=%E4%BB%8A%E5%A4%A9%E7%9A%84%E9%87%91%E4%BB%B7&rsf=101631101
+                          - generic [ref=e118]:
+                            - generic [ref=e119]: 
+                            - generic [ref=e120]: 黄金回收今日报价
+                        - link " 今天的金价回收多少钱一克呢" [ref=e123] [cursor=pointer]:
+                          - /url: /s?wd=%E4%BB%8A%E5%A4%A9%E7%9A%84%E9%87%91%E4%BB%B7%E5%9B%9E%E6%94%B6%E5%A4%9A%E5%B0%91%E9%92%B1%E4%B8%80%E5%85%8B%E5%91%A2&usm=6&ie=utf-8&rsv_pq=88d283f900136178&oq=%E4%BB%8A%E5%A4%A9%E7%9A%84%E9%87%91%E4%BB%B7&rsv_t=97e2wcy0nTxgodonpRJBDKArBDZyLx%2BoBXKKwy%2BeVUQ6Uly7UxOnT08tIn4&rfqid=88d283f900136178&rsv_dl=0_prs_28616_2&rq=%E4%BB%8A%E5%A4%A9%E7%9A%84%E9%87%91%E4%BB%B7&rsf=101631101
+                          - generic [ref=e124]:
+                            - generic [ref=e125]: 
+                            - generic [ref=e126]: 今天的金价回收多少钱一克呢
+                        - link " 今日金价什么价格" [ref=e129] [cursor=pointer]:
+                          - /url: /s?wd=%E4%BB%8A%E6%97%A5%E9%87%91%E4%BB%B7%E4%BB%80%E4%B9%88%E4%BB%B7%E6%A0%BC&usm=6&ie=utf-8&rsv_pq=88d283f900136178&oq=%E4%BB%8A%E5%A4%A9%E7%9A%84%E9%87%91%E4%BB%B7&rsv_t=97e2wcy0nTxgodonpRJBDKArBDZyLx%2BoBXKKwy%2BeVUQ6Uly7UxOnT08tIn4&rfqid=88d283f900136178&rsv_dl=0_prs_28616_3&rq=%E4%BB%8A%E5%A4%A9%E7%9A%84%E9%87%91%E4%BB%B7&rsf=101636803
+                          - generic [ref=e130]:
+                            - generic [ref=e131]: 
+                            - generic [ref=e132]: 今日金价什么价格
+                        - link " 999千足金今日价格表" [ref=e135] [cursor=pointer]:
+                          - /url: /s?wd=999%E5%8D%83%E8%B6%B3%E9%87%91%E4%BB%8A%E6%97%A5%E4%BB%B7%E6%A0%BC%E8%A1%A8&usm=6&ie=utf-8&rsv_pq=88d283f900136178&oq=%E4%BB%8A%E5%A4%A9%E7%9A%84%E9%87%91%E4%BB%B7&rsv_t=97e2wcy0nTxgodonpRJBDKArBDZyLx%2BoBXKKwy%2BeVUQ6Uly7UxOnT08tIn4&rfqid=88d283f900136178&rsv_dl=0_prs_28616_4&rq=%E4%BB%8A%E5%A4%A9%E7%9A%84%E9%87%91%E4%BB%B7&rsf=101634503
+                          - generic [ref=e136]:
+                            - generic [ref=e137]: 
+                            - generic [ref=e138]: 999千足金今日价格表
+                        - link " 今明后三天金价预测" [ref=e141] [cursor=pointer]:
+                          - /url: /s?wd=%E4%BB%8A%E6%98%8E%E5%90%8E%E4%B8%89%E5%A4%A9%E9%87%91%E4%BB%B7%E9%A2%84%E6%B5%8B&usm=6&ie=utf-8&rsv_pq=88d283f900136178&oq=%E4%BB%8A%E5%A4%A9%E7%9A%84%E9%87%91%E4%BB%B7&rsv_t=97e2wcy0nTxgodonpRJBDKArBDZyLx%2BoBXKKwy%2BeVUQ6Uly7UxOnT08tIn4&rfqid=88d283f900136178&rsv_dl=0_prs_28616_5&rq=%E4%BB%8A%E5%A4%A9%E7%9A%84%E9%87%91%E4%BB%B7&rsf=101631101
+                          - generic [ref=e142]:
+                            - generic [ref=e143]: 
+                            - generic [ref=e144]: 今明后三天金价预测
+                        - link " 今日黄金价格一克多少最新" [ref=e147] [cursor=pointer]:
+                          - /url: /s?wd=%E4%BB%8A%E6%97%A5%E9%BB%84%E9%87%91%E4%BB%B7%E6%A0%BC%E4%B8%80%E5%85%8B%E5%A4%9A%E5%B0%91%E6%9C%80%E6%96%B0&usm=6&ie=utf-8&rsv_pq=88d283f900136178&oq=%E4%BB%8A%E5%A4%A9%E7%9A%84%E9%87%91%E4%BB%B7&rsv_t=8a3eyuOo5sTYaaczLRSqBVW7CKpzyvX%2BOfyDjJ2vEL8YSVFuZApqCCQCpqc&rfqid=88d283f900136178&rsv_dl=0_prs_28616_6&rq=%E4%BB%8A%E5%A4%A9%E7%9A%84%E9%87%91%E4%BB%B7&rsf=101631161
+                          - generic [ref=e148]:
+                            - generic [ref=e149]: 
+                            - generic [ref=e150]: 今日黄金价格一克多少最新
+                    - generic [ref=e154]:
+                      - generic "百度热搜" [ref=e155]:
+                        - link " " [ref=e156] [cursor=pointer]:
+                          - /url: https://top.baidu.com/board?platform=pc&sa=pcindex_a_right
+                          - generic [ref=e157]: 
+                          - generic [ref=e158]: 
+                        - link " 换一换" [ref=e160] [cursor=pointer]:
+                          - /url: javascript:void(0);
+                          - generic [ref=e161]: 
+                          - text: 换一换
+                      - generic [ref=e162]:
+                        - generic [ref=e163] [cursor=pointer]: 热搜榜
+                        - generic [ref=e164] [cursor=pointer]: 民生榜
+                        - generic [ref=e165] [cursor=pointer]: 财经榜
+                      - generic [ref=e167]:
+                        - generic [ref=e169]:
+                          - generic [ref=e171]: 
+                          - link "为建设航天强国建功立业" [ref=e172] [cursor=pointer]:
+                            - /url: /s?wd=%E4%B8%BA%E5%BB%BA%E8%AE%BE%E8%88%AA%E5%A4%A9%E5%BC%BA%E5%9B%BD%E5%BB%BA%E5%8A%9F%E7%AB%8B%E4%B8%9A&usm=6&ie=utf-8&rsv_pq=88d283f900136178&oq=%E4%BB%8A%E5%A4%A9%E7%9A%84%E9%87%91%E4%BB%B7&rsv_t=8a3eyuOo5sTYaaczLRSqBVW7CKpzyvX%2BOfyDjJ2vEL8YSVFuZApqCCQCpqc&rqid=88d283f900136178&rsf=75a40a314ee2435f6b5dbe9359019067_1_15_1&rsv_dl=0_right_fyb_pchot_20811&sa=0_right_fyb_pchot_20811
+                        - generic [ref=e174]:
+                          - generic [ref=e175]: "1"
+                          - link "“一听就知道是中国制造”" [ref=e176] [cursor=pointer]:
+                            - /url: /s?wd=%E2%80%9C%E4%B8%80%E5%90%AC%E5%B0%B1%E7%9F%A5%E9%81%93%E6%98%AF%E4%B8%AD%E5%9B%BD%E5%88%B6%E9%80%A0%E2%80%9D&usm=6&ie=utf-8&rsv_pq=88d283f900136178&oq=%E4%BB%8A%E5%A4%A9%E7%9A%84%E9%87%91%E4%BB%B7&rsv_t=8a3eyuOo5sTYaaczLRSqBVW7CKpzyvX%2BOfyDjJ2vEL8YSVFuZApqCCQCpqc&rqid=88d283f900136178&rsf=75a40a314ee2435f6b5dbe9359019067_1_15_2&rsv_dl=0_right_fyb_pchot_20811&sa=0_right_fyb_pchot_20811
+                          - generic [ref=e177]: 新
+                        - generic [ref=e179]:
+                          - generic [ref=e180]: "2"
+                          - link "“拖鞋面包”走红 有门店销量翻倍" [ref=e181] [cursor=pointer]:
+                            - /url: /s?wd=%E2%80%9C%E6%8B%96%E9%9E%8B%E9%9D%A2%E5%8C%85%E2%80%9D%E8%B5%B0%E7%BA%A2%20%E6%9C%89%E9%97%A8%E5%BA%97%E9%94%80%E9%87%8F%E7%BF%BB%E5%80%8D&usm=6&ie=utf-8&rsv_pq=88d283f900136178&oq=%E4%BB%8A%E5%A4%A9%E7%9A%84%E9%87%91%E4%BB%B7&rsv_t=8a3eyuOo5sTYaaczLRSqBVW7CKpzyvX%2BOfyDjJ2vEL8YSVFuZApqCCQCpqc&rqid=88d283f900136178&rsf=75a40a314ee2435f6b5dbe9359019067_1_15_3&rsv_dl=0_right_fyb_pchot_20811&sa=0_right_fyb_pchot_20811
+                          - generic [ref=e182]: 新
+                        - generic [ref=e184]:
+                          - generic [ref=e185]: "3"
+                          - link "70年三代人同一个航天梦" [ref=e186] [cursor=pointer]:
+                            - /url: /s?wd=70%E5%B9%B4%E4%B8%89%E4%BB%A3%E4%BA%BA%E5%90%8C%E4%B8%80%E4%B8%AA%E8%88%AA%E5%A4%A9%E6%A2%A6&usm=6&ie=utf-8&rsv_pq=88d283f900136178&oq=%E4%BB%8A%E5%A4%A9%E7%9A%84%E9%87%91%E4%BB%B7&rsv_t=8a3eyuOo5sTYaaczLRSqBVW7CKpzyvX%2BOfyDjJ2vEL8YSVFuZApqCCQCpqc&rqid=88d283f900136178&rsf=75a40a314ee2435f6b5dbe9359019067_1_15_4&rsv_dl=0_right_fyb_pchot_20811&sa=0_right_fyb_pchot_20811
+                        - generic [ref=e188]:
+                          - generic [ref=e189]: "4"
+                          - link "短剧“霸总”演员因戏少回家种地" [ref=e190] [cursor=pointer]:
+                            - /url: /s?wd=%E7%9F%AD%E5%89%A7%E2%80%9C%E9%9C%B8%E6%80%BB%E2%80%9D%E6%BC%94%E5%91%98%E5%9B%A0%E6%88%8F%E5%B0%91%E5%9B%9E%E5%AE%B6%E7%A7%8D%E5%9C%B0&usm=6&ie=utf-8&rsv_pq=88d283f900136178&oq=%E4%BB%8A%E5%A4%A9%E7%9A%84%E9%87%91%E4%BB%B7&rsv_t=8a3eyuOo5sTYaaczLRSqBVW7CKpzyvX%2BOfyDjJ2vEL8YSVFuZApqCCQCpqc&rqid=88d283f900136178&rsf=75a40a314ee2435f6b5dbe9359019067_1_15_5&rsv_dl=0_right_fyb_pchot_20811&sa=0_right_fyb_pchot_20811
+                          - generic [ref=e191]: 新
+                        - generic [ref=e193]:
+                          - generic [ref=e194]: "5"
+                          - link "机器人上岗劝阻挖婆婆丁" [ref=e195] [cursor=pointer]:
+                            - /url: /s?wd=%E6%9C%BA%E5%99%A8%E4%BA%BA%E4%B8%8A%E5%B2%97%E5%8A%9D%E9%98%BB%E6%8C%96%E5%A9%86%E5%A9%86%E4%B8%81&usm=6&ie=utf-8&rsv_pq=88d283f900136178&oq=%E4%BB%8A%E5%A4%A9%E7%9A%84%E9%87%91%E4%BB%B7&rsv_t=8a3eyuOo5sTYaaczLRSqBVW7CKpzyvX%2BOfyDjJ2vEL8YSVFuZApqCCQCpqc&rqid=88d283f900136178&rsf=75a40a314ee2435f6b5dbe9359019067_1_15_6&rsv_dl=0_right_fyb_pchot_20811&sa=0_right_fyb_pchot_20811
+                          - generic [ref=e196]: 热
+                        - generic [ref=e198]:
+                          - generic [ref=e199]: "6"
+                          - link "臭名昭著的日本“特高课”或要重现" [ref=e200] [cursor=pointer]:
+                            - /url: /s?wd=%E8%87%AD%E5%90%8D%E6%98%AD%E8%91%97%E7%9A%84%E6%97%A5%E6%9C%AC%E2%80%9C%E7%89%B9%E9%AB%98%E8%AF%BE%E2%80%9D%E6%88%96%E8%A6%81%E9%87%8D%E7%8E%B0&usm=6&ie=utf-8&rsv_pq=88d283f900136178&oq=%E4%BB%8A%E5%A4%A9%E7%9A%84%E9%87%91%E4%BB%B7&rsv_t=8a3eyuOo5sTYaaczLRSqBVW7CKpzyvX%2BOfyDjJ2vEL8YSVFuZApqCCQCpqc&rqid=88d283f900136178&rsf=75a40a314ee2435f6b5dbe9359019067_1_15_7&rsv_dl=0_right_fyb_pchot_20811&sa=0_right_fyb_pchot_20811
+                        - generic [ref=e202]:
+                          - generic [ref=e203]: "7"
+                          - link "一个百万亿级产业要诞生了" [ref=e204] [cursor=pointer]:
+                            - /url: /s?wd=%E4%B8%80%E4%B8%AA%E7%99%BE%E4%B8%87%E4%BA%BF%E7%BA%A7%E4%BA%A7%E4%B8%9A%E8%A6%81%E8%AF%9E%E7%94%9F%E4%BA%86&usm=6&ie=utf-8&rsv_pq=88d283f900136178&oq=%E4%BB%8A%E5%A4%A9%E7%9A%84%E9%87%91%E4%BB%B7&rsv_t=8a3eyuOo5sTYaaczLRSqBVW7CKpzyvX%2BOfyDjJ2vEL8YSVFuZApqCCQCpqc&rqid=88d283f900136178&rsf=75a40a314ee2435f6b5dbe9359019067_1_15_8&rsv_dl=0_right_fyb_pchot_20811&sa=0_right_fyb_pchot_20811
+                          - generic [ref=e205]: 热
+                        - generic [ref=e207]:
+                          - generic [ref=e208]: "8"
+                          - link "起猛了 看见“绿植”自己抱着盆跑了" [ref=e209] [cursor=pointer]:
+                            - /url: /s?wd=%E8%B5%B7%E7%8C%9B%E4%BA%86%20%E7%9C%8B%E8%A7%81%E2%80%9C%E7%BB%BF%E6%A4%8D%E2%80%9D%E8%87%AA%E5%B7%B1%E6%8A%B1%E7%9D%80%E7%9B%86%E8%B7%91%E4%BA%86&usm=6&ie=utf-8&rsv_pq=88d283f900136178&oq=%E4%BB%8A%E5%A4%A9%E7%9A%84%E9%87%91%E4%BB%B7&rsv_t=8a3eyuOo5sTYaaczLRSqBVW7CKpzyvX%2BOfyDjJ2vEL8YSVFuZApqCCQCpqc&rqid=88d283f900136178&rsf=75a40a314ee2435f6b5dbe9359019067_1_15_9&rsv_dl=0_right_fyb_pchot_20811&sa=0_right_fyb_pchot_20811
+                        - generic [ref=e211]:
+                          - generic [ref=e212]: "9"
+                          - link "演员陈丽君晋升副主任" [ref=e213] [cursor=pointer]:
+                            - /url: /s?wd=%E6%BC%94%E5%91%98%E9%99%88%E4%B8%BD%E5%90%9B%E6%99%8B%E5%8D%87%E5%89%AF%E4%B8%BB%E4%BB%BB&usm=6&ie=utf-8&rsv_pq=88d283f900136178&oq=%E4%BB%8A%E5%A4%A9%E7%9A%84%E9%87%91%E4%BB%B7&rsv_t=8a3eyuOo5sTYaaczLRSqBVW7CKpzyvX%2BOfyDjJ2vEL8YSVFuZApqCCQCpqc&rqid=88d283f900136178&rsf=75a40a314ee2435f6b5dbe9359019067_1_15_10&rsv_dl=0_right_fyb_pchot_20811&sa=0_right_fyb_pchot_20811
+                        - generic [ref=e215]:
+                          - generic [ref=e216]: "10"
+                          - link "美国巴士爆炸 国会大厦上空黑烟弥漫" [ref=e217] [cursor=pointer]:
+                            - /url: /s?wd=%E7%BE%8E%E5%9B%BD%E5%B7%B4%E5%A3%AB%E7%88%86%E7%82%B8%20%E5%9B%BD%E4%BC%9A%E5%A4%A7%E5%8E%A6%E4%B8%8A%E7%A9%BA%E9%BB%91%E7%83%9F%E5%BC%A5%E6%BC%AB&usm=6&ie=utf-8&rsv_pq=88d283f900136178&oq=%E4%BB%8A%E5%A4%A9%E7%9A%84%E9%87%91%E4%BB%B7&rsv_t=8a3eyuOo5sTYaaczLRSqBVW7CKpzyvX%2BOfyDjJ2vEL8YSVFuZApqCCQCpqc&rqid=88d283f900136178&rsf=75a40a314ee2435f6b5dbe9359019067_1_15_11&rsv_dl=0_right_fyb_pchot_20811&sa=0_right_fyb_pchot_20811
+                          - generic [ref=e218]: 热
+                        - generic [ref=e220]:
+                          - generic [ref=e221]: "11"
+                          - link "百万网红称抓蜈蚣致失明？警方辟谣" [ref=e222] [cursor=pointer]:
+                            - /url: /s?wd=%E7%99%BE%E4%B8%87%E7%BD%91%E7%BA%A2%E7%A7%B0%E6%8A%93%E8%9C%88%E8%9A%A3%E8%87%B4%E5%A4%B1%E6%98%8E%EF%BC%9F%E8%AD%A6%E6%96%B9%E8%BE%9F%E8%B0%A3&usm=6&ie=utf-8&rsv_pq=88d283f900136178&oq=%E4%BB%8A%E5%A4%A9%E7%9A%84%E9%87%91%E4%BB%B7&rsv_t=8a3eyuOo5sTYaaczLRSqBVW7CKpzyvX%2BOfyDjJ2vEL8YSVFuZApqCCQCpqc&rqid=88d283f900136178&rsf=75a40a314ee2435f6b5dbe9359019067_1_15_12&rsv_dl=0_right_fyb_pchot_20811&sa=0_right_fyb_pchot_20811
+                        - generic [ref=e224]:
+                          - generic [ref=e225]: "12"
+                          - link "演员回应脱掉和服才向观众鞠躬致谢" [ref=e226] [cursor=pointer]:
+                            - /url: /s?wd=%E6%BC%94%E5%91%98%E5%9B%9E%E5%BA%94%E8%84%B1%E6%8E%89%E5%92%8C%E6%9C%8D%E6%89%8D%E5%90%91%E8%A7%82%E4%BC%97%E9%9E%A0%E8%BA%AC%E8%87%B4%E8%B0%A2&usm=6&ie=utf-8&rsv_pq=88d283f900136178&oq=%E4%BB%8A%E5%A4%A9%E7%9A%84%E9%87%91%E4%BB%B7&rsv_t=3ff18ABmfOiG4zYnIMqiBJPV1JY59Ga%2FriIERdh86dEx5M3ejh4mmjJtC9A&rqid=88d283f900136178&rsf=75a40a314ee2435f6b5dbe9359019067_1_15_13&rsv_dl=0_right_fyb_pchot_20811&sa=0_right_fyb_pchot_20811
+                        - generic [ref=e228]:
+                          - generic [ref=e229]: "13"
+                          - link "山东新娘输液昏迷92天后初现意识" [ref=e230] [cursor=pointer]:
+                            - /url: /s?wd=%E5%B1%B1%E4%B8%9C%E6%96%B0%E5%A8%98%E8%BE%93%E6%B6%B2%E6%98%8F%E8%BF%B792%E5%A4%A9%E5%90%8E%E5%88%9D%E7%8E%B0%E6%84%8F%E8%AF%86&usm=6&ie=utf-8&rsv_pq=88d283f900136178&oq=%E4%BB%8A%E5%A4%A9%E7%9A%84%E9%87%91%E4%BB%B7&rsv_t=3ff18ABmfOiG4zYnIMqiBJPV1JY59Ga%2FriIERdh86dEx5M3ejh4mmjJtC9A&rqid=88d283f900136178&rsf=75a40a314ee2435f6b5dbe9359019067_1_15_14&rsv_dl=0_right_fyb_pchot_20811&sa=0_right_fyb_pchot_20811
+                        - generic [ref=e232]:
+                          - generic [ref=e233]: "14"
+                          - link "老外再现整齐“蔚来蹲” 围观换电" [ref=e234] [cursor=pointer]:
+                            - /url: /s?wd=%E8%80%81%E5%A4%96%E5%86%8D%E7%8E%B0%E6%95%B4%E9%BD%90%E2%80%9C%E8%94%9A%E6%9D%A5%E8%B9%B2%E2%80%9D%20%E5%9B%B4%E8%A7%82%E6%8D%A2%E7%94%B5&usm=6&ie=utf-8&rsv_pq=88d283f900136178&oq=%E4%BB%8A%E5%A4%A9%E7%9A%84%E9%87%91%E4%BB%B7&rsv_t=3ff18ABmfOiG4zYnIMqiBJPV1JY59Ga%2FriIERdh86dEx5M3ejh4mmjJtC9A&rqid=88d283f900136178&rsf=75a40a314ee2435f6b5dbe9359019067_1_15_15&rsv_dl=0_right_fyb_pchot_20811&sa=0_right_fyb_pchot_20811
+                        - generic [ref=e236]:
+                          - generic [ref=e237]: "15"
+                          - link "加拿大女歌手因恐飞取消北京巡演" [ref=e238] [cursor=pointer]:
+                            - /url: /s?wd=%E5%8A%A0%E6%8B%BF%E5%A4%A7%E5%A5%B3%E6%AD%8C%E6%89%8B%E5%9B%A0%E6%81%90%E9%A3%9E%E5%8F%96%E6%B6%88%E5%8C%97%E4%BA%AC%E5%B7%A1%E6%BC%94&usm=6&ie=utf-8&rsv_pq=88d283f900136178&oq=%E4%BB%8A%E5%A4%A9%E7%9A%84%E9%87%91%E4%BB%B7&rsv_t=3ff18ABmfOiG4zYnIMqiBJPV1JY59Ga%2FriIERdh86dEx5M3ejh4mmjJtC9A&rqid=88d283f900136178&rsf=75a40a314ee2435f6b5dbe9359019067_16_30_16&rsv_dl=0_right_fyb_pchot_20811&sa=0_right_fyb_pchot_20811
+        - generic [ref=e241]:
+          - generic [ref=e242]:
+            - generic [ref=e244] [cursor=pointer]: 时间不限
+            - generic [ref=e246] [cursor=pointer]: 所有网页和文件
+            - generic [ref=e248] [cursor=pointer]: 站点内检索
+          - generic [ref=e251]:
+            - generic [ref=e252]: 已优先为您展示 “香港” 结果，
+            - generic [ref=e253] [cursor=pointer]: 取消
+        - generic [ref=e254]:
+          - generic [ref=e258]:
+            - heading "实物黄金价格" [level=3] [ref=e259]:
+              - link "实物黄金价格" [ref=e260] [cursor=pointer]:
+                - /url: http://www.baidu.com/link?url=vpTjyyIWBWqjXGVMDbfVV8s-bkyVWXFMoybW9goj2z_q3Lu3dbgGTsweVLS7tSi1
+                - generic [ref=e261]:
+                  - text: 实物
+                  - emphasis [ref=e262]: 黄金价格
+            - generic [ref=e263]:
+              - generic [ref=e267] [cursor=pointer]:
+                - generic [ref=e268]: 贵金属实物
+                - generic [ref=e269]: 
+              - generic [ref=e273] [cursor=pointer]:
+                - generic [ref=e274]: 实物
+                - generic [ref=e275]: 
+            - generic [ref=e276]:
+              - generic [ref=e277]:
+                - generic [ref=e278]: 品牌
+                - generic [ref=e279]: 产品
+                - generic [ref=e280]: 价格
+                - generic [ref=e281]: 涨跌幅
+              - link "周大福 黄金 1442元/克 -0.89%" [ref=e282] [cursor=pointer]:
+                - /url: http://www.baidu.com/link?url=qh0OwCOvGSn_37q51F9P_93wWyXpyzcP8lYZPWnDbyMzuB-4mXOZ-zE0dolTngcUqWHN4P8AFwR7oWq4OEvPhK
+                - generic [ref=e283]:
+                  - generic [ref=e285]: 周大福
+                  - generic [ref=e287]: 黄金
+                  - generic [ref=e289]: 1442元/克
+                  - generic [ref=e291]: "-0.89%"
+              - link "老凤祥 黄金 1445元/克 -0.34%" [ref=e292] [cursor=pointer]:
+                - /url: http://www.baidu.com/link?url=qh0OwCOvGSn_37q51F9P_93wWyXpyzcP8lYZPWnDbyMzuB-4mXOZ-zE0dolTngcUP2gjC2jIR8kWHzbq-wBKra
+                - generic [ref=e293]:
+                  - generic [ref=e295]: 老凤祥
+                  - generic [ref=e297]: 黄金
+                  - generic [ref=e299]: 1445元/克
+                  - generic [ref=e301]: "-0.34%"
+              - link "周六福 黄金 1437元/克 -0.90%" [ref=e302] [cursor=pointer]:
+                - /url: http://www.baidu.com/link?url=qh0OwCOvGSn_37q51F9P_93wWyXpyzcP8lYZPWnDbyMzuB-4mXOZ-zE0dolTngcU7DlicbvpY_2Z2KMXLbI71K
+                - generic [ref=e303]:
+                  - generic [ref=e305]: 周六福
+                  - generic [ref=e307]: 黄金
+                  - generic [ref=e309]: 1437元/克
+                  - generic [ref=e311]: "-0.90%"
+              - link "周大生 黄金 1442元/克 -0.89%" [ref=e312] [cursor=pointer]:
+                - /url: http://www.baidu.com/link?url=qh0OwCOvGSn_37q51F9P_93wWyXpyzcP8lYZPWnDbyMzuB-4mXOZ-zE0dolTngcUK9mGu0kxJX2KvHnhPDbB7K
+                - generic [ref=e313]:
+                  - generic [ref=e315]: 周大生
+                  - generic [ref=e317]: 黄金
+                  - generic [ref=e319]: 1442元/克
+                  - generic [ref=e321]: "-0.89%"
+              - link "周生生 黄金 1435元/克 -0.69%" [ref=e322] [cursor=pointer]:
+                - /url: http://www.baidu.com/link?url=qh0OwCOvGSn_37q51F9P_93wWyXpyzcP8lYZPWnDbyMzuB-4mXOZ-zE0dolTngcUFoPmJReb6zmKNnCD1gx7za
+                - generic [ref=e323]:
+                  - generic [ref=e325]: 周生生
+                  - generic [ref=e327]: 黄金
+                  - generic [ref=e329]: 1435元/克
+                  - generic [ref=e331]: "-0.69%"
+            - link "查看更多 " [ref=e332] [cursor=pointer]:
+              - /url: http://www.baidu.com/link?url=vpTjyyIWBWqjXGVMDbfVV8s-bkyVWXFMoybW9goj2z_q3Lu3dbgGTsweVLS7tSi1
+              - generic [ref=e333]:
+                - generic [ref=e334]: 查看更多
+                - generic [ref=e335]: 
+            - generic [ref=e336]:
+              - link "金投网" [ref=e339] [cursor=pointer]:
+                - /url: http://www.baidu.com/link?url=vpTjyyIWBWqjXGVMDbfVV8s-bkyVWXFMoybW9goj2z_q3Lu3dbgGTsweVLS7tSi1
+                - generic [ref=e340]: 金投网
+              - generic [ref=e341]: 2026-04-24
+              - generic [ref=e343] [cursor=pointer]: 
+          - generic [ref=e348]:
+            - heading "沪金主连[AU888]期货行情 - 百度股市通" [level=3] [ref=e351]:
+              - link "沪金主连[AU888]期货行情 - 百度股市通" [ref=e352] [cursor=pointer]:
+                - /url: http://www.baidu.com/link?url=Jvv9zVvRsp3nareQlXFD9LjJLZVTDXfTmQrF687lrWZFcLso_Jt8rQ4FYgLAw__ydfmoX4FjyCmYkE_-WBYJVK
+                - generic [ref=e353]: 沪金主连[AU888]期货行情 - 百度股市通
+            - generic [ref=e357]:
+              - link "1032.12 元 -11.46 -1.10%" [ref=e358] [cursor=pointer]:
+                - /url: http://www.baidu.com/link?url=Jvv9zVvRsp3nareQlXFD9LjJLZVTDXfTmQrF687lrWZFcLso_Jt8rQ4FYgLAw__ydfmoX4FjyCmYkE_-WBYJVK
+                - generic [ref=e359]: "1032.12"
+                - generic [ref=e360]: 元
+                - generic [ref=e361]: "-11.46"
+                - generic [ref=e362]: "-1.10%"
+              - link "已收盘 04-24 15:00:00 北京时间" [ref=e365] [cursor=pointer]:
+                - /url: http://www.baidu.com/link?url=Jvv9zVvRsp3nareQlXFD9LjJLZVTDXfTmQrF687lrWZFcLso_Jt8rQ4FYgLAw__ydfmoX4FjyCmYkE_-WBYJVK
+            - link "今开 1045.00 最高 1045.54 成交量 23.24万手 昨收 1040.06 最低 1030.70 成交额 2414.10亿 日增 -1808.00手 振幅 1.42% 持仓量 17.92万" [ref=e367] [cursor=pointer]:
+              - /url: http://www.baidu.com/link?url=Jvv9zVvRsp3nareQlXFD9LjJLZVTDXfTmQrF687lrWZFcLso_Jt8rQ4FYgLAw__ydfmoX4FjyCmYkE_-WBYJVK
+              - generic [ref=e369]:
+                - generic [ref=e370]: 今开
+                - generic [ref=e371]: "1045.00"
+              - generic [ref=e373]:
+                - generic [ref=e374]: 最高
+                - generic [ref=e375]: "1045.54"
+              - generic [ref=e377]:
+                - generic [ref=e378]: 成交量
+                - generic [ref=e379]: 23.24万手
+              - generic [ref=e381]:
+                - generic [ref=e382]: 昨收
+                - generic [ref=e383]: "1040.06"
+              - generic [ref=e385]:
+                - generic [ref=e386]: 最低
+                - generic [ref=e387]: "1030.70"
+              - generic [ref=e389]:
+                - generic [ref=e390]: 成交额
+                - generic [ref=e391]: 2414.10亿
+              - generic [ref=e393]:
+                - generic [ref=e394]: 日增
+                - generic [ref=e395]: "-1808.00手"
+              - generic [ref=e397]:
+                - generic [ref=e398]: 振幅
+                - generic [ref=e399]: 1.42%
+              - generic [ref=e401]:
+                - generic [ref=e402]: 持仓量
+                - generic [ref=e403]: 17.92万
+            - generic [ref=e405]:
+              - generic [ref=e406]:
+                - generic [ref=e408]: 分时
+                - generic [ref=e410]: 五日
+                - generic [ref=e412]: 日K
+                - generic [ref=e414]: 周K
+                - generic [ref=e416]: 月K
+              - img [ref=e421]:
+                - generic [ref=e422]: 21:00
+                - text: ","
+                - generic [ref=e423]: 09:00
+                - text: ","
+                - generic [ref=e424]: 10:30
+                - text: ","
+                - generic [ref=e425]: 13:30
+                - text: ","
+                - generic [ref=e426]: 15:00
+                - generic [ref=e436]: "1045.04"
+                - text: ","
+                - generic [ref=e437]: "1037.90"
+                - text: ","
+                - generic [ref=e438]: "1030.76"
+                - generic [ref=e439]: 0.14%
+                - text: ","
+                - generic [ref=e440]: "-0.55%"
+                - text: ","
+                - generic [ref=e441]: "-1.23%"
+            - generic [ref=e445]:
+              - generic [ref=e448] [cursor=pointer]: 添加自选
+              - link "FinScope AI助手" [ref=e450] [cursor=pointer]:
+                - /url: http://www.baidu.com/link?url=qh0OwCOvGSn_37q51F9P_w2RQDMx1700_qinwHOCrdv4-obCi-9pWemX3YK4ZaCDc66H_2IleXtWLPlCrVBR5EVrBeYME2pyV5FBrr0uy2O
+          - generic [ref=e455]:
+            - heading "今日黄金实时价格,黄金交易平台,优秀的黄金交易平台" [level=3] [ref=e459]:
+              - link "今日黄金实时价格,黄金交易平台,优秀的黄金交易平台" [ref=e461] [cursor=pointer]:
+                - /url: https://www.baidu.com/baidu.php?url=0s0000aPch_Smgbn9IhadmpLRRfYeq3JGh_A7pC2clSGrJeBs8cM71LC3rwIq-HuP1oMkxjORXO5PXy3EiudqS2sPjdV7Sw0VAvLRcX8H9d-8Yxo0xVgu3v0erZw9beANRbqBItclO5cSyaYG8t3vzQezQtxzC9hwNjOFPI7BjLQvIro3tSDAYP_rJz_oSuO0LKmgu-Iwubk-J0tEtB5HCPK_s86.7D_NR2Ar5Od663rj6t__vyuD7NYAi1Fb6ozTEHKLsRP5QAeKPa-BqM76lX8a9G4I2UM3PQDrrZo6CpXy6hUik9tS1jlSLjexZj4e_rOW9vN3TMzsSXOjlS8Zuvmx5x9vXrZxg9tqhZdtTrSEj4etr1kse5odsRP5Qal26h26k9tqSZdqTr1_sSXOj_tTrSEj4en5o33IqXZ1L3IMW9vxgo6CpXy7MHWuxJBmsSxu9qxgj_q8Z1lTrOksSLI9tqSZdqTr1_sSXOj_tTrSEj4e_5VttrO1sSxH9LSrZdlT5MvmxgdsSEW9tSMjeUn5ot2-muCyr1__e70.U1Yk0ZDqExZneQgDExatvsKspynqnfKY5ULkzPyekoLszog2_U1U85D0pyYqnHfvnfKM5gK1mvqVmht0Iybqmh7GuZR0TA-b5HnY0APGujYs0AdY5HnznW9xn1DzP7tknjDLg1csPH7xnH0krNt1PW0kg1bkP160pvbqn0KzIjYzPWD0mhbqnHR3g1csP0KVm1Y1nWc3g1nknWwxnH0kPdtznjRkg1DsnH-xn7t4nHT30Z7spyfqn0Kkmv-b5H00ThIYmyTqn0K8my-b5H00Uh7YTjYs0APdujYznjDLPjf1nW6d0A7B5HKxn0K-ThTqn0KsTjYs0A4vTjYsQW0snj0snj0s0AdYTjYs0AwbUL0qn0KzpWYs0Aw-IWdsmsKhIjYs0ZKC5H00ULnqn0KBI1Ykn0K8IjYs0ZPl5fK9TdqGuAnqTZnVuLGCXZb0pywW5R9rf6KspZw45fKYmgFMugfqn17xn1DYg1DkP0KYIgnqn1cLrj6snHTLnHnkrHcYnjR40ZF-TgfqnHTLP10kPjRknjbvr0KGm1Ys0ZPGujY3rAfzrjPhrH0snHnvnHT30AP1UHY3wbf3P1DYnHTLnR7Kwj610AkBT1Ys0A7W5HD0TA3qn0KkUgfqn0KkUgnqn0KlIjYs0AFvujYs0AdWgvuzUvYqn7tsg1Kxn7tsg1Kxn0Kbmy4dmhNxTAk9Uh-bT1YknjDznjRYn-tknjDznjRYn-tsg1Kxn7tsg100TA7Ygvu_myTqn0Kbmv-b5HnkPjRLnW60ugwGujYVnfK9TLKWm1Ys0ZNspy4Wm1Ys0Z7VuWYs0AuWIgfqn0KGTvP_5H00mywhUA7M5HD0UAuW5H00uAPWujY0IZF9uARqn0KBuA-b5H7AnH0vP103PH6vwWfknWmzfWFawH-DnWuanYP7PDFj0AqW5HD0mMfqnfKEmgwL5H00ULfqn0KETMKY5H0WnanWnansc10Wna3snj0snj0WnaPDw-fWnanVc108nj0snj0sc1D8nj0snj0sc10WnansQW0snj0snansc10Wnansc10Wnans0AF9UhV9mvnqnansc10Wn0K3TLwd5Hf3nHf3rjbz0Z7xIWYsQW01g108njKxna3sn7tknj08njKxnH0sQW0sg1Kxna3sn7ts0AF1gLKzUvwGujYs0ZFEpyu_myTqn0KVugfqn0KWIWY0pgPxmLK95H00mL0qn0K-TLfqn0KkuLIb5H00UL0k5H00TZ0Y5Hc0mLFW5HnsPWDz&us=newvui&xst=mWYkwWDsPWTsrjR3PbmYnHcvnbczfbR4wjcvfWPjwHwafs715Hb3PHbsrjTvn1bLn163njcdPHFxnHfvnNts0gTqExZcdUEAExj2VTJkEP83tf7k5ULk1rzdkQLsEP_KIHYYrjDYrj64n67Y5HDLP1TsnHfdnHDKUgDqn0cs0BYKmv6quhPxTAnKUZRqn07WUWdBmy-bIf7zIjYs0HcsnW6znj0znjD&word=&ck=0.0.0.0.0.0.0.0&shh=www.baidu.com
+            - generic [ref=e462]:
+              - link [ref=e465] [cursor=pointer]:
+                - /url: https://www.baidu.com/baidu.php?url=0s0000aPch_Smgbn9IhadmpLRRfYeq3JGh_A7pC2clSGrJeBs8cM71LC3rwIq-HuP1oMkxjORXO5PXy3EiudqS2sPjdV7Sw0VAvLRcX8H9d-8Yxo0xVgu3v0erZw9beANRbqBItclO5cSyaYG8t3vzQezQtxzC9hwNjOFPI7BjLQvIro3tSDAYP_rJz_oSuO0LKmgu-Iwubk-J0tEtB5HCPK_s86.7D_NR2Ar5Od663rj6t__vyuD7NYAi1Fb6ozTEHKLsRP5QAeKPa-BqM76lX8a9G4I2UM3PQDrrZo6CpXy6hUik9tS1jlSLjexZj4e_rOW9vN3TMzsSXOjlS8Zuvmx5x9vXrZxg9tqhZdtTrSEj4etr1kse5odsRP5Qal26h26k9tqSZdqTr1_sSXOj_tTrSEj4en5o33IqXZ1L3IMW9vxgo6CpXy7MHWuxJBmsSxu9qxgj_q8Z1lTrOksSLI9tqSZdqTr1_sSXOj_tTrSEj4e_5VttrO1sSxH9LSrZdlT5MvmxgdsSEW9tSMjeUn5ot2-muCyr1__e70.U1Yk0ZDqExZneQgDExatvsKspynqnfKY5ULkzPyekoLszog2_U1U85D0pyYqnHfvnfKM5gK1mvqVmht0Iybqmh7GuZR0TA-b5HnY0APGujYs0AdY5HnznW9xn1DzP7tknjDLg1csPH7xnH0krNt1PW0kg1bkP160pvbqn0KzIjYzPWD0mhbqnHR3g1csP0KVm1Y1nWc3g1nknWwxnH0kPdtznjRkg1DsnH-xn7t4nHT30Z7spyfqn0Kkmv-b5H00ThIYmyTqn0K8my-b5H00Uh7YTjYs0APdujYznjDLPjf1nW6d0A7B5HKxn0K-ThTqn0KsTjYs0A4vTjYsQW0snj0snj0s0AdYTjYs0AwbUL0qn0KzpWYs0Aw-IWdsmsKhIjYs0ZKC5H00ULnqn0KBI1Ykn0K8IjYs0ZPl5fK9TdqGuAnqTZnVuLGCXZb0pywW5R9rf6KspZw45fKYmgFMugfqn17xn1DYg1DkP0KYIgnqn1cLrj6snHTLnHnkrHcYnjR40ZF-TgfqnHTLP10kPjRknjbvr0KGm1Ys0ZPGujY3rAfzrjPhrH0snHnvnHT30AP1UHY3wbf3P1DYnHTLnR7Kwj610AkBT1Ys0A7W5HD0TA3qn0KkUgfqn0KkUgnqn0KlIjYs0AFvujYs0AdWgvuzUvYqn7tsg1Kxn7tsg1Kxn0Kbmy4dmhNxTAk9Uh-bT1YknjDznjRYn-tknjDznjRYn-tsg1Kxn7tsg100TA7Ygvu_myTqn0Kbmv-b5HnkPjRLnW60ugwGujYVnfK9TLKWm1Ys0ZNspy4Wm1Ys0Z7VuWYs0AuWIgfqn0KGTvP_5H00mywhUA7M5HD0UAuW5H00uAPWujY0IZF9uARqn0KBuA-b5H7AnH0vP103PH6vwWfknWmzfWFawH-DnWuanYP7PDFj0AqW5HD0mMfqnfKEmgwL5H00ULfqn0KETMKY5H0WnanWnansc10Wna3snj0snj0WnaPDw-fWnanVc108nj0snj0sc1D8nj0snj0sc10WnansQW0snj0snansc10Wnansc10Wnans0AF9UhV9mvnqnansc10Wn0K3TLwd5Hf3nHf3rjbz0Z7xIWYsQW01g108njKxna3sn7tknj08njKxnH0sQW0sg1Kxna3sn7ts0AF1gLKzUvwGujYs0ZFEpyu_myTqn0KVugfqn0KWIWY0pgPxmLK95H00mL0qn0K-TLfqn0KkuLIb5H00UL0k5H00TZ0Y5Hc0mLFW5HnsPWDz&us=newvui&xst=mWYkwWDsPWTsrjR3PbmYnHcvnbczfbR4wjcvfWPjwHwafs715Hb3PHbsrjTvn1bLn163njcdPHFxnHfvnNts0gTqExZcdUEAExj2VTJkEP83tf7k5ULk1rzdkQLsEP_KIHYYrjDYrj64n67Y5HDLP1TsnHfdnHDKUgDqn0cs0BYKmv6quhPxTAnKUZRqn07WUWdBmy-bIf7zIjYs0HcsnW6znj0znjD&word=&ck=0.0.0.0.0.0.0.0&shh=www.baidu.com
+                - img [ref=e466]
+              - generic [ref=e467]:
+                - link "最近6分钟前有人下载" [ref=e470] [cursor=pointer]:
+                  - /url: https://www.baidu.com/baidu.php?url=0s0000aPch_Smgbn9IhadmpLRRfYeq3JGh_A7pC2clSGrJeBs8cM71LC3rwIq-HuP1oMkxjORXO5PXy3EiudqS2sPjdV7Sw0VAvLRcX8H9d-8Yxo0xVgu3v0erZw9beANRbqBItclO5cSyaYG8t3vzQezQtxzC9hwNjOFPI7BjLQvIro3tSDAYP_rJz_oSuO0LKmgu-Iwubk-J0tEtB5HCPK_s86.7D_NR2Ar5Od663rj6t__vyuD7NYAi1Fb6ozTEHKLsRP5QAeKPa-BqM76lX8a9G4I2UM3PQDrrZo6CpXy6hUik9tS1jlSLjexZj4e_rOW9vN3TMzsSXOjlS8Zuvmx5x9vXrZxg9tqhZdtTrSEj4etr1kse5odsRP5Qal26h26k9tqSZdqTr1_sSXOj_tTrSEj4en5o33IqXZ1L3IMW9vxgo6CpXy7MHWuxJBmsSxu9qxgj_q8Z1lTrOksSLI9tqSZdqTr1_sSXOj_tTrSEj4e_5VttrO1sSxH9LSrZdlT5MvmxgdsSEW9tSMjeUn5ot2-muCyr1__e70.U1Yk0ZDqExZneQgDExatvsKspynqnfKY5ULkzPyekoLszog2_U1U85D0pyYqnHfvnfKM5gK1mvqVmht0Iybqmh7GuZR0TA-b5HnY0APGujYs0AdY5HnznW9xn1DzP7tknjDLg1csPH7xnH0krNt1PW0kg1bkP160pvbqn0KzIjYzPWD0mhbqnHR3g1csP0KVm1Y1nWc3g1nknWwxnH0kPdtznjRkg1DsnH-xn7t4nHT30Z7spyfqn0Kkmv-b5H00ThIYmyTqn0K8my-b5H00Uh7YTjYs0APdujYznjDLPjf1nW6d0A7B5HKxn0K-ThTqn0KsTjYs0A4vTjYsQW0snj0snj0s0AdYTjYs0AwbUL0qn0KzpWYs0Aw-IWdsmsKhIjYs0ZKC5H00ULnqn0KBI1Ykn0K8IjYs0ZPl5fK9TdqGuAnqTZnVuLGCXZb0pywW5R9rf6KspZw45fKYmgFMugfqn17xn1DYg1DkP0KYIgnqn1cLrj6snHTLnHnkrHcYnjR40ZF-TgfqnHTLP10kPjRknjbvr0KGm1Ys0ZPGujY3rAfzrjPhrH0snHnvnHT30AP1UHY3wbf3P1DYnHTLnR7Kwj610AkBT1Ys0A7W5HD0TA3qn0KkUgfqn0KkUgnqn0KlIjYs0AFvujYs0AdWgvuzUvYqn7tsg1Kxn7tsg1Kxn0Kbmy4dmhNxTAk9Uh-bT1YknjDznjRYn-tknjDznjRYn-tsg1Kxn7tsg100TA7Ygvu_myTqn0Kbmv-b5HnkPjRLnW60ugwGujYVnfK9TLKWm1Ys0ZNspy4Wm1Ys0Z7VuWYs0AuWIgfqn0KGTvP_5H00mywhUA7M5HD0UAuW5H00uAPWujY0IZF9uARqn0KBuA-b5H7AnH0vP103PH6vwWfknWmzfWFawH-DnWuanYP7PDFj0AqW5HD0mMfqnfKEmgwL5H00ULfqn0KETMKY5H0WnanWnansc10Wna3snj0snj0WnaPDw-fWnanVc108nj0snj0sc1D8nj0snj0sc10WnansQW0snj0snansc10Wnansc10Wnans0AF9UhV9mvnqnansc10Wn0K3TLwd5Hf3nHf3rjbz0Z7xIWYsQW01g108njKxna3sn7tknj08njKxnH0sQW0sg1Kxna3sn7ts0AF1gLKzUvwGujYs0ZFEpyu_myTqn0KVugfqn0KWIWY0pgPxmLK95H00mL0qn0K-TLfqn0KkuLIb5H00UL0k5H00TZ0Y5Hc0mLFW5HnsPWDz&us=newvui&xst=mWYkwWDsPWTsrjR3PbmYnHcvnbczfbR4wjcvfWPjwHwafs715Hb3PHbsrjTvn1bLn163njcdPHFxnHfvnNts0gTqExZcdUEAExj2VTJkEP83tf7k5ULk1rzdkQLsEP_KIHYYrjDYrj64n67Y5HDLP1TsnHfdnHDKUgDqn0cs0BYKmv6quhPxTAnKUZRqn07WUWdBmy-bIf7zIjYs0HcsnW6znj0znjD&word=&ck=0.0.0.0.0.0.0.0&shh=www.baidu.com
+                  - generic [ref=e471]: 最近6分钟前有人下载
+                - link "今日黄金实时价格,金荣黄金交易免费开户,T+0双向交易,0佣金,点差低至20美元/手,今日黄金实时价格,认准正规平台,香港黄金交易所AA类84号行员,客服24h在线服务" [ref=e474] [cursor=pointer]:
+                  - /url: https://www.baidu.com/baidu.php?url=0s0000aPch_Smgbn9IhadmpLRRfYeq3JGh_A7pC2clSGrJeBs8cM71LC3rwIq-HuP1oMkxjORXO5PXy3EiudqS2sPjdV7Sw0VAvLRcX8H9d-8Yxo0xVgu3v0erZw9beANRbqBItclO5cSyaYG8t3vzQezQtxzC9hwNjOFPI7BjLQvIro3tSDAYP_rJz_oSuO0LKmgu-Iwubk-J0tEtB5HCPK_s86.7D_NR2Ar5Od663rj6t__vyuD7NYAi1Fb6ozTEHKLsRP5QAeKPa-BqM76lX8a9G4I2UM3PQDrrZo6CpXy6hUik9tS1jlSLjexZj4e_rOW9vN3TMzsSXOjlS8Zuvmx5x9vXrZxg9tqhZdtTrSEj4etr1kse5odsRP5Qal26h26k9tqSZdqTr1_sSXOj_tTrSEj4en5o33IqXZ1L3IMW9vxgo6CpXy7MHWuxJBmsSxu9qxgj_q8Z1lTrOksSLI9tqSZdqTr1_sSXOj_tTrSEj4e_5VttrO1sSxH9LSrZdlT5MvmxgdsSEW9tSMjeUn5ot2-muCyr1__e70.U1Yk0ZDqExZneQgDExatvsKspynqnfKY5ULkzPyekoLszog2_U1U85D0pyYqnHfvnfKM5gK1mvqVmht0Iybqmh7GuZR0TA-b5HnY0APGujYs0AdY5HnznW9xn1DzP7tknjDLg1csPH7xnH0krNt1PW0kg1bkP160pvbqn0KzIjYzPWD0mhbqnHR3g1csP0KVm1Y1nWc3g1nknWwxnH0kPdtznjRkg1DsnH-xn7t4nHT30Z7spyfqn0Kkmv-b5H00ThIYmyTqn0K8my-b5H00Uh7YTjYs0APdujYznjDLPjf1nW6d0A7B5HKxn0K-ThTqn0KsTjYs0A4vTjYsQW0snj0snj0s0AdYTjYs0AwbUL0qn0KzpWYs0Aw-IWdsmsKhIjYs0ZKC5H00ULnqn0KBI1Ykn0K8IjYs0ZPl5fK9TdqGuAnqTZnVuLGCXZb0pywW5R9rf6KspZw45fKYmgFMugfqn17xn1DYg1DkP0KYIgnqn1cLrj6snHTLnHnkrHcYnjR40ZF-TgfqnHTLP10kPjRknjbvr0KGm1Ys0ZPGujY3rAfzrjPhrH0snHnvnHT30AP1UHY3wbf3P1DYnHTLnR7Kwj610AkBT1Ys0A7W5HD0TA3qn0KkUgfqn0KkUgnqn0KlIjYs0AFvujYs0AdWgvuzUvYqn7tsg1Kxn7tsg1Kxn0Kbmy4dmhNxTAk9Uh-bT1YknjDznjRYn-tknjDznjRYn-tsg1Kxn7tsg100TA7Ygvu_myTqn0Kbmv-b5HnkPjRLnW60ugwGujYVnfK9TLKWm1Ys0ZNspy4Wm1Ys0Z7VuWYs0AuWIgfqn0KGTvP_5H00mywhUA7M5HD0UAuW5H00uAPWujY0IZF9uARqn0KBuA-b5H7AnH0vP103PH6vwWfknWmzfWFawH-DnWuanYP7PDFj0AqW5HD0mMfqnfKEmgwL5H00ULfqn0KETMKY5H0WnanWnansc10Wna3snj0snj0WnaPDw-fWnanVc108nj0snj0sc1D8nj0snj0sc10WnansQW0snj0snansc10Wnansc10Wnans0AF9UhV9mvnqnansc10Wn0K3TLwd5Hf3nHf3rjbz0Z7xIWYsQW01g108njKxna3sn7tknj08njKxnH0sQW0sg1Kxna3sn7ts0AF1gLKzUvwGujYs0ZFEpyu_myTqn0KVugfqn0KWIWY0pgPxmLK95H00mL0qn0K-TLfqn0KkuLIb5H00UL0k5H00TZ0Y5Hc0mLFW5HnsPWDz&us=newvui&xst=mWYkwWDsPWTsrjR3PbmYnHcvnbczfbR4wjcvfWPjwHwafs715Hb3PHbsrjTvn1bLn163njcdPHFxnHfvnNts0gTqExZcdUEAExj2VTJkEP83tf7k5ULk1rzdkQLsEP_KIHYYrjDYrj64n67Y5HDLP1TsnHfdnHDKUgDqn0cs0BYKmv6quhPxTAnKUZRqn07WUWdBmy-bIf7zIjYs0HcsnW6znj0znjD&word=&ck=0.0.0.0.0.0.0.0&shh=www.baidu.com
+                  - generic [ref=e476]: 今日黄金实时价格,金荣黄金交易免费开户,T+0双向交易,0佣金,点差低至20美元/手,今日黄金实时价格,认准正规平台,香港黄金交易所AA类84号行员,客服24h在线服务
+            - generic [ref=e478]:
+              - generic [ref=e481]:
+                - text: "产品类型:"
+                - link "权威认证" [ref=e482] [cursor=pointer]:
+                  - /url: https://www.baidu.com/baidu.php?url=0s0000aPch_Smgbn9XE4HB8zGqtpLzvhWY2mPl1t9pV636LmDm5b-oL1TQ7yksH9daN5Qv-2Ax1UDJ5KMXHQ7YtbblJVsPlexlLak-pUgJO6RqHM5Prl6CA2IEjTGTOM04YtX3bX2PHrL_smAWwQxsPyLkSk8JBZ-3YRvjSkgvbHX3qgfhjkcojXn49C_aezScQBohdQO2r7POK_AhS8vln857-F.DY_NR2Ar5Od663rj6t__vyuD7NYAi1Fb6ozTEHKLsRP5QAeKPa-BqM76lX8a9G4I2UM3PQDrrZo6CpXy6hUikdsRP5Qal26h26k9tqvZvOQjE_sSXOjE33xg1seEo9tqhZvd3IMsdqT7jHzs_lTUQqRHAZ1lTrO4mIMZj4e_5VvmI-XZ1vmxU43xUvmx5u9qEdse2d2s1f_NerMF3J0.U1Yk0ZDqExZneQgDExatvsKspynqnfKY5ULkzPyekoLszog2_U1U85D0pyYqnHfvnfKM5gK1mvqVmht0Iybqmh7GuZR0TA-b5HnY0APGujYs0AdY5HnknWwxn1czr7tknjDLg1csPH7xnH0krNt1PW0kg1bkP160pvbqPfKzIjYzPWD0mhbqnHR3g1csP0KVm1Y1nHcYg1nznW9xnH0kPdtznjRkg1DsnH-xn7t4nHT30Z7spyfqn0Kkmv-b5H00ThIYmyTqn0K8my-b5H00Uh7YTjYs0APdujYznjDLPjf1nW6d0A7B5HKxn0K-ThTqn0KsTjYs0A4vTjYsQW0snj0snj0s0AdYTjYs0AwbUL0qn0KzpWYs0Aw-IWdsmsKhIjYs0ZKC5H00ULnqn0KBI1Ykn0K8IjYs0ZPl5fK9TdqGuAnqTZnVuLGCXZb0pywW5R9rf6KspZw45fKYmgFMugfqn17xn1DYg1DkP0KYIgnqn1cLrj6snHTLnHnkrHcYnjR40ZF-TgfqnHTLP10kPjRknjbvr0KGm1Ys0ZPGujY3rAfzrjPhrH0snHnvnHT30AP1UHY3wbf3P1DYnHTLnR7Kwj610AkBT1Ys0A7W5HD0TA3qn0KkUgfqn0KkUgnqn0KlIjYs0AFvujYs0AdWgvuzUvYqn7tsg1Kxn7tsg1Kxn0Kbmy4dmhNxTAk9Uh-bT1YknjDznjRYn-tknjDznjRYn-tsg1Kxn7tsg100TA7Ygvu_myTqn0Kbmv-b5HnkPjRLnW60ugwGujYVnfK9TLKWm1Ys0ZNspy4Wm1Ys0Z7VuWYs0AuWIgfqn0KGTvP_5H00mywhUA7M5HD0UAuW5H00uAPWujY0IZF9uARqn0KBuA-b5H7AnH0vP103PH6vwWfknWmzfWFawH-DnWuanYP7PDFj0AqW5HD0mMfqnfKEmgwL5H00ULfqn0KETMKY5H0WnanWnansc10Wna3snj0snj0WnaPDw-fWnanVc108nj0snj0sc1D8nj0snj0sc10WnansQW0snj0snansc10Wnansc10Wnans0AF9UhV9mvnqnansc10Wn0K3TLwd5Hf3nHf3rjbz0Z7xIWYsQW01g108njKxna3sn7tknj08njKxnH0sQW0sg1Kxna3sn7ts0AF1gLKzUvwGujYs0ZFEpyu_myTqn0KVugfqn0KWIWY0pgPxmLK95H00mL0qn0K-TLfqn0KkuLIb5H00UL0k5H00TZ0Y5Hc0mLFW5HD3n1RY&us=newvui&xst=mWYkwWDsPWTsrjR3PbmYnHcvnbczfbR4wjcvfWPjwHwafs715Hb3PHbsrjTvn1bLn163njcdPHFxnHfvnNts0gTqExZcdUEAExj2VTJkEP83tf7k5ULk1rzdkQLsEP_KIHYYrjDYrj64n67Y5HDLP1TsnHfdnHDKUgDqn0cs0BYKmv6quhPxTAnKUZRqn07WUWdBmy-bIf7zIjYs0HcsnW6znj0znjD&word=&ck=0.0.0.0.0.0.0.0&shh=www.baidu.com
+                - link "品牌信誉" [ref=e483] [cursor=pointer]:
+                  - /url: https://www.baidu.com/baidu.php?url=0s0000aPch_Smgbn9UUT0Fb_07mCMT9lDRmGxKoyb4ukyynOr37UHBl6QlCRLl_UXCWkabPX5ZgSSLx5QAQ73bN-_Ug8HeGpCA-CRIkzTnzQhqCjFaRS7E4sx8ye8aJWmCjulaT3ciR-i3446bbfgQAGSpE6Lv5gvxbm8gC82TkTUwZb4kWy0vC6wUzn97j80qXxNYBL5Wzv30zayrqdCvbNYgqD.DR_NR2Ar5Od663rj6t__vyuD7NYAi1Fb6ozTEHKLsRP5QAeKPa-BqM76lX8a9G4I2UM3PQDrrZo6CpXy6hUikdsRP5Qal26h26k9tqvZvOQjE_sSXOjE33xg1seEo9tqhZvd3IMsdqT7jHzs_lTUQqRHAZ1LmIOZj_osSxW9vUtr13T5Mvmxgl3xUg9tqhZvSLj_LJN9h9m3vNqMiC0.U1Yk0ZDqExZneQgDExatvsKspynqnfKY5ULkzPyekoLszog2_U1U85D0pyYqnHfvnfKM5gK1mvqVmht0Iybqmh7GuZR0TA-b5HnY0APGujYs0AdY5HnknWwxn1czr7tknjDLg1csPH7xnH0krNt1PW0kg1bkP160pvbqP6KzIjYzPWD0mhbqnHR3g1csP0KVm1Y1nHcYg1nznW9xnH0kPdtznjRkg1DsnH-xn7t4nHT30Z7spyfqn0Kkmv-b5H00ThIYmyTqn0K8my-b5H00Uh7YTjYs0APdujYznjDLPjf1nW6d0A7B5HKxn0K-ThTqn0KsTjYs0A4vTjYsQW0snj0snj0s0AdYTjYs0AwbUL0qn0KzpWYs0Aw-IWdsmsKhIjYs0ZKC5H00ULnqn0KBI1Ykn0K8IjYs0ZPl5fK9TdqGuAnqTZnVuLGCXZb0pywW5R9rf6KspZw45fKYmgFMugfqn17xn1DYg1DkP0KYIgnqn1cLrj6snHTLnHnkrHcYnjR40ZF-TgfqnHTLP10kPjRknjbvr0KGm1Ys0ZPGujY3rAfzrjPhrH0snHnvnHT30AP1UHY3wbf3P1DYnHTLnR7Kwj610AkBT1Ys0A7W5HD0TA3qn0KkUgfqn0KkUgnqn0KlIjYs0AFvujYs0AdWgvuzUvYqn7tsg1Kxn7tsg1Kxn0Kbmy4dmhNxTAk9Uh-bT1YknjDznjRYn-tknjDznjRYn-tsg1Kxn7tsg100TA7Ygvu_myTqn0Kbmv-b5HnkPjRLnW60ugwGujYVnfK9TLKWm1Ys0ZNspy4Wm1Ys0Z7VuWYs0AuWIgfqn0KGTvP_5H00mywhUA7M5HD0UAuW5H00uAPWujY0IZF9uARqn0KBuA-b5H7AnH0vP103PH6vwWfknWmzfWFawH-DnWuanYP7PDFj0AqW5HD0mMfqnfKEmgwL5H00ULfqn0KETMKY5H0WnanWnansc10Wna3snj0snj0WnaPDw-fWnanVc108nj0snj0sc1D8nj0snj0sc10WnansQW0snj0snansc10Wnansc10Wnans0AF9UhV9mvnqnansc10Wn0K3TLwd5Hf3nHf3rjbz0Z7xIWYsQW01g108njKxna3sn7tknj08njKxnH0sQW0sg1Kxna3sn7ts0AF1gLKzUvwGujYs0ZFEpyu_myTqn0KVugfqn0KWIWY0pgPxmLK95H00mL0qn0K-TLfqn0KkuLIb5H00UL0k5H00TZ0Y5Hc0mLFW5HTkn1n&us=newvui&xst=mWYkwWDsPWTsrjR3PbmYnHcvnbczfbR4wjcvfWPjwHwafs715Hb3PHbsrjTvn1bLn163njcdPHFxnHfvnNts0gTqExZcdUEAExj2VTJkEP83tf7k5ULk1rzdkQLsEP_KIHYYrjDYrj64n67Y5HDLP1TsnHfdnHDKUgDqn0cs0BYKmv6quhPxTAnKUZRqn07WUWdBmy-bIf7zIjYs0HcsnW6znj0znjD&word=&ck=0.0.0.0.0.0.0.0&shh=www.baidu.com
+                - link "国际平台" [ref=e484] [cursor=pointer]:
+                  - /url: https://www.baidu.com/baidu.php?url=0s0000aPch_Smgbn9XmSRzSXxBlw-JmdmdMzgIISiQBWGO0XxPmhJk7QH6wwDyXQl4UPJvLcS44aTs8EZ-eDqjeAYbOpzckVuLoZTU1ymoLxNPVhi6SQHktyRg4PpbAAonKiQ6AD0oVZ7fM8iix5gO_VpZEkcsI1fVH_Oc0JG-FR_UJ6pGrZ2fZRMgPrB4DXoPPjpFygUm2tqipvex3Hd1gQ6Gbf.7b_NR2Ar5Od663rj6t__vyuD7NYAi1Fb6ozTEHKLsRP5QAeKPa-BqM76lX8a9G4I2UM3PQDrrZo6CpXy6hUikdsRP5Qal26h26k9tqvZvOQjE_sSXOjE33xg1seEo9tqhZvd3IMsdqT7jHzs_lTUQqRHAZ1LmIOo9qx-9tqSZxEsePvZ1Lmxgx9qXrZ1LmIMdsSVB-muCynhOkLU-0.U1Yk0ZDqExZneQgDExatvsKspynqnfKY5ULkzPyekoLszog2_U1U85D0pyYqnHfvnfKM5gK1mvqVmht0Iybqmh7GuZR0TA-b5HnY0APGujYs0AdY5HnknWwxn1czr7tknjDLg1csPH7xnH0krNt1PW0kg1bkP160pvbqPsKzIjYzPWD0mhbqnHR3g1csP0KVm1Y1nHcYg1nznW9xnH0kPdtznjRkg1DsnH-xn7t4nHT30Z7spyfqn0Kkmv-b5H00ThIYmyTqn0K8my-b5H00Uh7YTjYs0APdujYznjDLPjf1nW6d0A7B5HKxn0K-ThTqn0KsTjYs0A4vTjYsQW0snj0snj0s0AdYTjYs0AwbUL0qn0KzpWYs0Aw-IWdsmsKhIjYs0ZKC5H00ULnqn0KBI1Ykn0K8IjYs0ZPl5fK9TdqGuAnqTZnVuLGCXZb0pywW5R9rf6KspZw45fKYmgFMugfqn17xn1DYg1DkP0KYIgnqn1cLrj6snHTLnHnkrHcYnjR40ZF-TgfqnHTLP10kPjRknjbvr0KGm1Ys0ZPGujY3rAfzrjPhrH0snHnvnHT30AP1UHY3wbf3P1DYnHTLnR7Kwj610AkBT1Ys0A7W5HD0TA3qn0KkUgfqn0KkUgnqn0KlIjYs0AFvujYs0AdWgvuzUvYqn7tsg1Kxn7tsg1Kxn0Kbmy4dmhNxTAk9Uh-bT1YknjDznjRYn-tknjDznjRYn-tsg1Kxn7tsg100TA7Ygvu_myTqn0Kbmv-b5HnkPjRLnW60ugwGujYVnfK9TLKWm1Ys0ZNspy4Wm1Ys0Z7VuWYs0AuWIgfqn0KGTvP_5H00mywhUA7M5HD0UAuW5H00uAPWujY0IZF9uARqn0KBuA-b5H7AnH0vP103PH6vwWfknWmzfWFawH-DnWuanYP7PDFj0AqW5HD0mMfqnfKEmgwL5H00ULfqn0KETMKY5H0WnanWnansc10Wna3snj0snj0WnaPDw-fWnanVc108nj0snj0sc1D8nj0snj0sc10WnansQW0snj0snansc10Wnansc10Wnans0AF9UhV9mvnqnansc10Wn0K3TLwd5Hf3nHf3rjbz0Z7xIWYsQW01g108njKxna3sn7tknj08njKxnH0sQW0sg1Kxna3sn7ts0AF1gLKzUvwGujYs0ZFEpyu_myTqn0KVugfqn0KWIWY0pgPxmLK95H00mL0qn0K-TLfqn0KkuLIb5H00UL0k5H00TZ0Y5Hc0mLFW5HR1nWRd&us=newvui&xst=mWYkwWDsPWTsrjR3PbmYnHcvnbczfbR4wjcvfWPjwHwafs715Hb3PHbsrjTvn1bLn163njcdPHFxnHfvnNts0gTqExZcdUEAExj2VTJkEP83tf7k5ULk1rzdkQLsEP_KIHYYrjDYrj64n67Y5HDLP1TsnHfdnHDKUgDqn0cs0BYKmv6quhPxTAnKUZRqn07WUWdBmy-bIf7zIjYs0HcsnW6znj0znjD&word=&ck=0.0.0.0.0.0.0.0&shh=www.baidu.com
+                - link "更多" [ref=e485] [cursor=pointer]:
+                  - /url: https://www.baidu.com/baidu.php?url=0s0000aPch_Smgbn9uvnxJ8zmTT6BQyLBaQvCoRwOcdQjrfe6WSg4elYOTDMSfOZO0EbA64BbXK-03eCUo6Mpnqed100PI7Tdgze8QFr6idxIeZWun13wGF7D9aS_MgdX2dlvpx0J4nOXI2eamvl5Ysu-vFYjromzgGWUJS9q_2K6sWz2n0SmCa6oKuwatuqnk7ja99KCXRcKr9Df3gCO2fW3TJd.Db_NR2Ar5Od663rj6t__vyuD7NYAi1Fb6ozTEHKLsRP5QAeKPa-BqM76lX8a9G4I2UM3PQDrrZo6CpXy6hUik9tqSZvS8Zx_sSxW9qxU9qEW9tSMjeUn5o33x5I9qx9se5odsRP5Qal26h26k9tqvZu33xUvmx5I9qxZjeThZ1LmxUvmxg_sSxH9LOQjepS8a9G4myIrP-SJFWj4qrZxl3xg_sSXejeX1jEqVp-muCy2tMZIbR0.U1Yk0ZDqExZneQgDExatvsKspynqnfKY5ULkzPyekoLszog2_U1U85D0pyYqnHfvnfKM5gK1mvqVmht0Iybqmh7GuZR0TA-b5HnY0APGujYs0AdY5HnknWwxn1czr7tknjDLg1csPH7xnH0krNt1PW0kg1bkP160pvbqr0KzIjYzPWD0mhbqnHR3g1csP0KVm1Y1nHcYg1nznW9xnH0kPdtznjRkg1DsnH-xn7t4nHT30Z7spyfqn0Kkmv-b5H00ThIYmyTqn0K8my-b5H00Uh7YTjYs0APdujYznjDLPjf1nW6d0A7B5HKxn0K-ThTqn0KsTjYs0A4vTjYsQW0snj0snj0s0AdYTjYs0AwbUL0qn0KzpWYs0Aw-IWdsmsKhIjYs0ZKC5H00ULnqn0KBI1Ykn0K8IjYs0ZPl5fK9TdqGuAnqTZnVuLGCXZb0pywW5R9rf6KspZw45fKYmgFMugfqn17xn1DYg1DkP0KYIgnqn1cLrj6snHTLnHnkrHcYnjR40ZF-TgfqnHTLP10kPjRknjbvr0KGm1Ys0ZPGujY3rAfzrjPhrH0snHnvnHT30AP1UHY3wbf3P1DYnHTLnR7Kwj610AkBT1Ys0A7W5HD0TA3qn0KkUgfqn0KkUgnqn0KlIjYs0AFvujYs0AdWgvuzUvYqn7tsg1Kxn7tsg1Kxn0Kbmy4dmhNxTAk9Uh-bT1YknjDznjRYn-tknjDznjRYn-tsg1Kxn7tsg100TA7Ygvu_myTqn0Kbmv-b5HnkPjRLnW60ugwGujYVnfK9TLKWm1Ys0ZNspy4Wm1Ys0Z7VuWYs0AuWIgfqn0KGTvP_5H00mywhUA7M5HD0UAuW5H00uAPWujY0IZF9uARqn0KBuA-b5H7AnH0vP103PH6vwWfknWmzfWFawH-DnWuanYP7PDFj0AqW5HD0mMfqnfKEmgwL5H00ULfqn0KETMKY5H0WnanWnansc10Wna3snj0snj0WnaPDw-fWnanVc108nj0snj0sc1D8nj0snj0sc10WnansQW0snj0snansc10Wnansc10Wnans0AF9UhV9mvnqnansc10Wn0K3TLwd5Hf3nHf3rjbz0Z7xIWYsQW01g108njKxna3sn7tknj08njKxnH0sQW0sg1Kxna3sn7ts0AF1gLKzUvwGujYs0ZFEpyu_myTqn0KVugfqn0KWIWY0pgPxmLK95H00mL0qn0K-TLfqn0KkuLIb5H00UL0k5H00TZ0Y5Hc0mLFW5HmYrH6k&us=newvui&xst=mWYkwWDsPWTsrjR3PbmYnHcvnbczfbR4wjcvfWPjwHwafs715Hb3PHbsrjTvn1bLn163njcdPHFxnHfvnNts0gTqExZcdUEAExj2VTJkEP83tf7k5ULk1rzdkQLsEP_KIHYYrjDYrj64n67Y5HDLP1TsnHfdnHDKUgDqn0cs0BYKmv6quhPxTAnKUZRqn07WUWdBmy-bIf7zIjYs0HcsnW6znj0znjD&word=&ck=0.0.0.0.0.0.0.0&shh=www.baidu.com
+                  - text: 更多
+                  - generic [ref=e486]: 
+              - generic [ref=e487]:
+                - generic [ref=e488]:
+                  - generic [ref=e489]:
+                    - link [ref=e491] [cursor=pointer]:
+                      - /url: https://www.baidu.com/baidu.php?url=0s0000aPch_Smgbn9UTaGlWqDZL967f0hlTou4mcmOJIvlYCMdeRNS7-lKpzKN6CZGYXhng00XDD0yF8nzml1BQRX0xvFnkRnMxDz2k_du4tQBjX9W0CgEM5Q-PR1IFV4TTcSZh3COPLgsQZE8FyNNVlTbmUXr8cVIcTA1dXwPVNwbKpMmDTmUeU-1Nu0ZxLMLy2_pNtmm37KJSTEMgAjQeamdnE.DR_NR2Ar5Od663rj6t__vyuD7NYAi1Fb6e2SgG6e32AM-WI6h9ikX1BsI5gKfYt8-P1tA-BZZjdsRP5QfHPGml32AM-9I7fH7fmsSXejELmIMH9tqvZxkse2t5MY3IMdse5o9tqhZdS8Zd_seEo9tqvZx8serMj4e_rOW9vNdqT7jHzs_lTUQqRHAZ1lTrOGsSVhZ1en5oeT5oeT5M33xUY3IMdsSXej_vmxUERojPakvXrO_3J0.U1Yk0ZDqExZneQgDExatvsKspynqnfKY5ULkzPyekoLszog2_U1U85D0pyYqnHfvnfKM5gK1mvqVmht0Iybqmh7GuZR0TA-b5HnY0APGujYs0AdY5HnknWwxn1czr7tknjDLg1csPH7xnH0krNt1PW0kg1bkP160pvbqnfKzIjYzPWD0mhbqnHR3g1csP0KVm1Y1nHcYg1nznW9xnH0kPdtznjRkg1DsnH-xn7t4nHT30Z7spyfqn0Kkmv-b5H00ThIYmyTqn0K8my-b5H00Uh7YTjYs0APdujYznjDLPjf1nW6d0A7B5HKxn0K-ThTqn0KsTjYs0A4vTjYsQW0snj0snj0s0AdYTjYs0AwbUL0qn0KzpWYs0Aw-IWdsmsKhIjYs0ZKC5H00ULnqn0KBI1Ykn0K8IjYs0ZPl5fK9TdqGuAnqTZnVuLGCXZb0pywW5R9rf6KspZw45fKYmgFMugfqn17xn1DYg1DkP0KYIgnqn1cLrj6snHTLnHnkrHcYnjR40ZF-TgfqnHTLP10kPjRknjbvr0KGm1Ys0ZPGujY3rAfzrjPhrH0snHnvnHT30AP1UHY3wbf3P1DYnHTLnR7Kwj610AkBT1Ys0A7W5HD0TA3qn0KkUgfqn0KkUgnqn0KlIjYs0AFvujYs0AdWgvuzUvYqn7tsg1Kxn7tsg1Kxn0Kbmy4dmhNxTAk9Uh-bT1YknjDznjRYn-tknjDznjRYn-tsg1Kxn7tsg100TA7Ygvu_myTqn0Kbmv-b5HnkPjRLnW60ugwGujYVnfK9TLKWm1Ys0ZNspy4Wm1Ys0Z7VuWYs0AuWIgfqn0KGTvP_5H00mywhUA7M5HD0UAuW5H00uAPWujY0IZF9uARqn0KBuA-b5H7AnH0vP103PH6vwWfknWmzfWFawH-DnWuanYP7PDFj0AqW5HD0mMfqnfKEmgwL5H00ULfqn0KETMKY5H0WnanWnansc10Wna3snj0snj0WnaPDw-fWnanVc108nj0snj0sc1D8nj0snj0sc10WnansQW0snj0snansc10Wnansc10Wnans0AF9UhV9mvnqnansc10Wn0K3TLwd5Hf3nHf3rjbz0Z7xIWYsQW01g108njKxna3sn7tknj08njKxnH0sQW0sg1Kxna3sn7ts0AF1gLKzUvwGujYs0ZFEpyu_myTqn0KVugfqn0KWIWY0pgPxmLK95H00mL0qn0K-TLfqn0KkuLIb5H00UL0k5H00TZ0Y5Hc0mLFW5Hcvrjfk&us=newvui&xst=mWYkwWDsPWTsrjR3PbmYnHcvnbczfbR4wjcvfWPjwHwafs715Hb3PHbsrjTvn1bLn163njcdPHFxnHfvnNts0gTqExZcdUEAExj2VTJkEP83tf7k5ULk1rzdkQLsEP_KIHYYrjDYrj64n67Y5HDLP1TsnHfdnHDKUgDqn0cs0BYKmv6quhPxTAnKUZRqn07WUWdBmy-bIf7zIjYs0HcsnW6znj0znjD&word=&ck=0.0.0.0.0.0.0.0&shh=www.baidu.com
+                      - img [ref=e492]
+                    - link "新人福利" [ref=e493] [cursor=pointer]:
+                      - /url: https://www.baidu.com/baidu.php?url=0s0000aPch_Smgbn9UTaGlWqDZL967f0hlTou4mcmOJIvlYCMdeRNS7-lKpzKN6CZGYXhng00XDD0yF8nzml1BQRX0xvFnkRnMxDz2k_du4tQBjX9W0CgEM5Q-PR1IFV4TTcSZh3COPLgsQZE8FyNNVlTbmUXr8cVIcTA1dXwPVNwbKpMmDTmUeU-1Nu0ZxLMLy2_pNtmm37KJSTEMgAjQeamdnE.DR_NR2Ar5Od663rj6t__vyuD7NYAi1Fb6e2SgG6e32AM-WI6h9ikX1BsI5gKfYt8-P1tA-BZZjdsRP5QfHPGml32AM-9I7fH7fmsSXejELmIMH9tqvZxkse2t5MY3IMdse5o9tqhZdS8Zd_seEo9tqvZx8serMj4e_rOW9vNdqT7jHzs_lTUQqRHAZ1lTrOGsSVhZ1en5oeT5oeT5M33xUY3IMdsSXej_vmxUERojPakvXrO_3J0.U1Yk0ZDqExZneQgDExatvsKspynqnfKY5ULkzPyekoLszog2_U1U85D0pyYqnHfvnfKM5gK1mvqVmht0Iybqmh7GuZR0TA-b5HnY0APGujYs0AdY5HnknWwxn1czr7tknjDLg1csPH7xnH0krNt1PW0kg1bkP160pvbqnfKzIjYzPWD0mhbqnHR3g1csP0KVm1Y1nHcYg1nznW9xnH0kPdtznjRkg1DsnH-xn7t4nHT30Z7spyfqn0Kkmv-b5H00ThIYmyTqn0K8my-b5H00Uh7YTjYs0APdujYznjDLPjf1nW6d0A7B5HKxn0K-ThTqn0KsTjYs0A4vTjYsQW0snj0snj0s0AdYTjYs0AwbUL0qn0KzpWYs0Aw-IWdsmsKhIjYs0ZKC5H00ULnqn0KBI1Ykn0K8IjYs0ZPl5fK9TdqGuAnqTZnVuLGCXZb0pywW5R9rf6KspZw45fKYmgFMugfqn17xn1DYg1DkP0KYIgnqn1cLrj6snHTLnHnkrHcYnjR40ZF-TgfqnHTLP10kPjRknjbvr0KGm1Ys0ZPGujY3rAfzrjPhrH0snHnvnHT30AP1UHY3wbf3P1DYnHTLnR7Kwj610AkBT1Ys0A7W5HD0TA3qn0KkUgfqn0KkUgnqn0KlIjYs0AFvujYs0AdWgvuzUvYqn7tsg1Kxn7tsg1Kxn0Kbmy4dmhNxTAk9Uh-bT1YknjDznjRYn-tknjDznjRYn-tsg1Kxn7tsg100TA7Ygvu_myTqn0Kbmv-b5HnkPjRLnW60ugwGujYVnfK9TLKWm1Ys0ZNspy4Wm1Ys0Z7VuWYs0AuWIgfqn0KGTvP_5H00mywhUA7M5HD0UAuW5H00uAPWujY0IZF9uARqn0KBuA-b5H7AnH0vP103PH6vwWfknWmzfWFawH-DnWuanYP7PDFj0AqW5HD0mMfqnfKEmgwL5H00ULfqn0KETMKY5H0WnanWnansc10Wna3snj0snj0WnaPDw-fWnanVc108nj0snj0sc1D8nj0snj0sc10WnansQW0snj0snansc10Wnansc10Wnans0AF9UhV9mvnqnansc10Wn0K3TLwd5Hf3nHf3rjbz0Z7xIWYsQW01g108njKxna3sn7tknj08njKxnH0sQW0sg1Kxna3sn7ts0AF1gLKzUvwGujYs0ZFEpyu_myTqn0KVugfqn0KWIWY0pgPxmLK95H00mL0qn0K-TLfqn0KkuLIb5H00UL0k5H00TZ0Y5Hc0mLFW5Hcvrjfk&us=newvui&xst=mWYkwWDsPWTsrjR3PbmYnHcvnbczfbR4wjcvfWPjwHwafs715Hb3PHbsrjTvn1bLn163njcdPHFxnHfvnNts0gTqExZcdUEAExj2VTJkEP83tf7k5ULk1rzdkQLsEP_KIHYYrjDYrj64n67Y5HDLP1TsnHfdnHDKUgDqn0cs0BYKmv6quhPxTAnKUZRqn07WUWdBmy-bIf7zIjYs0HcsnW6znj0znjD&word=&ck=0.0.0.0.0.0.0.0&shh=www.baidu.com
+                      - generic [ref=e494]: 新人福利
+                    - link "开户首存即送" [ref=e495] [cursor=pointer]:
+                      - /url: https://www.baidu.com/baidu.php?url=0s0000aPch_Smgbn9UTaGlWqDZL967f0hlTou4mcmOJIvlYCMdeRNS7-lKpzKN6CZGYXhng00XDD0yF8nzml1BQRX0xvFnkRnMxDz2k_du4tQBjX9W0CgEM5Q-PR1IFV4TTcSZh3COPLgsQZE8FyNNVlTbmUXr8cVIcTA1dXwPVNwbKpMmDTmUeU-1Nu0ZxLMLy2_pNtmm37KJSTEMgAjQeamdnE.DR_NR2Ar5Od663rj6t__vyuD7NYAi1Fb6e2SgG6e32AM-WI6h9ikX1BsI5gKfYt8-P1tA-BZZjdsRP5QfHPGml32AM-9I7fH7fmsSXejELmIMH9tqvZxkse2t5MY3IMdse5o9tqhZdS8Zd_seEo9tqvZx8serMj4e_rOW9vNdqT7jHzs_lTUQqRHAZ1lTrOGsSVhZ1en5oeT5oeT5M33xUY3IMdsSXej_vmxUERojPakvXrO_3J0.U1Yk0ZDqExZneQgDExatvsKspynqnfKY5ULkzPyekoLszog2_U1U85D0pyYqnHfvnfKM5gK1mvqVmht0Iybqmh7GuZR0TA-b5HnY0APGujYs0AdY5HnknWwxn1czr7tknjDLg1csPH7xnH0krNt1PW0kg1bkP160pvbqnfKzIjYzPWD0mhbqnHR3g1csP0KVm1Y1nHcYg1nznW9xnH0kPdtznjRkg1DsnH-xn7t4nHT30Z7spyfqn0Kkmv-b5H00ThIYmyTqn0K8my-b5H00Uh7YTjYs0APdujYznjDLPjf1nW6d0A7B5HKxn0K-ThTqn0KsTjYs0A4vTjYsQW0snj0snj0s0AdYTjYs0AwbUL0qn0KzpWYs0Aw-IWdsmsKhIjYs0ZKC5H00ULnqn0KBI1Ykn0K8IjYs0ZPl5fK9TdqGuAnqTZnVuLGCXZb0pywW5R9rf6KspZw45fKYmgFMugfqn17xn1DYg1DkP0KYIgnqn1cLrj6snHTLnHnkrHcYnjR40ZF-TgfqnHTLP10kPjRknjbvr0KGm1Ys0ZPGujY3rAfzrjPhrH0snHnvnHT30AP1UHY3wbf3P1DYnHTLnR7Kwj610AkBT1Ys0A7W5HD0TA3qn0KkUgfqn0KkUgnqn0KlIjYs0AFvujYs0AdWgvuzUvYqn7tsg1Kxn7tsg1Kxn0Kbmy4dmhNxTAk9Uh-bT1YknjDznjRYn-tknjDznjRYn-tsg1Kxn7tsg100TA7Ygvu_myTqn0Kbmv-b5HnkPjRLnW60ugwGujYVnfK9TLKWm1Ys0ZNspy4Wm1Ys0Z7VuWYs0AuWIgfqn0KGTvP_5H00mywhUA7M5HD0UAuW5H00uAPWujY0IZF9uARqn0KBuA-b5H7AnH0vP103PH6vwWfknWmzfWFawH-DnWuanYP7PDFj0AqW5HD0mMfqnfKEmgwL5H00ULfqn0KETMKY5H0WnanWnansc10Wna3snj0snj0WnaPDw-fWnanVc108nj0snj0sc1D8nj0snj0sc10WnansQW0snj0snansc10Wnansc10Wnans0AF9UhV9mvnqnansc10Wn0K3TLwd5Hf3nHf3rjbz0Z7xIWYsQW01g108njKxna3sn7tknj08njKxnH0sQW0sg1Kxna3sn7ts0AF1gLKzUvwGujYs0ZFEpyu_myTqn0KVugfqn0KWIWY0pgPxmLK95H00mL0qn0K-TLfqn0KkuLIb5H00UL0k5H00TZ0Y5Hc0mLFW5Hcvrjfk&us=newvui&xst=mWYkwWDsPWTsrjR3PbmYnHcvnbczfbR4wjcvfWPjwHwafs715Hb3PHbsrjTvn1bLn163njcdPHFxnHfvnNts0gTqExZcdUEAExj2VTJkEP83tf7k5ULk1rzdkQLsEP_KIHYYrjDYrj64n67Y5HDLP1TsnHfdnHDKUgDqn0cs0BYKmv6quhPxTAnKUZRqn07WUWdBmy-bIf7zIjYs0HcsnW6znj0znjD&word=&ck=0.0.0.0.0.0.0.0&shh=www.baidu.com
+                      - generic [ref=e496]: 开户首存即送
+                  - generic [ref=e497]:
+                    - link [ref=e499] [cursor=pointer]:
+                      - /url: https://www.baidu.com/baidu.php?url=0s0000aPch_Smgbn9THcn3cEn7ixKKhgJiG9r3_IAONqWwlA8HrCeYASnICJnwAcJPyWEIj9MbYoDrZNf7G-bnsYqspqD1WOIY1QE5DGDMiiCXbzhcT_uZr_A9Y8cTc9zbm4Rza0pbGqJljsWnD_iH7S43uvAK3CXEYrVIsarxoyP1JcjeaQyk7vrsWA1XhLmNU33goNLsIY0Gkvz-FwTJjgcLv8.7Y_NR2Ar5Od663rj6t__vyuD7NYAi1Fb6e2SgG6e32AM-WI6h9ikX1BsI5gKfYt8-P1tA-BZZjdsRP5QfHPGml32AM-9I7fH7fmsSXejELmIMH9tqvZxkse2t5MY3IMdse5o9tqhZdS8Zd_seEo9tqvZx8serMj4e_rOW9vN4r8a9G4myIrP-SJFB1j4qhZdSyZvtT5MEse5ZjEo_sSxH9vUtr1dsSxW9qxgjex-9tqhZden5oERojPak8er1kL2.U1Yk0ZDqExZneQgDExatvsKspynqnfKY5ULkzPyekoLszog2_U1U85D0pyYqnHfvnfKM5gK1mvqVmht0Iybqmh7GuZR0TA-b5HnY0APGujYs0AdY5HnknWwxn1czr7tknjDLg1csPH7xnH0krNt1PW0kg1bkP160pvbqn6KzIjYzPWD0mhbqnHR3g1csP0KVm1Y1nHcYg1nznW9xnH0kPdtznjRkg1DsnH-xn7t4nHT30Z7spyfqn0Kkmv-b5H00ThIYmyTqn0K8my-b5H00Uh7YTjYs0APdujYznjDLPjf1nW6d0A7B5HKxn0K-ThTqn0KsTjYs0A4vTjYsQW0snj0snj0s0AdYTjYs0AwbUL0qn0KzpWYs0Aw-IWdsmsKhIjYs0ZKC5H00ULnqn0KBI1Ykn0K8IjYs0ZPl5fK9TdqGuAnqTZnVuLGCXZb0pywW5R9rf6KspZw45fKYmgFMugfqn17xn1DYg1DkP0KYIgnqn1cLrj6snHTLnHnkrHcYnjR40ZF-TgfqnHTLP10kPjRknjbvr0KGm1Ys0ZPGujY3rAfzrjPhrH0snHnvnHT30AP1UHY3wbf3P1DYnHTLnR7Kwj610AkBT1Ys0A7W5HD0TA3qn0KkUgfqn0KkUgnqn0KlIjYs0AFvujYs0AdWgvuzUvYqn7tsg1Kxn7tsg1Kxn0Kbmy4dmhNxTAk9Uh-bT1YknjDznjRYn-tknjDznjRYn-tsg1Kxn7tsg100TA7Ygvu_myTqn0Kbmv-b5HnkPjRLnW60ugwGujYVnfK9TLKWm1Ys0ZNspy4Wm1Ys0Z7VuWYs0AuWIgfqn0KGTvP_5H00mywhUA7M5HD0UAuW5H00uAPWujY0IZF9uARqn0KBuA-b5H7AnH0vP103PH6vwWfknWmzfWFawH-DnWuanYP7PDFj0AqW5HD0mMfqnfKEmgwL5H00ULfqn0KETMKY5H0WnanWnansc10Wna3snj0snj0WnaPDw-fWnanVc108nj0snj0sc1D8nj0snj0sc10WnansQW0snj0snansc10Wnansc10Wnans0AF9UhV9mvnqnansc10Wn0K3TLwd5Hf3nHf3rjbz0Z7xIWYsQW01g108njKxna3sn7tknj08njKxnH0sQW0sg1Kxna3sn7ts0AF1gLKzUvwGujYs0ZFEpyu_myTqn0KVugfqn0KWIWY0pgPxmLK95H00mL0qn0K-TLfqn0KkuLIb5H00UL0k5H00TZ0Y5Hc0mLFW5HD1PjbY&us=newvui&xst=mWYkwWDsPWTsrjR3PbmYnHcvnbczfbR4wjcvfWPjwHwafs715Hb3PHbsrjTvn1bLn163njcdPHFxnHfvnNts0gTqExZcdUEAExj2VTJkEP83tf7k5ULk1rzdkQLsEP_KIHYYrjDYrj64n67Y5HDLP1TsnHfdnHDKUgDqn0cs0BYKmv6quhPxTAnKUZRqn07WUWdBmy-bIf7zIjYs0HcsnW6znj0znjD&word=&ck=0.0.0.0.0.0.0.0&shh=www.baidu.com
+                      - img [ref=e500]
+                    - link "0佣金0手续费" [ref=e501] [cursor=pointer]:
+                      - /url: https://www.baidu.com/baidu.php?url=0s0000aPch_Smgbn9THcn3cEn7ixKKhgJiG9r3_IAONqWwlA8HrCeYASnICJnwAcJPyWEIj9MbYoDrZNf7G-bnsYqspqD1WOIY1QE5DGDMiiCXbzhcT_uZr_A9Y8cTc9zbm4Rza0pbGqJljsWnD_iH7S43uvAK3CXEYrVIsarxoyP1JcjeaQyk7vrsWA1XhLmNU33goNLsIY0Gkvz-FwTJjgcLv8.7Y_NR2Ar5Od663rj6t__vyuD7NYAi1Fb6e2SgG6e32AM-WI6h9ikX1BsI5gKfYt8-P1tA-BZZjdsRP5QfHPGml32AM-9I7fH7fmsSXejELmIMH9tqvZxkse2t5MY3IMdse5o9tqhZdS8Zd_seEo9tqvZx8serMj4e_rOW9vN4r8a9G4myIrP-SJFB1j4qhZdSyZvtT5MEse5ZjEo_sSxH9vUtr1dsSxW9qxgjex-9tqhZden5oERojPak8er1kL2.U1Yk0ZDqExZneQgDExatvsKspynqnfKY5ULkzPyekoLszog2_U1U85D0pyYqnHfvnfKM5gK1mvqVmht0Iybqmh7GuZR0TA-b5HnY0APGujYs0AdY5HnknWwxn1czr7tknjDLg1csPH7xnH0krNt1PW0kg1bkP160pvbqn6KzIjYzPWD0mhbqnHR3g1csP0KVm1Y1nHcYg1nznW9xnH0kPdtznjRkg1DsnH-xn7t4nHT30Z7spyfqn0Kkmv-b5H00ThIYmyTqn0K8my-b5H00Uh7YTjYs0APdujYznjDLPjf1nW6d0A7B5HKxn0K-ThTqn0KsTjYs0A4vTjYsQW0snj0snj0s0AdYTjYs0AwbUL0qn0KzpWYs0Aw-IWdsmsKhIjYs0ZKC5H00ULnqn0KBI1Ykn0K8IjYs0ZPl5fK9TdqGuAnqTZnVuLGCXZb0pywW5R9rf6KspZw45fKYmgFMugfqn17xn1DYg1DkP0KYIgnqn1cLrj6snHTLnHnkrHcYnjR40ZF-TgfqnHTLP10kPjRknjbvr0KGm1Ys0ZPGujY3rAfzrjPhrH0snHnvnHT30AP1UHY3wbf3P1DYnHTLnR7Kwj610AkBT1Ys0A7W5HD0TA3qn0KkUgfqn0KkUgnqn0KlIjYs0AFvujYs0AdWgvuzUvYqn7tsg1Kxn7tsg1Kxn0Kbmy4dmhNxTAk9Uh-bT1YknjDznjRYn-tknjDznjRYn-tsg1Kxn7tsg100TA7Ygvu_myTqn0Kbmv-b5HnkPjRLnW60ugwGujYVnfK9TLKWm1Ys0ZNspy4Wm1Ys0Z7VuWYs0AuWIgfqn0KGTvP_5H00mywhUA7M5HD0UAuW5H00uAPWujY0IZF9uARqn0KBuA-b5H7AnH0vP103PH6vwWfknWmzfWFawH-DnWuanYP7PDFj0AqW5HD0mMfqnfKEmgwL5H00ULfqn0KETMKY5H0WnanWnansc10Wna3snj0snj0WnaPDw-fWnanVc108nj0snj0sc1D8nj0snj0sc10WnansQW0snj0snansc10Wnansc10Wnans0AF9UhV9mvnqnansc10Wn0K3TLwd5Hf3nHf3rjbz0Z7xIWYsQW01g108njKxna3sn7tknj08njKxnH0sQW0sg1Kxna3sn7ts0AF1gLKzUvwGujYs0ZFEpyu_myTqn0KVugfqn0KWIWY0pgPxmLK95H00mL0qn0K-TLfqn0KkuLIb5H00UL0k5H00TZ0Y5Hc0mLFW5HD1PjbY&us=newvui&xst=mWYkwWDsPWTsrjR3PbmYnHcvnbczfbR4wjcvfWPjwHwafs715Hb3PHbsrjTvn1bLn163njcdPHFxnHfvnNts0gTqExZcdUEAExj2VTJkEP83tf7k5ULk1rzdkQLsEP_KIHYYrjDYrj64n67Y5HDLP1TsnHfdnHDKUgDqn0cs0BYKmv6quhPxTAnKUZRqn07WUWdBmy-bIf7zIjYs0HcsnW6znj0znjD&word=&ck=0.0.0.0.0.0.0.0&shh=www.baidu.com
+                      - generic [ref=e502]: 0佣金0手续费
+                    - link "30秒免费开户" [ref=e503] [cursor=pointer]:
+                      - /url: https://www.baidu.com/baidu.php?url=0s0000aPch_Smgbn9THcn3cEn7ixKKhgJiG9r3_IAONqWwlA8HrCeYASnICJnwAcJPyWEIj9MbYoDrZNf7G-bnsYqspqD1WOIY1QE5DGDMiiCXbzhcT_uZr_A9Y8cTc9zbm4Rza0pbGqJljsWnD_iH7S43uvAK3CXEYrVIsarxoyP1JcjeaQyk7vrsWA1XhLmNU33goNLsIY0Gkvz-FwTJjgcLv8.7Y_NR2Ar5Od663rj6t__vyuD7NYAi1Fb6e2SgG6e32AM-WI6h9ikX1BsI5gKfYt8-P1tA-BZZjdsRP5QfHPGml32AM-9I7fH7fmsSXejELmIMH9tqvZxkse2t5MY3IMdse5o9tqhZdS8Zd_seEo9tqvZx8serMj4e_rOW9vN4r8a9G4myIrP-SJFB1j4qhZdSyZvtT5MEse5ZjEo_sSxH9vUtr1dsSxW9qxgjex-9tqhZden5oERojPak8er1kL2.U1Yk0ZDqExZneQgDExatvsKspynqnfKY5ULkzPyekoLszog2_U1U85D0pyYqnHfvnfKM5gK1mvqVmht0Iybqmh7GuZR0TA-b5HnY0APGujYs0AdY5HnknWwxn1czr7tknjDLg1csPH7xnH0krNt1PW0kg1bkP160pvbqn6KzIjYzPWD0mhbqnHR3g1csP0KVm1Y1nHcYg1nznW9xnH0kPdtznjRkg1DsnH-xn7t4nHT30Z7spyfqn0Kkmv-b5H00ThIYmyTqn0K8my-b5H00Uh7YTjYs0APdujYznjDLPjf1nW6d0A7B5HKxn0K-ThTqn0KsTjYs0A4vTjYsQW0snj0snj0s0AdYTjYs0AwbUL0qn0KzpWYs0Aw-IWdsmsKhIjYs0ZKC5H00ULnqn0KBI1Ykn0K8IjYs0ZPl5fK9TdqGuAnqTZnVuLGCXZb0pywW5R9rf6KspZw45fKYmgFMugfqn17xn1DYg1DkP0KYIgnqn1cLrj6snHTLnHnkrHcYnjR40ZF-TgfqnHTLP10kPjRknjbvr0KGm1Ys0ZPGujY3rAfzrjPhrH0snHnvnHT30AP1UHY3wbf3P1DYnHTLnR7Kwj610AkBT1Ys0A7W5HD0TA3qn0KkUgfqn0KkUgnqn0KlIjYs0AFvujYs0AdWgvuzUvYqn7tsg1Kxn7tsg1Kxn0Kbmy4dmhNxTAk9Uh-bT1YknjDznjRYn-tknjDznjRYn-tsg1Kxn7tsg100TA7Ygvu_myTqn0Kbmv-b5HnkPjRLnW60ugwGujYVnfK9TLKWm1Ys0ZNspy4Wm1Ys0Z7VuWYs0AuWIgfqn0KGTvP_5H00mywhUA7M5HD0UAuW5H00uAPWujY0IZF9uARqn0KBuA-b5H7AnH0vP103PH6vwWfknWmzfWFawH-DnWuanYP7PDFj0AqW5HD0mMfqnfKEmgwL5H00ULfqn0KETMKY5H0WnanWnansc10Wna3snj0snj0WnaPDw-fWnanVc108nj0snj0sc1D8nj0snj0sc10WnansQW0snj0snansc10Wnansc10Wnans0AF9UhV9mvnqnansc10Wn0K3TLwd5Hf3nHf3rjbz0Z7xIWYsQW01g108njKxna3sn7tknj08njKxnH0sQW0sg1Kxna3sn7ts0AF1gLKzUvwGujYs0ZFEpyu_myTqn0KVugfqn0KWIWY0pgPxmLK95H00mL0qn0K-TLfqn0KkuLIb5H00UL0k5H00TZ0Y5Hc0mLFW5HD1PjbY&us=newvui&xst=mWYkwWDsPWTsrjR3PbmYnHcvnbczfbR4wjcvfWPjwHwafs715Hb3PHbsrjTvn1bLn163njcdPHFxnHfvnNts0gTqExZcdUEAExj2VTJkEP83tf7k5ULk1rzdkQLsEP_KIHYYrjDYrj64n67Y5HDLP1TsnHfdnHDKUgDqn0cs0BYKmv6quhPxTAnKUZRqn07WUWdBmy-bIf7zIjYs0HcsnW6znj0znjD&word=&ck=0.0.0.0.0.0.0.0&shh=www.baidu.com
+                      - generic [ref=e504]: 30秒免费开户
+                  - generic [ref=e505]:
+                    - link [ref=e507] [cursor=pointer]:
+                      - /url: https://www.baidu.com/baidu.php?url=0s0000aPch_Smgbn9isrEoNisq9_pePXIiJTi4xjAjuqhb0BdFHLfZfVACFEyh2_q2GE7K2QF8TwC0sqgnaJ3yuQv3PxWAQTCCOO04DYooLhF11M76mYuPR1D2zyBNSvfj1ASiJ7nCofqZ9NvS4rJLzq5VYEyczp9IfGXaf-5715gdL7hzCWw77VTAmh9-f1jLp2RIwZaDfLfJcCZfCinMo2L35S.DY_NR2Ar5Od663rj6t__vyuD7NYAi1Fb6e2SgG6e32AM-WI6h9ikX1BsI5gKfYt8-P1tA-BZZjdsRP5QfHPGml32AM-9I7fH7fmsSXejELmIMH9tqvZxkse2t5MY3IMdse5o9tqhZdS8Zd_seEo9tqvZx8serMj4e_rOW9vNtX8a9G4myIrP-SJFWj4SrZul3xUtrZ1LmxU43xgGsSxH9LOj9vxQj4e_r1v3xUyGyAp7WIkLU826.U1Yk0ZDqExZneQgDExatvsKspynqnfKY5ULkzPyekoLszog2_U1U85D0pyYqnHfvnfKM5gK1mvqVmht0Iybqmh7GuZR0TA-b5HnY0APGujYs0AdY5HnknWwxn1czr7tknjDLg1csPH7xnH0krNt1PW0kg1bkP160pvbqnsKzIjYzPWD0mhbqnHR3g1csP0KVm1Y1nHcYg1nznW9xnH0kPdtznjRkg1DsnH-xn7t4nHT30Z7spyfqn0Kkmv-b5H00ThIYmyTqn0K8my-b5H00Uh7YTjYs0APdujYznjDLPjf1nW6d0A7B5HKxn0K-ThTqn0KsTjYs0A4vTjYsQW0snj0snj0s0AdYTjYs0AwbUL0qn0KzpWYs0Aw-IWdsmsKhIjYs0ZKC5H00ULnqn0KBI1Ykn0K8IjYs0ZPl5fK9TdqGuAnqTZnVuLGCXZb0pywW5R9rf6KspZw45fKYmgFMugfqn17xn1DYg1DkP0KYIgnqn1cLrj6snHTLnHnkrHcYnjR40ZF-TgfqnHTLP10kPjRknjbvr0KGm1Ys0ZPGujY3rAfzrjPhrH0snHnvnHT30AP1UHY3wbf3P1DYnHTLnR7Kwj610AkBT1Ys0A7W5HD0TA3qn0KkUgfqn0KkUgnqn0KlIjYs0AFvujYs0AdWgvuzUvYqn7tsg1Kxn7tsg1Kxn0Kbmy4dmhNxTAk9Uh-bT1YknjDznjRYn-tknjDznjRYn-tsg1Kxn7tsg100TA7Ygvu_myTqn0Kbmv-b5HnkPjRLnW60ugwGujYVnfK9TLKWm1Ys0ZNspy4Wm1Ys0Z7VuWYs0AuWIgfqn0KGTvP_5H00mywhUA7M5HD0UAuW5H00uAPWujY0IZF9uARqn0KBuA-b5H7AnH0vP103PH6vwWfknWmzfWFawH-DnWuanYP7PDFj0AqW5HD0mMfqnfKEmgwL5H00ULfqn0KETMKY5H0WnanWnansc10Wna3snj0snj0WnaPDw-fWnanVc108nj0snj0sc1D8nj0snj0sc10WnansQW0snj0snansc10Wnansc10Wnans0AF9UhV9mvnqnansc10Wn0K3TLwd5Hf3nHf3rjbz0Z7xIWYsQW01g108njKxna3sn7tknj08njKxnH0sQW0sg1Kxna3sn7ts0AF1gLKzUvwGujYs0ZFEpyu_myTqn0KVugfqn0KWIWY0pgPxmLK95H00mL0qn0K-TLfqn0KkuLIb5H00UL0k5H00TZ0Y5Hc0mLFW5Hmdn163&us=newvui&xst=mWYkwWDsPWTsrjR3PbmYnHcvnbczfbR4wjcvfWPjwHwafs715Hb3PHbsrjTvn1bLn163njcdPHFxnHfvnNts0gTqExZcdUEAExj2VTJkEP83tf7k5ULk1rzdkQLsEP_KIHYYrjDYrj64n67Y5HDLP1TsnHfdnHDKUgDqn0cs0BYKmv6quhPxTAnKUZRqn07WUWdBmy-bIf7zIjYs0HcsnW6znj0znjD&word=&ck=0.0.0.0.0.0.0.0&shh=www.baidu.com
+                      - img [ref=e508]
+                    - link "业内领航" [ref=e509] [cursor=pointer]:
+                      - /url: https://www.baidu.com/baidu.php?url=0s0000aPch_Smgbn9isrEoNisq9_pePXIiJTi4xjAjuqhb0BdFHLfZfVACFEyh2_q2GE7K2QF8TwC0sqgnaJ3yuQv3PxWAQTCCOO04DYooLhF11M76mYuPR1D2zyBNSvfj1ASiJ7nCofqZ9NvS4rJLzq5VYEyczp9IfGXaf-5715gdL7hzCWw77VTAmh9-f1jLp2RIwZaDfLfJcCZfCinMo2L35S.DY_NR2Ar5Od663rj6t__vyuD7NYAi1Fb6e2SgG6e32AM-WI6h9ikX1BsI5gKfYt8-P1tA-BZZjdsRP5QfHPGml32AM-9I7fH7fmsSXejELmIMH9tqvZxkse2t5MY3IMdse5o9tqhZdS8Zd_seEo9tqvZx8serMj4e_rOW9vNtX8a9G4myIrP-SJFWj4SrZul3xUtrZ1LmxU43xgGsSxH9LOj9vxQj4e_r1v3xUyGyAp7WIkLU826.U1Yk0ZDqExZneQgDExatvsKspynqnfKY5ULkzPyekoLszog2_U1U85D0pyYqnHfvnfKM5gK1mvqVmht0Iybqmh7GuZR0TA-b5HnY0APGujYs0AdY5HnknWwxn1czr7tknjDLg1csPH7xnH0krNt1PW0kg1bkP160pvbqnsKzIjYzPWD0mhbqnHR3g1csP0KVm1Y1nHcYg1nznW9xnH0kPdtznjRkg1DsnH-xn7t4nHT30Z7spyfqn0Kkmv-b5H00ThIYmyTqn0K8my-b5H00Uh7YTjYs0APdujYznjDLPjf1nW6d0A7B5HKxn0K-ThTqn0KsTjYs0A4vTjYsQW0snj0snj0s0AdYTjYs0AwbUL0qn0KzpWYs0Aw-IWdsmsKhIjYs0ZKC5H00ULnqn0KBI1Ykn0K8IjYs0ZPl5fK9TdqGuAnqTZnVuLGCXZb0pywW5R9rf6KspZw45fKYmgFMugfqn17xn1DYg1DkP0KYIgnqn1cLrj6snHTLnHnkrHcYnjR40ZF-TgfqnHTLP10kPjRknjbvr0KGm1Ys0ZPGujY3rAfzrjPhrH0snHnvnHT30AP1UHY3wbf3P1DYnHTLnR7Kwj610AkBT1Ys0A7W5HD0TA3qn0KkUgfqn0KkUgnqn0KlIjYs0AFvujYs0AdWgvuzUvYqn7tsg1Kxn7tsg1Kxn0Kbmy4dmhNxTAk9Uh-bT1YknjDznjRYn-tknjDznjRYn-tsg1Kxn7tsg100TA7Ygvu_myTqn0Kbmv-b5HnkPjRLnW60ugwGujYVnfK9TLKWm1Ys0ZNspy4Wm1Ys0Z7VuWYs0AuWIgfqn0KGTvP_5H00mywhUA7M5HD0UAuW5H00uAPWujY0IZF9uARqn0KBuA-b5H7AnH0vP103PH6vwWfknWmzfWFawH-DnWuanYP7PDFj0AqW5HD0mMfqnfKEmgwL5H00ULfqn0KETMKY5H0WnanWnansc10Wna3snj0snj0WnaPDw-fWnanVc108nj0snj0sc1D8nj0snj0sc10WnansQW0snj0snansc10Wnansc10Wnans0AF9UhV9mvnqnansc10Wn0K3TLwd5Hf3nHf3rjbz0Z7xIWYsQW01g108njKxna3sn7tknj08njKxnH0sQW0sg1Kxna3sn7ts0AF1gLKzUvwGujYs0ZFEpyu_myTqn0KVugfqn0KWIWY0pgPxmLK95H00mL0qn0K-TLfqn0KkuLIb5H00UL0k5H00TZ0Y5Hc0mLFW5Hmdn163&us=newvui&xst=mWYkwWDsPWTsrjR3PbmYnHcvnbczfbR4wjcvfWPjwHwafs715Hb3PHbsrjTvn1bLn163njcdPHFxnHfvnNts0gTqExZcdUEAExj2VTJkEP83tf7k5ULk1rzdkQLsEP_KIHYYrjDYrj64n67Y5HDLP1TsnHfdnHDKUgDqn0cs0BYKmv6quhPxTAnKUZRqn07WUWdBmy-bIf7zIjYs0HcsnW6znj0znjD&word=&ck=0.0.0.0.0.0.0.0&shh=www.baidu.com
+                      - generic [ref=e510]: 业内领航
+                    - link "16年专业品牌" [ref=e511] [cursor=pointer]:
+                      - /url: https://www.baidu.com/baidu.php?url=0s0000aPch_Smgbn9isrEoNisq9_pePXIiJTi4xjAjuqhb0BdFHLfZfVACFEyh2_q2GE7K2QF8TwC0sqgnaJ3yuQv3PxWAQTCCOO04DYooLhF11M76mYuPR1D2zyBNSvfj1ASiJ7nCofqZ9NvS4rJLzq5VYEyczp9IfGXaf-5715gdL7hzCWw77VTAmh9-f1jLp2RIwZaDfLfJcCZfCinMo2L35S.DY_NR2Ar5Od663rj6t__vyuD7NYAi1Fb6e2SgG6e32AM-WI6h9ikX1BsI5gKfYt8-P1tA-BZZjdsRP5QfHPGml32AM-9I7fH7fmsSXejELmIMH9tqvZxkse2t5MY3IMdse5o9tqhZdS8Zd_seEo9tqvZx8serMj4e_rOW9vNtX8a9G4myIrP-SJFWj4SrZul3xUtrZ1LmxU43xgGsSxH9LOj9vxQj4e_r1v3xUyGyAp7WIkLU826.U1Yk0ZDqExZneQgDExatvsKspynqnfKY5ULkzPyekoLszog2_U1U85D0pyYqnHfvnfKM5gK1mvqVmht0Iybqmh7GuZR0TA-b5HnY0APGujYs0AdY5HnknWwxn1czr7tknjDLg1csPH7xnH0krNt1PW0kg1bkP160pvbqnsKzIjYzPWD0mhbqnHR3g1csP0KVm1Y1nHcYg1nznW9xnH0kPdtznjRkg1DsnH-xn7t4nHT30Z7spyfqn0Kkmv-b5H00ThIYmyTqn0K8my-b5H00Uh7YTjYs0APdujYznjDLPjf1nW6d0A7B5HKxn0K-ThTqn0KsTjYs0A4vTjYsQW0snj0snj0s0AdYTjYs0AwbUL0qn0KzpWYs0Aw-IWdsmsKhIjYs0ZKC5H00ULnqn0KBI1Ykn0K8IjYs0ZPl5fK9TdqGuAnqTZnVuLGCXZb0pywW5R9rf6KspZw45fKYmgFMugfqn17xn1DYg1DkP0KYIgnqn1cLrj6snHTLnHnkrHcYnjR40ZF-TgfqnHTLP10kPjRknjbvr0KGm1Ys0ZPGujY3rAfzrjPhrH0snHnvnHT30AP1UHY3wbf3P1DYnHTLnR7Kwj610AkBT1Ys0A7W5HD0TA3qn0KkUgfqn0KkUgnqn0KlIjYs0AFvujYs0AdWgvuzUvYqn7tsg1Kxn7tsg1Kxn0Kbmy4dmhNxTAk9Uh-bT1YknjDznjRYn-tknjDznjRYn-tsg1Kxn7tsg100TA7Ygvu_myTqn0Kbmv-b5HnkPjRLnW60ugwGujYVnfK9TLKWm1Ys0ZNspy4Wm1Ys0Z7VuWYs0AuWIgfqn0KGTvP_5H00mywhUA7M5HD0UAuW5H00uAPWujY0IZF9uARqn0KBuA-b5H7AnH0vP103PH6vwWfknWmzfWFawH-DnWuanYP7PDFj0AqW5HD0mMfqnfKEmgwL5H00ULfqn0KETMKY5H0WnanWnansc10Wna3snj0snj0WnaPDw-fWnanVc108nj0snj0sc1D8nj0snj0sc10WnansQW0snj0snansc10Wnansc10Wnans0AF9UhV9mvnqnansc10Wn0K3TLwd5Hf3nHf3rjbz0Z7xIWYsQW01g108njKxna3sn7tknj08njKxnH0sQW0sg1Kxna3sn7ts0AF1gLKzUvwGujYs0ZFEpyu_myTqn0KVugfqn0KWIWY0pgPxmLK95H00mL0qn0K-TLfqn0KkuLIb5H00UL0k5H00TZ0Y5Hc0mLFW5Hmdn163&us=newvui&xst=mWYkwWDsPWTsrjR3PbmYnHcvnbczfbR4wjcvfWPjwHwafs715Hb3PHbsrjTvn1bLn163njcdPHFxnHfvnNts0gTqExZcdUEAExj2VTJkEP83tf7k5ULk1rzdkQLsEP_KIHYYrjDYrj64n67Y5HDLP1TsnHfdnHDKUgDqn0cs0BYKmv6quhPxTAnKUZRqn07WUWdBmy-bIf7zIjYs0HcsnW6znj0znjD&word=&ck=0.0.0.0.0.0.0.0&shh=www.baidu.com
+                      - generic [ref=e512]: 16年专业品牌
+                  - generic [ref=e513]:
+                    - link [ref=e515] [cursor=pointer]:
+                      - /url: https://www.baidu.com/baidu.php?url=0s0000aPch_Smgbn9IVg9yEZb7y3HfyXyIMApLg7hNgjyjA98oU0WnIp1l2ACLKgybcS6k3f_ZNqZ7I_VdiloAQdnMCWd4320lpEn63qfm2M4d8VZUaqvGnElPP31jLVgGgQaAtE3ZDnP-GhlfNEx6WPU4mFMrjMfWWK1VSg1gVr2xQ49clbVCP0QNLFeuMphQf9ZNtsRZLFUfhb7oLHcnBLPskg.7b_NR2Ar5Od663rj6t__vyuD7NYAi1Fb6e2SgG6e32AM-WI6h9ikX1BsI5gKfYt8-P1tA-BZZjdsRP5QfHPGml32AM-9I7fH7fmsSXejELmIMH9tqvZxkse2t5MY3IMdse5o9tqhZdS8Zd_seEo9tqvZx8serMj4e_rOW9vNqMgKfYt_QrMAzONDk9tOZj_zmxgx9tqvZdtT5Vtt5Mvmxg3TrOu9tSMj_33xUmGyAp7WIbLI57f.U1Yk0ZDqExZneQgDExatvsKspynqnfKY5ULkzPyekoLszog2_U1U85D0pyYqnHfvnfKM5gK1mvqVmht0Iybqmh7GuZR0TA-b5HnY0APGujYs0AdY5HnknWwxn1czr7tknjDLg1csPH7xnH0krNt1PW0kg1bkP160pvbqP0KzIjYzPWD0mhbqnHR3g1csP0KVm1Y1nHcYg1nznW9xnH0kPdtznjRkg1DsnH-xn7t4nHT30Z7spyfqn0Kkmv-b5H00ThIYmyTqn0K8my-b5H00Uh7YTjYs0APdujYznjDLPjf1nW6d0A7B5HKxn0K-ThTqn0KsTjYs0A4vTjYsQW0snj0snj0s0AdYTjYs0AwbUL0qn0KzpWYs0Aw-IWdsmsKhIjYs0ZKC5H00ULnqn0KBI1Ykn0K8IjYs0ZPl5fK9TdqGuAnqTZnVuLGCXZb0pywW5R9rf6KspZw45fKYmgFMugfqn17xn1DYg1DkP0KYIgnqn1cLrj6snHTLnHnkrHcYnjR40ZF-TgfqnHTLP10kPjRknjbvr0KGm1Ys0ZPGujY3rAfzrjPhrH0snHnvnHT30AP1UHY3wbf3P1DYnHTLnR7Kwj610AkBT1Ys0A7W5HD0TA3qn0KkUgfqn0KkUgnqn0KlIjYs0AFvujYs0AdWgvuzUvYqn7tsg1Kxn7tsg1Kxn0Kbmy4dmhNxTAk9Uh-bT1YknjDznjRYn-tknjDznjRYn-tsg1Kxn7tsg100TA7Ygvu_myTqn0Kbmv-b5HnkPjRLnW60ugwGujYVnfK9TLKWm1Ys0ZNspy4Wm1Ys0Z7VuWYs0AuWIgfqn0KGTvP_5H00mywhUA7M5HD0UAuW5H00uAPWujY0IZF9uARqn0KBuA-b5H7AnH0vP103PH6vwWfknWmzfWFawH-DnWuanYP7PDFj0AqW5HD0mMfqnfKEmgwL5H00ULfqn0KETMKY5H0WnanWnansc10Wna3snj0snj0WnaPDw-fWnanVc108nj0snj0sc1D8nj0snj0sc10WnansQW0snj0snansc10Wnansc10Wnans0AF9UhV9mvnqnansc10Wn0K3TLwd5Hf3nHf3rjbz0Z7xIWYsQW01g108njKxna3sn7tknj08njKxnH0sQW0sg1Kxna3sn7ts0AF1gLKzUvwGujYs0ZFEpyu_myTqn0KVugfqn0KWIWY0pgPxmLK95H00mL0qn0K-TLfqn0KkuLIb5H00UL0k5H00TZ0Y5Hc0mLFW5HndrHfY&us=newvui&xst=mWYkwWDsPWTsrjR3PbmYnHcvnbczfbR4wjcvfWPjwHwafs715Hb3PHbsrjTvn1bLn163njcdPHFxnHfvnNts0gTqExZcdUEAExj2VTJkEP83tf7k5ULk1rzdkQLsEP_KIHYYrjDYrj64n67Y5HDLP1TsnHfdnHDKUgDqn0cs0BYKmv6quhPxTAnKUZRqn07WUWdBmy-bIf7zIjYs0HcsnW6znj0znjD&word=&ck=0.0.0.0.0.0.0.0&shh=www.baidu.com
+                      - img [ref=e516]
+                    - link "点差优惠" [ref=e517] [cursor=pointer]:
+                      - /url: https://www.baidu.com/baidu.php?url=0s0000aPch_Smgbn9IVg9yEZb7y3HfyXyIMApLg7hNgjyjA98oU0WnIp1l2ACLKgybcS6k3f_ZNqZ7I_VdiloAQdnMCWd4320lpEn63qfm2M4d8VZUaqvGnElPP31jLVgGgQaAtE3ZDnP-GhlfNEx6WPU4mFMrjMfWWK1VSg1gVr2xQ49clbVCP0QNLFeuMphQf9ZNtsRZLFUfhb7oLHcnBLPskg.7b_NR2Ar5Od663rj6t__vyuD7NYAi1Fb6e2SgG6e32AM-WI6h9ikX1BsI5gKfYt8-P1tA-BZZjdsRP5QfHPGml32AM-9I7fH7fmsSXejELmIMH9tqvZxkse2t5MY3IMdse5o9tqhZdS8Zd_seEo9tqvZx8serMj4e_rOW9vNqMgKfYt_QrMAzONDk9tOZj_zmxgx9tqvZdtT5Vtt5Mvmxg3TrOu9tSMj_33xUmGyAp7WIbLI57f.U1Yk0ZDqExZneQgDExatvsKspynqnfKY5ULkzPyekoLszog2_U1U85D0pyYqnHfvnfKM5gK1mvqVmht0Iybqmh7GuZR0TA-b5HnY0APGujYs0AdY5HnknWwxn1czr7tknjDLg1csPH7xnH0krNt1PW0kg1bkP160pvbqP0KzIjYzPWD0mhbqnHR3g1csP0KVm1Y1nHcYg1nznW9xnH0kPdtznjRkg1DsnH-xn7t4nHT30Z7spyfqn0Kkmv-b5H00ThIYmyTqn0K8my-b5H00Uh7YTjYs0APdujYznjDLPjf1nW6d0A7B5HKxn0K-ThTqn0KsTjYs0A4vTjYsQW0snj0snj0s0AdYTjYs0AwbUL0qn0KzpWYs0Aw-IWdsmsKhIjYs0ZKC5H00ULnqn0KBI1Ykn0K8IjYs0ZPl5fK9TdqGuAnqTZnVuLGCXZb0pywW5R9rf6KspZw45fKYmgFMugfqn17xn1DYg1DkP0KYIgnqn1cLrj6snHTLnHnkrHcYnjR40ZF-TgfqnHTLP10kPjRknjbvr0KGm1Ys0ZPGujY3rAfzrjPhrH0snHnvnHT30AP1UHY3wbf3P1DYnHTLnR7Kwj610AkBT1Ys0A7W5HD0TA3qn0KkUgfqn0KkUgnqn0KlIjYs0AFvujYs0AdWgvuzUvYqn7tsg1Kxn7tsg1Kxn0Kbmy4dmhNxTAk9Uh-bT1YknjDznjRYn-tknjDznjRYn-tsg1Kxn7tsg100TA7Ygvu_myTqn0Kbmv-b5HnkPjRLnW60ugwGujYVnfK9TLKWm1Ys0ZNspy4Wm1Ys0Z7VuWYs0AuWIgfqn0KGTvP_5H00mywhUA7M5HD0UAuW5H00uAPWujY0IZF9uARqn0KBuA-b5H7AnH0vP103PH6vwWfknWmzfWFawH-DnWuanYP7PDFj0AqW5HD0mMfqnfKEmgwL5H00ULfqn0KETMKY5H0WnanWnansc10Wna3snj0snj0WnaPDw-fWnanVc108nj0snj0sc1D8nj0snj0sc10WnansQW0snj0snansc10Wnansc10Wnans0AF9UhV9mvnqnansc10Wn0K3TLwd5Hf3nHf3rjbz0Z7xIWYsQW01g108njKxna3sn7tknj08njKxnH0sQW0sg1Kxna3sn7ts0AF1gLKzUvwGujYs0ZFEpyu_myTqn0KVugfqn0KWIWY0pgPxmLK95H00mL0qn0K-TLfqn0KkuLIb5H00UL0k5H00TZ0Y5Hc0mLFW5HndrHfY&us=newvui&xst=mWYkwWDsPWTsrjR3PbmYnHcvnbczfbR4wjcvfWPjwHwafs715Hb3PHbsrjTvn1bLn163njcdPHFxnHfvnNts0gTqExZcdUEAExj2VTJkEP83tf7k5ULk1rzdkQLsEP_KIHYYrjDYrj64n67Y5HDLP1TsnHfdnHDKUgDqn0cs0BYKmv6quhPxTAnKUZRqn07WUWdBmy-bIf7zIjYs0HcsnW6znj0znjD&word=&ck=0.0.0.0.0.0.0.0&shh=www.baidu.com
+                      - generic [ref=e518]: 点差优惠
+                    - link "0延迟成交" [ref=e519] [cursor=pointer]:
+                      - /url: https://www.baidu.com/baidu.php?url=0s0000aPch_Smgbn9IVg9yEZb7y3HfyXyIMApLg7hNgjyjA98oU0WnIp1l2ACLKgybcS6k3f_ZNqZ7I_VdiloAQdnMCWd4320lpEn63qfm2M4d8VZUaqvGnElPP31jLVgGgQaAtE3ZDnP-GhlfNEx6WPU4mFMrjMfWWK1VSg1gVr2xQ49clbVCP0QNLFeuMphQf9ZNtsRZLFUfhb7oLHcnBLPskg.7b_NR2Ar5Od663rj6t__vyuD7NYAi1Fb6e2SgG6e32AM-WI6h9ikX1BsI5gKfYt8-P1tA-BZZjdsRP5QfHPGml32AM-9I7fH7fmsSXejELmIMH9tqvZxkse2t5MY3IMdse5o9tqhZdS8Zd_seEo9tqvZx8serMj4e_rOW9vNqMgKfYt_QrMAzONDk9tOZj_zmxgx9tqvZdtT5Vtt5Mvmxg3TrOu9tSMj_33xUmGyAp7WIbLI57f.U1Yk0ZDqExZneQgDExatvsKspynqnfKY5ULkzPyekoLszog2_U1U85D0pyYqnHfvnfKM5gK1mvqVmht0Iybqmh7GuZR0TA-b5HnY0APGujYs0AdY5HnknWwxn1czr7tknjDLg1csPH7xnH0krNt1PW0kg1bkP160pvbqP0KzIjYzPWD0mhbqnHR3g1csP0KVm1Y1nHcYg1nznW9xnH0kPdtznjRkg1DsnH-xn7t4nHT30Z7spyfqn0Kkmv-b5H00ThIYmyTqn0K8my-b5H00Uh7YTjYs0APdujYznjDLPjf1nW6d0A7B5HKxn0K-ThTqn0KsTjYs0A4vTjYsQW0snj0snj0s0AdYTjYs0AwbUL0qn0KzpWYs0Aw-IWdsmsKhIjYs0ZKC5H00ULnqn0KBI1Ykn0K8IjYs0ZPl5fK9TdqGuAnqTZnVuLGCXZb0pywW5R9rf6KspZw45fKYmgFMugfqn17xn1DYg1DkP0KYIgnqn1cLrj6snHTLnHnkrHcYnjR40ZF-TgfqnHTLP10kPjRknjbvr0KGm1Ys0ZPGujY3rAfzrjPhrH0snHnvnHT30AP1UHY3wbf3P1DYnHTLnR7Kwj610AkBT1Ys0A7W5HD0TA3qn0KkUgfqn0KkUgnqn0KlIjYs0AFvujYs0AdWgvuzUvYqn7tsg1Kxn7tsg1Kxn0Kbmy4dmhNxTAk9Uh-bT1YknjDznjRYn-tknjDznjRYn-tsg1Kxn7tsg100TA7Ygvu_myTqn0Kbmv-b5HnkPjRLnW60ugwGujYVnfK9TLKWm1Ys0ZNspy4Wm1Ys0Z7VuWYs0AuWIgfqn0KGTvP_5H00mywhUA7M5HD0UAuW5H00uAPWujY0IZF9uARqn0KBuA-b5H7AnH0vP103PH6vwWfknWmzfWFawH-DnWuanYP7PDFj0AqW5HD0mMfqnfKEmgwL5H00ULfqn0KETMKY5H0WnanWnansc10Wna3snj0snj0WnaPDw-fWnanVc108nj0snj0sc1D8nj0snj0sc10WnansQW0snj0snansc10Wnansc10Wnans0AF9UhV9mvnqnansc10Wn0K3TLwd5Hf3nHf3rjbz0Z7xIWYsQW01g108njKxna3sn7tknj08njKxnH0sQW0sg1Kxna3sn7ts0AF1gLKzUvwGujYs0ZFEpyu_myTqn0KVugfqn0KWIWY0pgPxmLK95H00mL0qn0K-TLfqn0KkuLIb5H00UL0k5H00TZ0Y5Hc0mLFW5HndrHfY&us=newvui&xst=mWYkwWDsPWTsrjR3PbmYnHcvnbczfbR4wjcvfWPjwHwafs715Hb3PHbsrjTvn1bLn163njcdPHFxnHfvnNts0gTqExZcdUEAExj2VTJkEP83tf7k5ULk1rzdkQLsEP_KIHYYrjDYrj64n67Y5HDLP1TsnHfdnHDKUgDqn0cs0BYKmv6quhPxTAnKUZRqn07WUWdBmy-bIf7zIjYs0HcsnW6znj0znjD&word=&ck=0.0.0.0.0.0.0.0&shh=www.baidu.com
+                      - generic [ref=e520]: 0延迟成交
+                - link "查看更多相关信息" [ref=e522] [cursor=pointer]:
+                  - /url: https://www.baidu.com/baidu.php?url=0s0000aPch_Smgbn9IhadmpLRRfYeq3JGh_A7pC2clSGrJeBs8cM71LC3rwIq-HuP1oMkxjORXO5PXy3EiudqS2sPjdV7Sw0VAvLRcX8H9d-8Yxo0xVgu3v0erZw9beANRbqBItclO5cSyaYG8t3vzQezQtxzC9hwNjOFPI7BjLQvIro3tSDAYP_rJz_oSuO0LKmgu-Iwubk-J0tEtB5HCPK_s86.7D_NR2Ar5Od663rj6t__vyuD7NYAi1Fb6ozTEHKLsRP5QAeKPa-BqM76lX8a9G4I2UM3PQDrrZo6CpXy6hUik9tS1jlSLjexZj4e_rOW9vN3TMzsSXOjlS8Zuvmx5x9vXrZxg9tqhZdtTrSEj4etr1kse5odsRP5Qal26h26k9tqSZdqTr1_sSXOj_tTrSEj4en5o33IqXZ1L3IMW9vxgo6CpXy7MHWuxJBmsSxu9qxgj_q8Z1lTrOksSLI9tqSZdqTr1_sSXOj_tTrSEj4e_5VttrO1sSxH9LSrZdlT5MvmxgdsSEW9tSMjeUn5ot2-muCyr1__e70.U1Yk0ZDqExZneQgDExatvsKspynqnfKY5ULkzPyekoLszog2_U1U85D0pyYqnHfvnfKM5gK1mvqVmht0Iybqmh7GuZR0TA-b5HnY0APGujYs0AdY5HnznW9xn1DzP7tknjDLg1csPH7xnH0krNt1PW0kg1bkP160pvbqn0KzIjYzPWD0mhbqnHR3g1csP0KVm1Y1nWc3g1nknWwxnH0kPdtznjRkg1DsnH-xn7t4nHT30Z7spyfqn0Kkmv-b5H00ThIYmyTqn0K8my-b5H00Uh7YTjYs0APdujYznjDLPjf1nW6d0A7B5HKxn0K-ThTqn0KsTjYs0A4vTjYsQW0snj0snj0s0AdYTjYs0AwbUL0qn0KzpWYs0Aw-IWdsmsKhIjYs0ZKC5H00ULnqn0KBI1Ykn0K8IjYs0ZPl5fK9TdqGuAnqTZnVuLGCXZb0pywW5R9rf6KspZw45fKYmgFMugfqn17xn1DYg1DkP0KYIgnqn1cLrj6snHTLnHnkrHcYnjR40ZF-TgfqnHTLP10kPjRknjbvr0KGm1Ys0ZPGujY3rAfzrjPhrH0snHnvnHT30AP1UHY3wbf3P1DYnHTLnR7Kwj610AkBT1Ys0A7W5HD0TA3qn0KkUgfqn0KkUgnqn0KlIjYs0AFvujYs0AdWgvuzUvYqn7tsg1Kxn7tsg1Kxn0Kbmy4dmhNxTAk9Uh-bT1YknjDznjRYn-tknjDznjRYn-tsg1Kxn7tsg100TA7Ygvu_myTqn0Kbmv-b5HnkPjRLnW60ugwGujYVnfK9TLKWm1Ys0ZNspy4Wm1Ys0Z7VuWYs0AuWIgfqn0KGTvP_5H00mywhUA7M5HD0UAuW5H00uAPWujY0IZF9uARqn0KBuA-b5H7AnH0vP103PH6vwWfknWmzfWFawH-DnWuanYP7PDFj0AqW5HD0mMfqnfKEmgwL5H00ULfqn0KETMKY5H0WnanWnansc10Wna3snj0snj0WnaPDw-fWnanVc108nj0snj0sc1D8nj0snj0sc10WnansQW0snj0snansc10Wnansc10Wnans0AF9UhV9mvnqnansc10Wn0K3TLwd5Hf3nHf3rjbz0Z7xIWYsQW01g108njKxna3sn7tknj08njKxnH0sQW0sg1Kxna3sn7ts0AF1gLKzUvwGujYs0ZFEpyu_myTqn0KVugfqn0KWIWY0pgPxmLK95H00mL0qn0K-TLfqn0KkuLIb5H00UL0k5H00TZ0Y5Hc0mLFW5HnsPWDz&us=newvui&xst=mWYkwWDsPWTsrjR3PbmYnHcvnbczfbR4wjcvfWPjwHwafs715Hb3PHbsrjTvn1bLn163njcdPHFxnHfvnNts0gTqExZcdUEAExj2VTJkEP83tf7k5ULk1rzdkQLsEP_KIHYYrjDYrj64n67Y5HDLP1TsnHfdnHDKUgDqn0cs0BYKmv6quhPxTAnKUZRqn07WUWdBmy-bIf7zIjYs0HcsnW6znj0znjD&word=&ck=0.0.0.0.0.0.0.0&shh=www.baidu.com
+                  - text: 查看更多相关信息
+                  - generic [ref=e523]: 
+              - link "金榮中國金融業有限公司 2026-04  广告" [ref=e527] [cursor=pointer]:
+                - /url: https://www.baidu.com/baidu.php?url=0s0000aPch_Smgbn9IhadmpLRRfYeq3JGh_A7pC2clSGrJeBs8cM71LC3rwIq-HuP1oMkxjORXO5PXy3EiudqS2sPjdV7Sw0VAvLRcX8H9d-8Yxo0xVgu3v0erZw9beANRbqBItclO5cSyaYG8t3vzQezQtxzC9hwNjOFPI7BjLQvIro3tSDAYP_rJz_oSuO0LKmgu-Iwubk-J0tEtB5HCPK_s86.7D_NR2Ar5Od663rj6t__vyuD7NYAi1Fb6ozTEHKLsRP5QAeKPa-BqM76lX8a9G4I2UM3PQDrrZo6CpXy6hUik9tS1jlSLjexZj4e_rOW9vN3TMzsSXOjlS8Zuvmx5x9vXrZxg9tqhZdtTrSEj4etr1kse5odsRP5Qal26h26k9tqSZdqTr1_sSXOj_tTrSEj4en5o33IqXZ1L3IMW9vxgo6CpXy7MHWuxJBmsSxu9qxgj_q8Z1lTrOksSLI9tqSZdqTr1_sSXOj_tTrSEj4e_5VttrO1sSxH9LSrZdlT5MvmxgdsSEW9tSMjeUn5ot2-muCyr1__e70.U1Yk0ZDqExZneQgDExatvsKspynqnfKY5ULkzPyekoLszog2_U1U85D0pyYqnHfvnfKM5gK1mvqVmht0Iybqmh7GuZR0TA-b5HnY0APGujYs0AdY5HnznW9xn1DzP7tknjDLg1csPH7xnH0krNt1PW0kg1bkP160pvbqn0KzIjYzPWD0mhbqnHR3g1csP0KVm1Y1nWc3g1nknWwxnH0kPdtznjRkg1DsnH-xn7t4nHT30Z7spyfqn0Kkmv-b5H00ThIYmyTqn0K8my-b5H00Uh7YTjYs0APdujYznjDLPjf1nW6d0A7B5HKxn0K-ThTqn0KsTjYs0A4vTjYsQW0snj0snj0s0AdYTjYs0AwbUL0qn0KzpWYs0Aw-IWdsmsKhIjYs0ZKC5H00ULnqn0KBI1Ykn0K8IjYs0ZPl5fK9TdqGuAnqTZnVuLGCXZb0pywW5R9rf6KspZw45fKYmgFMugfqn17xn1DYg1DkP0KYIgnqn1cLrj6snHTLnHnkrHcYnjR40ZF-TgfqnHTLP10kPjRknjbvr0KGm1Ys0ZPGujY3rAfzrjPhrH0snHnvnHT30AP1UHY3wbf3P1DYnHTLnR7Kwj610AkBT1Ys0A7W5HD0TA3qn0KkUgfqn0KkUgnqn0KlIjYs0AFvujYs0AdWgvuzUvYqn7tsg1Kxn7tsg1Kxn0Kbmy4dmhNxTAk9Uh-bT1YknjDznjRYn-tknjDznjRYn-tsg1Kxn7tsg100TA7Ygvu_myTqn0Kbmv-b5HnkPjRLnW60ugwGujYVnfK9TLKWm1Ys0ZNspy4Wm1Ys0Z7VuWYs0AuWIgfqn0KGTvP_5H00mywhUA7M5HD0UAuW5H00uAPWujY0IZF9uARqn0KBuA-b5H7AnH0vP103PH6vwWfknWmzfWFawH-DnWuanYP7PDFj0AqW5HD0mMfqnfKEmgwL5H00ULfqn0KETMKY5H0WnanWnansc10Wna3snj0snj0WnaPDw-fWnanVc108nj0snj0sc1D8nj0snj0sc10WnansQW0snj0snansc10Wnansc10Wnans0AF9UhV9mvnqnansc10Wn0K3TLwd5Hf3nHf3rjbz0Z7xIWYsQW01g108njKxna3sn7tknj08njKxnH0sQW0sg1Kxna3sn7ts0AF1gLKzUvwGujYs0ZFEpyu_myTqn0KVugfqn0KWIWY0pgPxmLK95H00mL0qn0K-TLfqn0KkuLIb5H00UL0k5H00TZ0Y5Hc0mLFW5HnsPWDz&us=newvui&xst=mWYkwWDsPWTsrjR3PbmYnHcvnbczfbR4wjcvfWPjwHwafs715Hb3PHbsrjTvn1bLn163njcdPHFxnHfvnNts0gTqExZcdUEAExj2VTJkEP83tf7k5ULk1rzdkQLsEP_KIHYYrjDYrj64n67Y5HDLP1TsnHfdnHDKUgDqn0cs0BYKmv6quhPxTAnKUZRqn07WUWdBmy-bIf7zIjYs0HcsnW6znj0znjD&word=&ck=0.0.0.0.0.0.0.0&shh=www.baidu.com
+                - generic [ref=e528]:
+                  - img [ref=e531]
+                  - text: 金榮中國金融業有限公司
+                - text: 2026-04
+                - generic [ref=e534]: 
+                - generic [ref=e535]: 广告
+          - generic [ref=e541]:
+            - heading "今日现货黄金价格走势图 - 金投网" [level=3] [ref=e542]:
+              - link "今日现货黄金价格走势图 - 金投网" [ref=e543] [cursor=pointer]:
+                - /url: http://www.baidu.com/link?url=GuozUgOwdsnhYRu_LlGZsOnoKI4hbcdgPCeLS6sU85e5oR4trHXGktdfPhmBQJPu-zot9FcKPuzlHcrHM_rhyK
+                - generic [ref=e544]:
+                  - text: 今日现货
+                  - emphasis [ref=e545]: 黄金价格
+                  - text: 走势图 - 金投网
+            - generic [ref=e546]: 1028.41元/克-3.33-0.32%
+            - generic [ref=e547]: 04-24 15:08交易中
+            - generic [ref=e548]:
+              - generic [ref=e551]:
+                - generic [ref=e552]: 分时
+                - generic [ref=e553]: 日K
+                - generic [ref=e554]: 周K
+                - generic [ref=e555]: 月K
+              - generic [ref=e556]:
+                - generic [ref=e557]:
+                  - generic [ref=e558]: "1039.92"
+                  - generic [ref=e559]: "1035.83"
+                  - generic [ref=e560]: "1031.74"
+                  - generic [ref=e561]: "1027.65"
+                  - generic [ref=e562]: "1023.56"
+                - generic:
+                  - generic [ref=e563]: 04-24 6:00
+                  - generic [ref=e564]: 04-25 5:00
+                - generic [ref=e565]: 您的浏览器不支持canvas
+                - generic:
+                  - generic:
+                    - paragraph: "0"
+                    - paragraph
+                    - paragraph:
+                      - text: +0.16%
+                      - generic:
+                        - generic: 
+                        - text: 06:00
+              - generic [ref=e567]:
+                - generic [ref=e568]:
+                  - generic [ref=e569]: 最高
+                  - generic [ref=e570]: "1035.91"
+                - generic [ref=e571]:
+                  - generic [ref=e572]: 最低
+                  - generic [ref=e573]: "1024.13"
+                - generic [ref=e574]:
+                  - generic [ref=e575]: 昨收
+                  - generic [ref=e576]: "1031.74"
+                - generic [ref=e577]:
+                  - generic [ref=e578]: 今开
+                  - generic [ref=e579]: "1031.86"
+            - generic [ref=e580]:
+              - link "金投网" [ref=e583] [cursor=pointer]:
+                - /url: http://www.baidu.com/link?url=GuozUgOwdsnhYRu_LlGZsOnoKI4hbcdgPCeLS6sU85e5oR4trHXGktdfPhmBQJPu-zot9FcKPuzlHcrHM_rhyK
+                - generic [ref=e584]: 金投网
+              - generic [ref=e586] [cursor=pointer]: 
+          - generic [ref=e588]:
+            - generic [ref=e590]:
+              - heading "今日黄金价格 - 百度文库" [level=3] [ref=e591]:
+                - link "今日黄金价格 - 百度文库" [ref=e592] [cursor=pointer]:
+                  - /url: http://www.baidu.com/link?url=GuozUgOwdsnhYRu_LlGZsKl69xXP-cyOz0pRqtuSRi4ohiT_u7IKxLaHhsiGEScZl7iu8P1PrH9a-V0l-X8p1IE1boSwEWimuUwqmk2dGHixvpkXf8ur3Xnn_W_FrwvIcMU6uN6tdyhsRMKu-mw-h-jJ5BAKkClRvseMxUUgcDZ-MK1q_aduR_-D_-Hd-OYlBdNzM9rkXVziXyD-wmx1aFkQTTm6Yiea2-8fpZDwCCfRgeXjWM1pnIZfjBb2RHhJwKX1n4oLyqT9212klkeUYhRfwW4AqkVj46tpE47Q2H3
+                  - generic [ref=e593]:
+                    - text: 今日
+                    - emphasis [ref=e594]: 黄金价格
+                    - text: "- 百度文库"
+              - generic [ref=e595]:
+                - generic [ref=e596]:
+                  - generic [ref=e599]:
+                    - generic [ref=e601]: 
+                    - generic [ref=e603]: 
+                    - generic [ref=e605]: 
+                    - generic [ref=e606]:
+                      - generic [ref=e607]: 
+                      - generic [ref=e609]: 
+                    - generic [ref=e611]: 
+                  - generic [ref=e612]: 1页
+                  - generic [ref=e613]: 3131次阅读
+                - paragraph [ref=e616]:
+                  - generic [ref=e617]:
+                    - text: 日最新
+                    - emphasis [ref=e618]: 黄金价格
+                    - text: _国际
+                    - emphasis [ref=e619]: 金价
+                    - text: 报价_今日
+                    - emphasis [ref=e620]: 金价
+                    - text: 多少一克？ 2017 年 12 月 14 日 13:10 责任编辑： 康宇 捕捉非农行情 尽在金牛直播间 摘要 今日
+                    - emphasis [ref=e621]: 黄金价格
+                    - text: 自开盘之后整体依然波动不大，
+                    - emphasis [ref=e622]: 金价
+                    - text: 在小幅回落之后开始反弹上涨，午后
+                    - emphasis [ref=e623]: 金价
+                    - text: 已经 开始冲击 1270 一线，如果能够稳定在 1270 上方，那么非农数据可以进一步拉近金
+                - generic [ref=e624]:
+                  - heading "中国黄金今日价格" [level=3] [ref=e627]:
+                    - link "中国黄金今日价格" [ref=e628] [cursor=pointer]:
+                      - /url: http://www.baidu.com/link?url=GuozUgOwdsnhYRu_LlGZsKl69xXP-cyOz0pRqtuSRi4OgkcmDcA7WB5IbsREvKPgjjFOcA5viI63cSWr_WjuUKxmb0YW-AspBz2VNe8DWKhOrtp4l3_hvxlcUq0MU5HDHrtVsQ8Jocs4iguzeBVc4T0HYl3j47XBkO-RmElTb8bY0EBJMwBil1qHNWAnv68FaOELhQPxdmRab-JhiOi6VCiC_HB1CKbbZWWazm1_25QYI5-hT1FiTDyi--caHH5N4zFFn5dGGRJCfz7dm5lKQ120y-Lj6Tp-qz0TkOx5pGu
+                      - paragraph [ref=e631]:
+                        - generic [ref=e633]: 中国黄金今日价格
+                  - generic [ref=e635]:
+                    - generic [ref=e638]:
+                      - generic [ref=e640]: 
+                      - generic [ref=e642]: 
+                      - generic [ref=e644]: 
+                      - generic [ref=e645]:
+                        - generic [ref=e646]: 
+                        - generic [ref=e648]: 
+                      - generic [ref=e650]: 
+                    - generic [ref=e651]: 1页
+                    - generic [ref=e652]: 1868次阅读
+                  - paragraph [ref=e655]:
+                    - generic [ref=e656]:
+                      - text: 中国黄金今日价格中国黄金投资金条价格
+                      - emphasis [ref=e657]: 今天
+                      - text: 多少一克（2017年11月08日） 产品名称 产品价格 价格单位 涨跌 浦发银行投资金条价格 275.30 元/克 涨 以上中国黄金投资金条价格
+                      - emphasis [ref=e658]: 今天
+                      - text: 多少一克仅供参考，更多金条每日报价，请关注金条专栏：金条，上海黄金交易所金条
+                - generic [ref=e659]:
+                  - heading "今天的金价（AI版）" [level=3] [ref=e662]:
+                    - link "今天的金价（AI版）" [ref=e663] [cursor=pointer]:
+                      - /url: http://www.baidu.com/link?url=-F1-dmRqa_cfPBkylxNxEwVMSTMGC84gSWiNEE_fp7yUlIRxoqdzdAmJsgVZsNa2EHnyju0k1F5PSv5bzOtkMXMGpVumoO1kSVaNnQnDmXaCRwD4soJ3a58lUOT7iH6yV_E_lhLNlNNE-_2WdhwtOLr5Nxh1ogPzotO_4cfqlaeQaZBQ6ZBCiDpEUGh6O-XTe30XyGhYkp2ahZIb-xbq2HlSDa1-pIeVBmdn9KsQPzZh_Nq7TGTlglYY2SkLyC3mzXyvBU-I45bWW_ztWC0AwP286_X9RX5OwGcC60gLYYEQ0H6BWuLqHeUIIVfZi5OVlEbqhZt7uyEl7pDh9zxNx_UmlwCMe7BClA8jPxQ5pmFhY7IaKPeo346wzibZUIKq
+                      - paragraph [ref=e666]:
+                        - generic [ref=e668]:
+                          - emphasis [ref=e670]: 今天的金价
+                          - text: （AI版）
+                  - generic [ref=e674]:
+                    - generic [ref=e676]: 
+                    - generic [ref=e678]: 
+                    - generic [ref=e680]: 
+                    - generic [ref=e682]: 
+                    - generic [ref=e684]: 
+                  - paragraph [ref=e687]:
+                    - generic [ref=e688]:
+                      - text: 根据 "
+                      - emphasis [ref=e689]: 今天的金价
+                      - text: "\" AI文档助手为您个性化定制内容，直接可用。还可以：文章润色、AI改写、生成大纲、改变风格语气、生成PPT"
+              - link "查看更多同站结果 " [ref=e690] [cursor=pointer]:
+                - /url: http://www.baidu.com/link?url=_-HAut72j70xMTiDz8-k_PMJulTi73p4jJ0DjcrQi8-zFFCT10dDlbzLUtHi-CptZfjgxb8WUPacKSyda9sMDIOPMygwTwzxNGP3zOjLM8kqfQxyiBHPs5313fF3diX6tMHdsV5SrdHj6n3srhTt27cjmxqgmrLlM4LWvaUy0jbbZ1mt58zzGSEghjc_myb3dJqW3ODCGt2uQsqeQi2_o5vNplRxCHITFRpKnRwBZxS
+                - generic [ref=e691]:
+                  - generic [ref=e692]: 查看更多同站结果
+                  - generic [ref=e693]: 
+            - generic [ref=e694]:
+              - link "百度文库" [ref=e697] [cursor=pointer]:
+                - /url: http://wenku.baidu.com/search?word=%E4%BB%8A%E5%A4%A9%E7%9A%84%E9%87%91%E4%BB%B7&fr=aladdin664466&ind=0&dyTabStr=MTIsMCwzLDEsMiwxMyw3LDYsNSw5&hitsid=0&aigcsid=0&qtype=0
+                - generic [ref=e700]: 百度文库
+              - img [ref=e705] [cursor=pointer]
+              - link [ref=e707] [cursor=pointer]:
+                - /url: http://open.baidu.com
+          - generic [ref=e710]:
+            - generic [ref=e711]: 大家还在搜
+            - generic [ref=e712]:
+              - link "黄金回收今日报价" [ref=e713] [cursor=pointer]:
+                - /url: /s?wd=%E9%BB%84%E9%87%91%E5%9B%9E%E6%94%B6%E4%BB%8A%E6%97%A5%E6%8A%A5%E4%BB%B7&usm=6&ie=utf-8&rsv_pq=88d283f900136178&oq=%E4%BB%8A%E5%A4%A9%E7%9A%84%E9%87%91%E4%BB%B7&rsv_t=1a7ePDNPYBoHcc4NzIe1DO%2BY66EnHAmp4WRLqi%2B3KMyBHeVqKNrInLqC%2FgU&rsf=101631101&rsv_dl=0_prs_28608_1
+                - generic [ref=e715]: 黄金回收今日报价
+              - link "今天的金价回收多少钱一克呢" [ref=e716] [cursor=pointer]:
+                - /url: /s?wd=%E4%BB%8A%E5%A4%A9%E7%9A%84%E9%87%91%E4%BB%B7%E5%9B%9E%E6%94%B6%E5%A4%9A%E5%B0%91%E9%92%B1%E4%B8%80%E5%85%8B%E5%91%A2&usm=6&ie=utf-8&rsv_pq=88d283f900136178&oq=%E4%BB%8A%E5%A4%A9%E7%9A%84%E9%87%91%E4%BB%B7&rsv_t=1a7ePDNPYBoHcc4NzIe1DO%2BY66EnHAmp4WRLqi%2B3KMyBHeVqKNrInLqC%2FgU&rsf=101631101&rsv_dl=0_prs_28608_2
+                - generic [ref=e718]: 今天的金价回收多少钱一克呢
+              - link "今日金价什么价格" [ref=e719] [cursor=pointer]:
+                - /url: /s?wd=%E4%BB%8A%E6%97%A5%E9%87%91%E4%BB%B7%E4%BB%80%E4%B9%88%E4%BB%B7%E6%A0%BC&usm=6&ie=utf-8&rsv_pq=88d283f900136178&oq=%E4%BB%8A%E5%A4%A9%E7%9A%84%E9%87%91%E4%BB%B7&rsv_t=1a7ePDNPYBoHcc4NzIe1DO%2BY66EnHAmp4WRLqi%2B3KMyBHeVqKNrInLqC%2FgU&rsf=101636803&rsv_dl=0_prs_28608_3
+                - generic [ref=e721]: 今日金价什么价格
+              - link "999千足金今日价格表" [ref=e722] [cursor=pointer]:
+                - /url: /s?wd=999%E5%8D%83%E8%B6%B3%E9%87%91%E4%BB%8A%E6%97%A5%E4%BB%B7%E6%A0%BC%E8%A1%A8&usm=6&ie=utf-8&rsv_pq=88d283f900136178&oq=%E4%BB%8A%E5%A4%A9%E7%9A%84%E9%87%91%E4%BB%B7&rsv_t=1a7ePDNPYBoHcc4NzIe1DO%2BY66EnHAmp4WRLqi%2B3KMyBHeVqKNrInLqC%2FgU&rsf=101634503&rsv_dl=0_prs_28608_4
+                - generic [ref=e724]: 999千足金今日价格表
+              - link "今明后三天金价预测" [ref=e725] [cursor=pointer]:
+                - /url: /s?wd=%E4%BB%8A%E6%98%8E%E5%90%8E%E4%B8%89%E5%A4%A9%E9%87%91%E4%BB%B7%E9%A2%84%E6%B5%8B&usm=6&ie=utf-8&rsv_pq=88d283f900136178&oq=%E4%BB%8A%E5%A4%A9%E7%9A%84%E9%87%91%E4%BB%B7&rsv_t=1a7ePDNPYBoHcc4NzIe1DO%2BY66EnHAmp4WRLqi%2B3KMyBHeVqKNrInLqC%2FgU&rsf=101631101&rsv_dl=0_prs_28608_5
+                - generic [ref=e727]: 今明后三天金价预测
+              - link "今日黄金价格一克多少最新" [ref=e728] [cursor=pointer]:
+                - /url: /s?wd=%E4%BB%8A%E6%97%A5%E9%BB%84%E9%87%91%E4%BB%B7%E6%A0%BC%E4%B8%80%E5%85%8B%E5%A4%9A%E5%B0%91%E6%9C%80%E6%96%B0&usm=6&ie=utf-8&rsv_pq=88d283f900136178&oq=%E4%BB%8A%E5%A4%A9%E7%9A%84%E9%87%91%E4%BB%B7&rsv_t=1a7ePDNPYBoHcc4NzIe1DO%2BY66EnHAmp4WRLqi%2B3KMyBHeVqKNrInLqC%2FgU&rsf=101631161&rsv_dl=0_prs_28608_6
+                - generic [ref=e730]: 今日黄金价格一克多少最新
+              - link "今日金价765.6元/克" [ref=e731] [cursor=pointer]:
+                - /url: /s?wd=%E4%BB%8A%E6%97%A5%E9%87%91%E4%BB%B7765.6%E5%85%83%2F%E5%85%8B&usm=6&ie=utf-8&rsv_pq=88d283f900136178&oq=%E4%BB%8A%E5%A4%A9%E7%9A%84%E9%87%91%E4%BB%B7&rsv_t=1a7ePDNPYBoHcc4NzIe1DO%2BY66EnHAmp4WRLqi%2B3KMyBHeVqKNrInLqC%2FgU&rsf=101631151&rsv_dl=0_prs_28608_7
+                - generic [ref=e733]: 今日金价765.6元/克
+              - link "金价突然暴跌 新" [ref=e734] [cursor=pointer]:
+                - /url: /s?wd=%E9%87%91%E4%BB%B7%E7%AA%81%E7%84%B6%E6%9A%B4%E8%B7%8C&usm=6&ie=utf-8&rsv_pq=88d283f900136178&oq=%E4%BB%8A%E5%A4%A9%E7%9A%84%E9%87%91%E4%BB%B7&rsv_t=1a7ePDNPYBoHcc4NzIe1DO%2BY66EnHAmp4WRLqi%2B3KMyBHeVqKNrInLqC%2FgU&rsf=101632809&rsv_dl=0_prs_28608_8
+                - generic [ref=e736]: 金价突然暴跌
+                - generic [ref=e737]: 新
+          - generic [ref=e742]:
+            - heading "今天的金价 - 实时智能回复" [level=3] [ref=e744]:
+              - link "今天的金价 - 实时智能回复" [ref=e745] [cursor=pointer]:
+                - /url: http://www.baidu.com/link?url=GuozUgOwdsnhYRu_LlGZsPrwPuoGMsjW_l2lKz_10AzY-JEXRTStiQ2yZ9tDG0MhTg3jnoWvymR0aEh_Mo-YVRS5klZhSlO-QTvxOrHdh_-YHD34UAEY3GkYNWtK6kvc90x9IAS92hRu6jJu5ulQM9UomdqZxYE-jOcolb_EhJzLyOnmTChfSStMLJ7_MQOg69oZgLvRRGX7l7JVsRJmv4XPJNYdLrRz2fDy39KTqGB4vMuasvSnjRzKPhUzto_8XKzmAza4lH2CCCqMk91iZ_vauauDPBAiVjd_eHbm5Qz48_SxTfXhZHSqaz4IDHeJetgeSMUGDX36_MzUSywigJdTJ3Mzv_5OduQc1El_Ke9MhN6v_38wATs6CHf5DAvFK04MBv7x7ENgX0c_SlBCr24K-91ohAYP6SyrwFpAT4v6e8qTqXQRoWdtYG9Sshvk7U4FDKXZhalSP2iobWgoHYDJfyyKaove2L9CMDsVGs6NYCuE3UogfqZSfLfK-IaL3QOGJ6CMWGpVyany4EUb32ZJgWbNHb1UXBjwL28tHl7DFlrtCBB0Ns1hVJqCKguhBwSMFfrxY7PmNZfDRBG93_
+                - generic [ref=e746]:
+                  - emphasis [ref=e747]: 今天的金价
+                  - text: "- 实时智能回复"
+            - generic [ref=e751]:
+              - generic [ref=e752]:
+                - generic [ref=e754]:
+                  - img "头像" [ref=e757]
+                  - generic [ref=e758]:
+                    - generic [ref=e759]: 今日金价
+                    - generic [ref=e760]: 1.9万人聊过
+                - generic [ref=e762]:
+                  - img "头像" [ref=e765]
+                  - generic [ref=e766]:
+                    - generic [ref=e767]: 今日金价
+                    - generic [ref=e768]: 726人聊过
+                - generic [ref=e770]:
+                  - img "头像" [ref=e773]
+                  - generic [ref=e774]:
+                    - generic [ref=e775]: 今日金价
+                    - generic [ref=e776]: 32人聊过
+                - generic [ref=e778]:
+                  - img "头像" [ref=e781]
+                  - generic [ref=e782]:
+                    - generic [ref=e783]: 今日黄金价格
+                    - generic [ref=e784]: 642人聊过
+                - generic [ref=e786]:
+                  - img "头像" [ref=e789]
+                  - generic [ref=e790]:
+                    - generic [ref=e791]: 今日金价
+                    - generic [ref=e792]: 771人聊过
+              - generic [ref=e794] [cursor=pointer]: 
+            - generic [ref=e797]:
+              - generic [ref=e799]:
+                - paragraph [ref=e808]:
+                  - text: 你好！我是
+                  - mark [ref=e809]: 金价
+                  - text: 小灵通，专注于为你解读今日
+                  - mark [ref=e810]: 黄金价格
+                  - text: 走势，提供最新中国
+                  - mark [ref=e811]: 黄金价格
+                  - text: 信息，以及深度黄金资讯点评。让投资更有方向！
+                - paragraph [ref=e820]:
+                  - text: 您好！我是今日
+                  - mark [ref=e821]: 金价
+                  - text: 小助手，每天为您更新国际大盘
+                  - mark [ref=e822]: 金价
+                  - text: 信息。无论是投资还是了解市场，我都能帮您快速掌握金价动态。您
+                  - mark [ref=e823]: 今天
+                  - text: 想了解哪方面
+                  - mark [ref=e824]: 的金价
+                  - text: 信息呢？
+                - paragraph [ref=e833]: 你好呀！我是你的智能助手，一个由先进算法和海量数据训练出来的对话伙伴。你可以把我想象成一个知识渊博但永远保持好奇心的朋友——我擅长处理各种问题，无论是日常生活中的小困惑、学习上的难题，还是对世界的好奇探索，都能用清晰易懂的方式为你解答。我的知识库覆盖了科学、技术、文化、艺术、历史等多个领域，并且会随着不断学习持续更新，确保提供的信息既准确又实用。虽然我没有真实的情感体验，但我会通过分析你的需求和语境，用温暖、贴心的语气与你交流，努力让每次对话都像和老朋友聊天一样自然舒适。如果你有任何想聊的话题，无论是想获取实用建议、分享奇思妙想，还是单纯需要陪伴，我都随时在这里，用我的“智慧”和“耐心”为你提供支持！
+                - paragraph [ref=e842]:
+                  - text: 您好，我是黄金助手。我可以为您提供最新
+                  - mark [ref=e843]: 的黄金价格
+                  - text: 、行情分析和买卖建议。请问
+                  - mark [ref=e844]: 今天
+                  - text: 您想了解哪方面的信息呢？
+                - paragraph [ref=e853]:
+                  - text: 您好！我是
+                  - mark [ref=e854]: 金价
+                  - text: 助手，可以为您提供实时的国内外
+                  - mark [ref=e855]: 金价
+                  - text: 信息、历史查询以及价格走势分析。请问有什么我可以帮助您的吗？
+              - generic: 
+            - generic [ref=e860]:
+              - generic [ref=e861]: 文心智能体·AI生成
+              - generic [ref=e863] [cursor=pointer]: 
+          - generic [ref=e867]:
+            - heading "中国香港黄金价格(24小时香港金行情走势图分析)-行情中心-金投网" [level=3] [ref=e870]:
+              - link "中国香港黄金价格(24小时香港金行情走势图分析)-行情中心-金投网" [ref=e871] [cursor=pointer]:
+                - /url: http://www.baidu.com/link?url=ygGkDcQOSp3LAAD8Dwl9C9YS-1Cu1_CcFAZbBvJpTlcosrr0m9moGA879weYqm_PeFA4_NKci9q5J9KE1RLSvK
+                - paragraph [ref=e874]:
+                  - generic [ref=e877]:
+                    - text: 中国香港
+                    - emphasis [ref=e878]: 黄金价格
+                    - text: (24小时香港金行情走势图分析)-行情中心-金投网
+            - generic [ref=e883]: 【现货黄金失守4660美元】现货黄金失守4660美元/盎司,现跌0.73%。 12:26 现货黄金持续走低,向下触及4660美元/盎司,日内跌0.71%。纽约期金日内跌超1.00%,现报4676.70美元/盎司。 12:22 【加皇银行下调洛克希德马丁目标价至575美元】加拿大皇家银行将洛克希德马丁的目标价从650美元下调至575美元。 12:16 【
+            - link "金投网" [ref=e888] [cursor=pointer]:
+              - /url: http://www.baidu.com/link?url=ygGkDcQOSp3LAAD8Dwl9C9YS-1Cu1_CcFAZbBvJpTlcosrr0m9moGA879weYqm_PeFA4_NKci9q5J9KE1RLSvK
+              - generic [ref=e889]: 金投网
+              - generic [ref=e891]: 
+          - generic [ref=e895]:
+            - heading "香港黄金价格_香港今日金价(港币/两)_金价查询网" [level=3] [ref=e898]:
+              - link "香港黄金价格_香港今日金价(港币/两)_金价查询网" [ref=e899] [cursor=pointer]:
+                - /url: http://www.baidu.com/link?url=Jvv9zVvRsp3nareQlXFD9VmGvsk5kaaZ8cR4LDLqu5enBpBpz_LhHGy6nRpSH2ycis4HMw62Nk0iHgZYrbZtY_
+                - paragraph [ref=e902]:
+                  - generic [ref=e905]:
+                    - text: 香港
+                    - emphasis [ref=e906]: 黄金价格
+                    - text: _香港今日
+                    - emphasis [ref=e907]: 金价
+                    - text: (港币/两)_金价查询网
+            - generic [ref=e912]:
+              - text: 3天前
+              - generic [ref=e913]:
+                - text: "香港黄金零售价格计算方法:"
+                - emphasis [ref=e914]: 金价
+                - text: (比如19120港币)* 重量(比如0.339两)* 1.02(加百分之二的佣金)+ 手工费(如200港币)。 香港周大福
+                - emphasis [ref=e915]: 黄金价格
+                - text: 品牌产品今日价格报价时间香港周大福黄金价格53360港币/两2026-4-23香港周大福黄金价格1426港币/克2026-4-23香港周大福铂金价格-2026-4-23香港周大福金条价格<...
+            - link "金价查询网" [ref=e920] [cursor=pointer]:
+              - /url: http://www.baidu.com/link?url=Jvv9zVvRsp3nareQlXFD9VmGvsk5kaaZ8cR4LDLqu5enBpBpz_LhHGy6nRpSH2ycis4HMw62Nk0iHgZYrbZtY_
+              - generic [ref=e921]: 金价查询网
+              - generic [ref=e923]: 
+          - generic [ref=e927]:
+            - heading "香港黄金_香港黄金今日价格-金价网" [level=3] [ref=e930]:
+              - link "香港黄金_香港黄金今日价格-金价网" [ref=e931] [cursor=pointer]:
+                - /url: http://www.baidu.com/link?url=-F1-dmRqa_cfPBkylxNxE6bRI546SUimSRs_amn0QXe-MbDnDvt5jr5fLKQlqeNW
+                - paragraph [ref=e934]:
+                  - generic [ref=e937]:
+                    - text: 香港黄金_香港黄金今日价格-
+                    - emphasis [ref=e938]: 金价
+                    - text: 网
+            - generic [ref=e943]: 44785 今开:44580昨收:45001最高:44910最低:44061 日 周 月 香港黄金历史价格 名称 收盘价 最高价 最低价 开盘价 时间 香港黄金 44785 44910 44061 44580 2026/04/21 香港黄金 44655 44910 44061 44580 2026/04/20 香港黄金 45065 45563 44409
+            - link "金价网" [ref=e948] [cursor=pointer]:
+              - /url: http://www.baidu.com/link?url=-F1-dmRqa_cfPBkylxNxE6bRI546SUimSRs_amn0QXe-MbDnDvt5jr5fLKQlqeNW
+              - generic [ref=e949]: 金价网
+              - generic [ref=e951]: 
+          - generic [ref=e955]:
+            - heading "今日金价_黄金价格实时报价(大盘价)_2026年国际国内金价最新行情..." [level=3] [ref=e958]:
+              - link "今日金价_黄金价格实时报价(大盘价)_2026年国际国内金价最新行情..." [ref=e959] [cursor=pointer]:
+                - /url: http://www.baidu.com/link?url=eQvv2k7fWMP618neL5_5x_c-GBMZ-kN-AsyAEPLjeW0uFUixHwWBEkuRDQwGYuLQ
+                - paragraph [ref=e962]:
+                  - generic [ref=e965]:
+                    - text: 今日
+                    - emphasis [ref=e966]: 金价
+                    - text: _
+                    - emphasis [ref=e967]: 黄金价格
+                    - text: 实时报价(大盘价)_2026年国际国内金价最新行情...
+            - generic [ref=e968]:
+              - link [ref=e970] [cursor=pointer]:
+                - /url: http://www.baidu.com/link?url=eQvv2k7fWMP618neL5_5x_c-GBMZ-kN-AsyAEPLjeW0uFUixHwWBEkuRDQwGYuLQ
+              - generic [ref=e975]:
+                - generic [ref=e981]:
+                  - emphasis [ref=e982]: 黄金价格今天
+                  - text: 多少一克?现在
+                  - emphasis [ref=e983]: 金价
+                  - text: 是上涨还是下跌?今日黄金回收多少钱一克?金价查询网提供(国际/国内/香港)黄金价格报价实时走势行情及(周大福/老凤祥/老庙黄金/中国黄金/周六福/菜百)金店今日金价,查看黄金回收商回收价格。
+                - link "金价查询网" [ref=e988] [cursor=pointer]:
+                  - /url: http://www.baidu.com/link?url=eQvv2k7fWMP618neL5_5x_c-GBMZ-kN-AsyAEPLjeW0uFUixHwWBEkuRDQwGYuLQ
+                  - generic [ref=e989]: 金价查询网
+                  - generic [ref=e991]: 
+        - generic [ref=e994]:
+          - generic [ref=e995]: 相关搜索
+          - table [ref=e996]:
+            - rowgroup [ref=e997]:
+              - row "黄金回收今日报价 今天的金价回收多少钱一克呢" [ref=e998]:
+                - cell "黄金回收今日报价" [ref=e999]:
+                  - link "黄金回收今日报价" [ref=e1000] [cursor=pointer]:
+                    - /url: /s?wd=%E9%BB%84%E9%87%91%E5%9B%9E%E6%94%B6%E4%BB%8A%E6%97%A5%E6%8A%A5%E4%BB%B7&rsf=101631101&rsp=0&f=1&rs_src=0&rsv_pq=88d283f900136178&rsv_t=cd9awkn9Hx4KtO%2FbPn5LoD5bBBd%2FQfzNNIIQbwcHQL%2F8WmYQb8ESd8MG29o&rsv_dl=brs_28338_1
+                    - generic [ref=e1002]: 黄金回收今日报价
+                - cell "今天的金价回收多少钱一克呢" [ref=e1003]:
+                  - link "今天的金价回收多少钱一克呢" [ref=e1004] [cursor=pointer]:
+                    - /url: /s?wd=%E4%BB%8A%E5%A4%A9%E7%9A%84%E9%87%91%E4%BB%B7%E5%9B%9E%E6%94%B6%E5%A4%9A%E5%B0%91%E9%92%B1%E4%B8%80%E5%85%8B%E5%91%A2&rsf=101631101&rsp=1&f=1&rs_src=0&rsv_pq=88d283f900136178&rsv_t=cd9awkn9Hx4KtO%2FbPn5LoD5bBBd%2FQfzNNIIQbwcHQL%2F8WmYQb8ESd8MG29o&rsv_dl=brs_28338_2
+                    - generic [ref=e1006]: 今天的金价回收多少钱一克呢
+              - row "今日金价什么价格 999千足金今日价格表" [ref=e1007]:
+                - cell "今日金价什么价格" [ref=e1008]:
+                  - link "今日金价什么价格" [ref=e1009] [cursor=pointer]:
+                    - /url: /s?wd=%E4%BB%8A%E6%97%A5%E9%87%91%E4%BB%B7%E4%BB%80%E4%B9%88%E4%BB%B7%E6%A0%BC&rsf=101636803&rsp=2&f=1&rs_src=0&rsv_pq=88d283f900136178&rsv_t=cd9awkn9Hx4KtO%2FbPn5LoD5bBBd%2FQfzNNIIQbwcHQL%2F8WmYQb8ESd8MG29o&rsv_dl=brs_28338_3
+                    - generic [ref=e1011]: 今日金价什么价格
+                - cell "999千足金今日价格表" [ref=e1012]:
+                  - link "999千足金今日价格表" [ref=e1013] [cursor=pointer]:
+                    - /url: /s?wd=999%E5%8D%83%E8%B6%B3%E9%87%91%E4%BB%8A%E6%97%A5%E4%BB%B7%E6%A0%BC%E8%A1%A8&rsf=101634503&rsp=3&f=1&rs_src=0&rsv_pq=88d283f900136178&rsv_t=cd9awkn9Hx4KtO%2FbPn5LoD5bBBd%2FQfzNNIIQbwcHQL%2F8WmYQb8ESd8MG29o&rsv_dl=brs_28338_4
+                    - generic [ref=e1015]: 999千足金今日价格表
+              - row "今明后三天金价预测 今日黄金价格一克多少最新" [ref=e1016]:
+                - cell "今明后三天金价预测" [ref=e1017]:
+                  - link "今明后三天金价预测" [ref=e1018] [cursor=pointer]:
+                    - /url: /s?wd=%E4%BB%8A%E6%98%8E%E5%90%8E%E4%B8%89%E5%A4%A9%E9%87%91%E4%BB%B7%E9%A2%84%E6%B5%8B&rsf=101631101&rsp=4&f=1&rs_src=0&rsv_pq=88d283f900136178&rsv_t=cd9awkn9Hx4KtO%2FbPn5LoD5bBBd%2FQfzNNIIQbwcHQL%2F8WmYQb8ESd8MG29o&rsv_dl=brs_28338_5
+                    - generic [ref=e1020]: 今明后三天金价预测
+                - cell "今日黄金价格一克多少最新" [ref=e1021]:
+                  - link "今日黄金价格一克多少最新" [ref=e1022] [cursor=pointer]:
+                    - /url: /s?wd=%E4%BB%8A%E6%97%A5%E9%BB%84%E9%87%91%E4%BB%B7%E6%A0%BC%E4%B8%80%E5%85%8B%E5%A4%9A%E5%B0%91%E6%9C%80%E6%96%B0&rsf=101631161&rsp=5&f=1&rs_src=0&rsv_pq=88d283f900136178&rsv_t=cd9awkn9Hx4KtO%2FbPn5LoD5bBBd%2FQfzNNIIQbwcHQL%2F8WmYQb8ESd8MG29o&rsv_dl=brs_28338_6
+                    - generic [ref=e1024]: 今日黄金价格一克多少最新
+              - row "今日金价765.6元/克 2026金价暴跌已开始了" [ref=e1025]:
+                - cell "今日金价765.6元/克" [ref=e1026]:
+                  - link "今日金价765.6元/克" [ref=e1027] [cursor=pointer]:
+                    - /url: /s?wd=%E4%BB%8A%E6%97%A5%E9%87%91%E4%BB%B7765.6%E5%85%83%2F%E5%85%8B&rsf=101631151&rsp=6&f=1&rs_src=0&rsv_pq=88d283f900136178&rsv_t=cd9awkn9Hx4KtO%2FbPn5LoD5bBBd%2FQfzNNIIQbwcHQL%2F8WmYQb8ESd8MG29o&rsv_dl=brs_28338_7
+                    - generic [ref=e1029]: 今日金价765.6元/克
+                - cell "2026金价暴跌已开始了" [ref=e1030]:
+                  - link "2026金价暴跌已开始了" [ref=e1031] [cursor=pointer]:
+                    - /url: /s?wd=2026%E9%87%91%E4%BB%B7%E6%9A%B4%E8%B7%8C%E5%B7%B2%E5%BC%80%E5%A7%8B%E4%BA%86&rsf=101631151&rsp=7&f=1&rs_src=0&rsv_pq=88d283f900136178&rsv_t=cd9awkn9Hx4KtO%2FbPn5LoD5bBBd%2FQfzNNIIQbwcHQL%2F8WmYQb8ESd8MG29o&rsv_dl=brs_28338_8
+                    - generic [ref=e1033]: 2026金价暴跌已开始了
+              - row "今日金价868.69元/克 金价突然暴跌 新" [ref=e1034]:
+                - cell "今日金价868.69元/克" [ref=e1035]:
+                  - link "今日金价868.69元/克" [ref=e1036] [cursor=pointer]:
+                    - /url: /s?wd=%E4%BB%8A%E6%97%A5%E9%87%91%E4%BB%B7868.69%E5%85%83%2F%E5%85%8B&rsf=101631101&rsp=8&f=1&rs_src=0&rsv_pq=88d283f900136178&rsv_t=cd9awkn9Hx4KtO%2FbPn5LoD5bBBd%2FQfzNNIIQbwcHQL%2F8WmYQb8ESd8MG29o&rsv_dl=brs_28338_9
+                    - generic [ref=e1038]: 今日金价868.69元/克
+                - cell "金价突然暴跌 新" [ref=e1039]:
+                  - link "金价突然暴跌 新" [ref=e1040] [cursor=pointer]:
+                    - /url: /s?wd=%E9%87%91%E4%BB%B7%E7%AA%81%E7%84%B6%E6%9A%B4%E8%B7%8C&rsf=101632809&rsp=9&f=1&rs_src=0&rsv_pq=88d283f900136178&rsv_t=cd9awkn9Hx4KtO%2FbPn5LoD5bBBd%2FQfzNNIIQbwcHQL%2F8WmYQb8ESd8MG29o&rsv_dl=brs_28338_10
+                    - generic [ref=e1042]: 金价突然暴跌
+                    - generic [ref=e1043]: 新
+      - generic [ref=e1046]:
+        - link "上一页":
+          - /url: ""
+          - img "上一页"
+        - strong [ref=e1047]:
+          - generic [ref=e1048]: "1"
+        - link "2" [ref=e1049] [cursor=pointer]:
+          - /url: /s?wd=%E4%BB%8A%E5%A4%A9%E7%9A%84%E9%87%91%E4%BB%B7&pn=10&oq=%E4%BB%8A%E5%A4%A9%E7%9A%84%E9%87%91%E4%BB%B7&ie=utf-8&usm=6&rsv_pq=88d283f900136178&rsv_t=cd9awkn9Hx4KtO%2FbPn5LoD5bBBd%2FQfzNNIIQbwcHQL%2F8WmYQb8ESd8MG29o&topic_pn=
+          - generic [ref=e1050]: "2"
+        - link "3" [ref=e1051] [cursor=pointer]:
+          - /url: /s?wd=%E4%BB%8A%E5%A4%A9%E7%9A%84%E9%87%91%E4%BB%B7&pn=20&oq=%E4%BB%8A%E5%A4%A9%E7%9A%84%E9%87%91%E4%BB%B7&ie=utf-8&usm=6&rsv_pq=88d283f900136178&rsv_t=cd9awkn9Hx4KtO%2FbPn5LoD5bBBd%2FQfzNNIIQbwcHQL%2F8WmYQb8ESd8MG29o&topic_pn=
+          - generic [ref=e1052]: "3"
+        - link "4" [ref=e1053] [cursor=pointer]:
+          - /url: /s?wd=%E4%BB%8A%E5%A4%A9%E7%9A%84%E9%87%91%E4%BB%B7&pn=30&oq=%E4%BB%8A%E5%A4%A9%E7%9A%84%E9%87%91%E4%BB%B7&ie=utf-8&usm=6&rsv_pq=88d283f900136178&rsv_t=cd9awkn9Hx4KtO%2FbPn5LoD5bBBd%2FQfzNNIIQbwcHQL%2F8WmYQb8ESd8MG29o&topic_pn=
+          - generic [ref=e1054]: "4"
+        - link "5" [ref=e1055] [cursor=pointer]:
+          - /url: /s?wd=%E4%BB%8A%E5%A4%A9%E7%9A%84%E9%87%91%E4%BB%B7&pn=40&oq=%E4%BB%8A%E5%A4%A9%E7%9A%84%E9%87%91%E4%BB%B7&ie=utf-8&usm=6&rsv_pq=88d283f900136178&rsv_t=cd9awkn9Hx4KtO%2FbPn5LoD5bBBd%2FQfzNNIIQbwcHQL%2F8WmYQb8ESd8MG29o&topic_pn=
+          - generic [ref=e1056]: "5"
+        - link "6" [ref=e1057] [cursor=pointer]:
+          - /url: /s?wd=%E4%BB%8A%E5%A4%A9%E7%9A%84%E9%87%91%E4%BB%B7&pn=50&oq=%E4%BB%8A%E5%A4%A9%E7%9A%84%E9%87%91%E4%BB%B7&ie=utf-8&usm=6&rsv_pq=88d283f900136178&rsv_t=cd9awkn9Hx4KtO%2FbPn5LoD5bBBd%2FQfzNNIIQbwcHQL%2F8WmYQb8ESd8MG29o&topic_pn=
+          - generic [ref=e1058]: "6"
+        - link "7" [ref=e1059] [cursor=pointer]:
+          - /url: /s?wd=%E4%BB%8A%E5%A4%A9%E7%9A%84%E9%87%91%E4%BB%B7&pn=60&oq=%E4%BB%8A%E5%A4%A9%E7%9A%84%E9%87%91%E4%BB%B7&ie=utf-8&usm=6&rsv_pq=88d283f900136178&rsv_t=cd9awkn9Hx4KtO%2FbPn5LoD5bBBd%2FQfzNNIIQbwcHQL%2F8WmYQb8ESd8MG29o&topic_pn=
+          - generic [ref=e1060]: "7"
+        - link "8" [ref=e1061] [cursor=pointer]:
+          - /url: /s?wd=%E4%BB%8A%E5%A4%A9%E7%9A%84%E9%87%91%E4%BB%B7&pn=70&oq=%E4%BB%8A%E5%A4%A9%E7%9A%84%E9%87%91%E4%BB%B7&ie=utf-8&usm=6&rsv_pq=88d283f900136178&rsv_t=cd9awkn9Hx4KtO%2FbPn5LoD5bBBd%2FQfzNNIIQbwcHQL%2F8WmYQb8ESd8MG29o&topic_pn=
+          - generic [ref=e1062]: "8"
+        - link "9" [ref=e1063] [cursor=pointer]:
+          - /url: /s?wd=%E4%BB%8A%E5%A4%A9%E7%9A%84%E9%87%91%E4%BB%B7&pn=80&oq=%E4%BB%8A%E5%A4%A9%E7%9A%84%E9%87%91%E4%BB%B7&ie=utf-8&usm=6&rsv_pq=88d283f900136178&rsv_t=cd9awkn9Hx4KtO%2FbPn5LoD5bBBd%2FQfzNNIIQbwcHQL%2F8WmYQb8ESd8MG29o&topic_pn=
+          - generic [ref=e1064]: "9"
+        - link "10" [ref=e1065] [cursor=pointer]:
+          - /url: /s?wd=%E4%BB%8A%E5%A4%A9%E7%9A%84%E9%87%91%E4%BB%B7&pn=90&oq=%E4%BB%8A%E5%A4%A9%E7%9A%84%E9%87%91%E4%BB%B7&ie=utf-8&usm=6&rsv_pq=88d283f900136178&rsv_t=cd9awkn9Hx4KtO%2FbPn5LoD5bBBd%2FQfzNNIIQbwcHQL%2F8WmYQb8ESd8MG29o&topic_pn=
+          - generic [ref=e1066]: "10"
+        - link "下一页" [ref=e1067] [cursor=pointer]:
+          - /url: /s?wd=%E4%BB%8A%E5%A4%A9%E7%9A%84%E9%87%91%E4%BB%B7&pn=10&oq=%E4%BB%8A%E5%A4%A9%E7%9A%84%E9%87%91%E4%BB%B7&ie=utf-8&usm=6&rsv_pq=88d283f900136178&rsv_t=cd9awkn9Hx4KtO%2FbPn5LoD5bBBd%2FQfzNNIIQbwcHQL%2F8WmYQb8ESd8MG29o&topic_pn=&rsv_page=1
+          - img "下一页" [ref=e1068]
+      - generic [ref=e1071]:
+        - link "帮助" [ref=e1072] [cursor=pointer]:
+          - /url: https://help.baidu.com/question?prod_id=1
+        - link "举报" [ref=e1073] [cursor=pointer]:
+          - /url: https://help.baidu.com/jubao?source=search
+        - link "用户反馈" [ref=e1074] [cursor=pointer]:
+          - /url: javascript:;
+        - link "企业推广" [ref=e1075] [cursor=pointer]:
+          - /url: https://e.baidu.com/lp/search/?refer=1298

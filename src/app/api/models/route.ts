@@ -27,13 +27,13 @@ function dedupeModels(models: ModelOption[]) {
   })
 }
 
-async function fetchJsonCandidates(baseUrl: string, paths: string[], init?: RequestInit) {
+async function fetchJsonCandidates(baseUrl: string, paths: string[], init?: RequestInit, timeoutMs = 5000) {
   for (const routePath of paths) {
     const url = joinUrl(baseUrl, routePath)
     try {
       const res = await fetch(url, {
         ...init,
-        signal: AbortSignal.timeout(1000), // 再次缩短超时时间到 1秒
+        signal: AbortSignal.timeout(timeoutMs),
       })
       if (res.ok) return await res.json()
     } catch {
@@ -77,8 +77,8 @@ function toOllamaModels(payload: unknown) {
 
 async function discoverLocalModels(ollamaUrl: string, lmstudioUrl: string) {
   const [ollamaPayload, lmsPayload] = await Promise.all([
-    fetchJsonCandidates(ollamaUrl, ['/api/tags', '/v1/models']),
-    fetchJsonCandidates(lmstudioUrl, ['/v1/models', '/models']),
+    fetchJsonCandidates(ollamaUrl, ['/api/tags', '/v1/models'], undefined, 5000),
+    fetchJsonCandidates(lmstudioUrl, ['/v1/models', '/models'], undefined, 5000),
   ])
 
   const ollamaModels = toOllamaModels(ollamaPayload)
@@ -97,7 +97,8 @@ async function discoverApiModels(baseUrl: string, apiKey: string, provider: stri
       headers: {
         Authorization: `Bearer ${apiKey}`,
       },
-    }
+    },
+    10000
   )
 
   return toOpenAICompatibleModels(payload, provider, prefix, (id) => {
@@ -133,8 +134,8 @@ function fallbackModels(settings: {
 
   if (settings.minimaxKey) {
     models.push(
+      { id: 'minimax::MiniMax-M2.7', name: 'MiniMax-M2.7', provider: 'minimax' },
       { id: 'minimax::MiniMax-M2.5', name: 'MiniMax-M2.5', provider: 'minimax' },
-      { id: 'minimax::abab7-chat', name: 'abab7-chat', provider: 'minimax' }
     )
   }
 

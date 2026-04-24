@@ -19,6 +19,8 @@ export async function GET() {
           searchKey: "",
           embeddingModel: "text-embedding-3-small",
           hybridSearchEnabled: true,
+          mcpEnabled: true,
+          mcpAutoLoad: false,
           theme: "zinc",
         }
       })
@@ -58,6 +60,8 @@ export async function POST(req: Request) {
         apiMaxTokens: data.apiMaxTokens,
         apiContextSize: data.apiContextSize,
         theme: data.theme,
+        mcpEnabled: data.mcpEnabled,
+        mcpAutoLoad: data.mcpAutoLoad,
       } as any,
       create: {
         id: "default",
@@ -83,6 +87,8 @@ export async function POST(req: Request) {
         apiMaxTokens: data.apiMaxTokens ?? 2048,
         apiContextSize: data.apiContextSize ?? 8192,
         theme: data.theme || "zinc",
+        mcpEnabled: data.mcpEnabled ?? true,
+        mcpAutoLoad: data.mcpAutoLoad ?? false,
       } as any,
     })
     return NextResponse.json(settings)

@@ -58,9 +58,9 @@ export function ChatPanel({
   }, [])
 
   const refreshModels = () => {
-    fetch('/api/models')
+    fetch('/api/models?refresh=true')
       .then(res => res.json())
-      .then(data => { 
+      .then(data => {
         const fetchedModels = Array.isArray(data) ? data : (data.models || [])
         setModels(fetchedModels)
         if (fetchedModels.length > 0 && !fetchedModels.find((m: { id: string }) => m.id === selectedModel)) {

@@ -10,13 +10,14 @@ import 'katex/dist/katex.min.css'
 import {
   ChevronDown, ChevronRight, Brain, Copy, Check, FileCode2,
   Play, Code, Download, Maximize2, Minimize2, WrapText,
-  Terminal, Globe, Braces, FileJson, Hash, FileDown
+  Terminal, Globe, Braces, FileJson, Hash, FileDown, Presentation
 } from 'lucide-react'
 import { asBlob } from 'html-docx-js-typescript'
 import { saveAs } from 'file-saver'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism'
 import { MermaidRenderer } from './mermaid-renderer'
+import { PptRenderer } from './ppt-renderer'
 
 interface MessageRendererProps {
   content: string
@@ -44,8 +45,9 @@ const LANG_META: Record<string, { icon: React.ReactNode; color: string; ext: str
   sql:        { icon: <FileCode2 className="size-3.5" />, color: '#E38C00', ext: 'sql'  },
   svg:        { icon: <Globe className="size-3.5" />,     color: '#FFB13B', ext: 'svg'  },
   mermaid:    { icon: <Code className="size-3.5" />,      color: '#00C853', ext: 'mmd'  },
+  ppt:        { icon: <Presentation className="size-3.5" />, color: '#EA580C', ext: 'json' },
 }
-const PREVIEWABLE = ['html', 'svg', 'mermaid']
+const PREVIEWABLE = ['html', 'svg', 'mermaid', 'ppt']
 
 // 标准化语言名到 Prism
 function normLang(lang: string) {
@@ -117,14 +119,14 @@ const lineNumberStyle: React.CSSProperties = {
 }
 
 function CodeBlock({ children, className }: { children: string; className?: string }) {
-  const language   = className?.replace('language-', '') ?? 'text'
+  const language = className?.split(' ').find(c => c.startsWith('language-'))?.replace('language-', '') ?? 'text'
   const meta       = LANG_META[language]
   const isWebCode  = PREVIEWABLE.includes(language)
   const lineCount  = children.split('\n').length
   const longCode   = lineCount > 25
 
   const [copied,      setCopied]      = useState(false)
-  const [viewMode,    setViewMode]    = useState<'code' | 'preview'>(language === 'mermaid' ? 'preview' : 'code')
+  const [viewMode,    setViewMode]    = useState<'code' | 'preview'>(['mermaid', 'ppt'].includes(language) ? 'preview' : 'code')
   const [collapsed,   setCollapsed]   = useState(false)
   const [wordWrap,    setWordWrap]    = useState(false)
   const [fullscreen,  setFullscreen]  = useState(false)
@@ -262,6 +264,8 @@ function CodeBlock({ children, className }: { children: string; className?: stri
           >
             {language === 'mermaid' ? (
               <MermaidRenderer code={children} />
+            ) : language === 'ppt' ? (
+              <PptRenderer data={children} />
             ) : (
               <iframe
                 srcDoc={children}
@@ -271,6 +275,9 @@ function CodeBlock({ children, className }: { children: string; className?: stri
               />
             )}
           </div>
+        ) : language === 'ppt' ? (
+           /* For PPT, we prefer showing the preview directly by default */
+           <PptRenderer data={children} />
         ) : (
           /* 代码高亮区 */
           <div

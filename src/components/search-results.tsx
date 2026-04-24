@@ -17,7 +17,7 @@ export function SearchResults({ citations }: { citations: Citation[] }) {
   const favicons = citations.slice(0, 5).map(c => {
     try {
       const url = new URL(c.url)
-      return `https://www.google.com/s2/favicons?domain=${url.hostname}&sz=32`
+      return `https://icon.horse/icon/${url.hostname}`
     } catch {
       return null
     }

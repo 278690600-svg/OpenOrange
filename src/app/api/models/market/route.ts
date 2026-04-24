@@ -9,7 +9,12 @@ export async function GET(req: Request) {
   const hfUrl = `https://huggingface.co/api/models?search=${encodeURIComponent(query + ' gguf')}&sort=downloads&direction=-1&limit=20&full=true`
   
   try {
-    const response = await fetch(hfUrl)
+    const response = await fetch(hfUrl, {
+      signal: AbortSignal.timeout(15000),
+      headers: {
+        'User-Agent': 'ClosedUI/1.0',
+      },
+    })
     if (!response.ok) {
       throw new Error(`HF API error: ${response.statusText}`)
     }
