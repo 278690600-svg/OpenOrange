@@ -6,9 +6,9 @@ type SearchResult = { title: string; snippet: string; url: string }
 /**
  * Bing search — works in China, no API key needed.
  */
-async function searchBing(query: string): Promise<SearchResult[]> {
+async function searchBing(query: string, count: number = 8, first: number = 0): Promise<SearchResult[]> {
   try {
-    const url = `https://cn.bing.com/search?q=${encodeURIComponent(query)}&count=8`
+    const url = `https://cn.bing.com/search?q=${encodeURIComponent(query)}&count=${count}&first=${first}`
     const res = await fetch(url, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
@@ -27,7 +27,7 @@ async function searchBing(query: string): Promise<SearchResult[]> {
 
     // Bing results structure: <h2><a href="URL">Title</a></h2><div class="b_caption"><p>Snippet</p></div>
     const blocks = html.split(/class="b_algo"/)
-    for (let i = 1; i < blocks.length && results.length < 8; i++) {
+    for (let i = 1; i < blocks.length && results.length < count; i++) {
       const block = blocks[i]
 
       // Extract title and URL from <h2><a href="...">Title</a></h2>
@@ -219,8 +219,35 @@ async function searchSerpApi(query: string, apiKey: string): Promise<SearchResul
   }))
 }
 
-async function searchWithFallback(query: string, engine: string, searchKey: string): Promise<{ results: SearchResult[]; engine: string }> {
-  console.log(`[Search] Trying engine: ${engine}`)
+async function searchWithFallback(query: string, engine: string, searchKey: string, deep: boolean = false): Promise<{ results: SearchResult[]; engine: string }> {
+  console.log(`[Search] Trying engine: ${engine}${deep ? ' (DEEP MODE)' : ''}`)
+
+  if (deep) {
+    console.log('[Search] Deep research: fetching massive results concurrently...')
+    const promises: Promise<SearchResult[]>[] = []
+    
+    // Concurrently fetch DuckDuckGo and Wikipedia
+    promises.push(searchDuckDuckGo(query))
+    promises.push(searchWikipedia(query))
+    promises.push(searchWikipediaZh(query))
+    
+    // Fetch multiple pages of Bing
+    promises.push(searchBing(query, 50, 0))
+    promises.push(searchBing(query, 50, 50)) // Next 50
+    
+    const resultsArray = await Promise.allSettled(promises)
+    let combined: SearchResult[] = []
+    for (const res of resultsArray) {
+      if (res.status === 'fulfilled') {
+        combined = combined.concat(res.value)
+      }
+    }
+    
+    // Deduplicate by URL
+    const uniqueResults = Array.from(new Map(combined.map(r => [r.url, r])).values())
+    console.log(`[Search] Deep research collected ${uniqueResults.length} unique results.`)
+    return { results: uniqueResults, engine: 'deep-ensemble' }
+  }
 
   switch (engine) {
     case 'bing': {
@@ -285,16 +312,16 @@ async function searchWithFallback(query: string, engine: string, searchKey: stri
 
 export async function POST(req: Request) {
   try {
-    const { query } = await req.json()
+    const { query, deep } = await req.json()
     if (!query) return NextResponse.json({ error: 'Query required' }, { status: 400 })
 
     const settings = await prisma.settings.findUnique({ where: { id: 'default' } })
     const engine = (settings as any)?.searchEngine || 'bing'
     const searchKey = (settings as any)?.searchKey || ''
 
-    console.log(`[Search] query="${query}"`)
+    console.log(`[Search] query="${query}" deep=${!!deep}`)
 
-    const { results, engine: usedEngine } = await searchWithFallback(query, engine, searchKey)
+    const { results, engine: usedEngine } = await searchWithFallback(query, engine, searchKey, deep)
 
     console.log(`[Search] Got ${results.length} results from ${usedEngine}`)
     return NextResponse.json({ results, engine: usedEngine })

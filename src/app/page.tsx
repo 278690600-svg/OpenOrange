@@ -18,7 +18,7 @@ const SUGGESTIONS = [
 
 export default function Home() {
   const [selectedModel, setSelectedModel] = useState("ollama::llama3")
-  const [webSearch, setWebSearch] = useState<boolean | 'auto'>('auto')
+  const [webSearch, setWebSearch] = useState<boolean | 'auto' | 'deep'>('auto')
   const [deepThink, setDeepThink] = useState(false)
   const [kbId, setKbId] = useState<string | null>(null)
   const [inputValue, setInputValue] = useState("")

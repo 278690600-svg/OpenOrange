@@ -55,7 +55,7 @@ function ActiveChat({ initialMessages, chatId, selectedModel, setSelectedModel }
   selectedModel: string
   setSelectedModel: (m: string) => void
 }) {
-  const [webSearch, setWebSearch] = useState<boolean | 'auto'>('auto')
+  const [webSearch, setWebSearch] = useState<boolean | 'auto' | 'deep'>('auto')
   const [deepThink, setDeepThink] = useState(false)
   const [kbId, setKbId] = useState<string | null>(null)
   const [inputValue, setInputValue] = useState("")

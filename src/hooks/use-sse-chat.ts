@@ -121,7 +121,7 @@ export function useSSEChat() {
     options: {
       model: string
       chatId: string | null
-      webSearch: boolean | 'auto'
+      webSearch: boolean | 'auto' | 'deep'
       deepThink: boolean
       kbId?: string | null
       files?: any[]
@@ -231,7 +231,7 @@ export function useSSEChat() {
 
                 case 'status': {
                   const statusEvt = data as StatusEvent
-                  if (statusEvt.type === 'search' || statusEvt.type === 'mcp') {
+                  if (statusEvt.type === 'search' || statusEvt.type === 'mcp' || statusEvt.type === 'model_load') {
                     accSearchSteps = [...accSearchSteps, statusEvt]
                     setCurrentSearch([...accSearchSteps])
                     setMessages(prev => prev.map(m =>

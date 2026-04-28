@@ -15,25 +15,11 @@ async function getLlamaInstance(isGemma4 = false) {
   if (!llamaInstance) {
     const { getLlama } = await import(/* webpackIgnore: true */ /* turbopackIgnore: true */ 'node-llama-cpp')
     
-    if (isGemma4) {
-      console.log('[Llama] Gemma 4 detected. Attempting to load with latest source-based engine...')
-      // For Gemma 4, we might need the latest llama.cpp master fixes.
-      // If the prebuilt binary fails, node-llama-cpp will automatically attempt to compile
-      // from the source we just downloaded.
-      llamaIsCompiling = true 
-      llamaInstance = await getLlama()
-      llamaIsCompiling = false
-    } else {
-      console.log('[Llama] Loading engine (using official prebuilt binaries)...')
-      // Try to use official prebuilt first for standard models to save time
-      llamaInstance = await getLlama().catch(async () => {
-        console.warn('[Llama] Prebuilt binary failed, falling back to source compilation...')
-        llamaIsCompiling = true
-        const instance = await getLlama()
-        llamaIsCompiling = false
-        return instance
-      })
-    }
+    console.log('[Llama] Loading engine (strictly using prebuilt binaries only)...')
+    // We set gpu: 'auto' to automatically leverage CUDA/Vulkan if available.
+    // 'build: never' prevents node-llama-cpp from attempting to compile local variants
+    // if the ideal GPU environment is missing, allowing a graceful fallback to the prebuilt CPU driver.
+    llamaInstance = await getLlama({ gpu: 'auto', build: 'never' })
   }
   return llamaInstance
 }
@@ -70,22 +56,9 @@ async function handleLocalGgufChat({
   let llama: any, model: any, context: any, session: any
 
   try {
-    // Check if we need to compile llama.cpp first
-    const pkg = 'node-llama-cpp'
-    const llamaModule = await import(/* webpackIgnore: true */ pkg)
-
-    if (!llamaInstance) {
-      const isFirstTime = !llamaIsCompiling
-      if (isFirstTime) {
-        await onStatus({ 
-          type: 'model_load', 
-          stage: 'compiling', 
-          message: '首次初始化本地推理引擎（仅需一次，后续启动将跳过此步骤）...', 
-          progress: 0 
-        })
-      }
-      console.log('[Local GGUF] Initializing llama engine...')
-    }
+    // Immediate feedback that we are starting the local engine
+    await onStatus({ type: 'model_load', stage: 'compiling', message: '正在启动本地推理引擎...', progress: 0, modelName: fileName })
+    
     const isGemma4 = fileName.toLowerCase().includes('gemma-4')
     llama = await getLlamaInstance(isGemma4)
 
@@ -222,21 +195,27 @@ The system will automatically render it as a PREMIUM interactive slide deck.
    - \`blue\`: Corporate, professional, institutional.
    - \`green\`: Growth, environment, health.
    - \`rose\`: Creative, luxury, design.
+4. **Styles**: Choose a design style:
+   - \`pencil\`: Hand-drawn, sketch style, best for creative or brainstorming.
+   - \`gradient\`: Modern translucent glassmorphism with colorful gradients.
+   - \`brutalism\`: High-contrast, sharp, bold and black outlines.
+   - \`modern\`: Standard corporate and academic layout.
 
 ## JSON Schema:
 \`\`\`ppt
 {
   "title": "Main Presentation Title",
   "theme": "orange", // zinc, orange, blue, green, rose
+  "style": "modern", // Choose one: modern, pencil, gradient, brutalism, cyberpunk, notion, retro, bauhaus, terminal, academic
   "slides": [
     {
-      "title": "Slide Title",
-      "subtitle": "Optional subtitle (best for title slides)",
-      "layout": "bullet", // "title", "bullet", "two_column", "hero"
-      "content": ["Point A", "Point B"], // Use for bullet/hero layouts
-      "leftContent": ["..."], // Use only for two_column
-      "rightContent": ["..."], // Use only for two_column
-      "notes": "Speaker notes"
+       "title": "Slide Title",
+       "subtitle": "Subtitle or context text",
+       "layout": "bullet", // "title" (cover), "section" (break), "kpi" (huge numbers), "quote" (impact), "three_column" (3 pillars), "two_column", "hero", "bullet"
+       "content": ["Point A", "Point B"], // Use for bullet/hero/three_column/kpi/quote layouts
+       "leftContent": ["..."], // Use only for two_column
+       "rightContent": ["..."], // Use only for two_column
+       "notes": "Speaker notes"
     }
   ]
 }
@@ -645,7 +624,8 @@ export async function POST(req: Request) {
         // 2. Web Search
         let searchQuery = originalQuery
 
-        const forceSearch = webSearch === true
+        const deepSearch = webSearch === 'deep'
+        const forceSearch = webSearch === true || deepSearch
         const autoSearch = webSearch === 'auto' || webSearch === undefined
 
         let isSearchNeeded = forceSearch
@@ -702,7 +682,7 @@ Search query:`
             const searchRes = await fetch(new URL('/api/search', baseUrl), {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ query: searchQuery }),
+              body: JSON.stringify({ query: searchQuery, deep: deepSearch }),
             })
             const searchData = await searchRes.json()
             const rawResults = searchData.results || []
@@ -715,9 +695,10 @@ Search query:`
             }))
 
             // 3. Crawl top results
-            const topResults = rawResults.slice(0, 3)
+            const numToCrawl = deepSearch ? 15 : 3
+            const topResults = rawResults.slice(0, numToCrawl)
             if (topResults.length > 0) {
-              await write(sseEvent('status', { type: 'search', stage: 'reading', message: `正在阅读 ${topResults.length} 个网页...` }))
+              await write(sseEvent('status', { type: 'search', stage: 'reading', message: `正在深度阅读 ${topResults.length} 个核心网页...` }))
 
               const crawledContents = await Promise.all(
                 topResults.map(async (r: SearchResult, i: number) => {
@@ -748,6 +729,19 @@ Search query:`
                 .map((r, i) => `SOURCE [${i + 1}]:\nTitle: ${r.title}\nContent: ${r.snippet}\nURL: ${r.url}`)
                 .join('\n\n---\n\n')
 
+              const baseInstruction = deepSearch
+                ? `1. 你正在执行一项"深度研究 (Deep Research)"任务。用户期望一份极具深度、结构严谨的详尽研究报告。
+2. 你必须结合这些大量的网页搜索结果，撰写一份至少 1000 字（如果用户明确要求甚至可以达到 10000 字）的高手级报告或论文。
+3. 请使用清晰的标题、子标题、Markdown 格式来组织内容（比如：引言、核心分析、不同观点、背景、结论等）。
+4. 绝不要仅仅是对检索结果进行简单罗列，必须对信息进行融会贯通、数据对比与逻辑推演。
+5. 当你引用任何事实、数据或观点时，必须精准地尾随引用标注（例如 [1], [2] 等，对照上述的数据源SOURCE编号）。
+6. 用用户的语言回复，尽量提供极致的细节和有洞见的分析，如果搜索结果不够支撑长篇大论，请尽你所能去深度推理或告知信息的边界。`
+                : `1. **Prioritize the provided results** as the primary source of truth for recent events or specific details.
+2. **Synthesize and integrate** the information into a comprehensive answer. Do not just list the results.
+3. **Cite your sources** using the numbered format [1], [2], etc., corresponding to the SOURCE numbers above. Place citations immediately after the relevant information.
+4. If the search results are insufficient or irrelevant, acknowledge it, but still try to use the most relevant parts.
+5. **Output Language**: Respond in the language of the user's query (usually Chinese).`
+
               systemInjection = `
 # WEB SEARCH CONTEXT
 The user has requested a web search. Below are the most relevant and up-to-date search results from the internet.
@@ -756,12 +750,8 @@ The user has requested a web search. Below are the most relevant and up-to-date 
 ${contextBlock}
 
 ## INSTRUCTIONS:
-1. **Prioritize the provided results** as the primary source of truth for recent events or specific details.
-2. **Synthesize and integrate** the information into a comprehensive answer. Do not just list the results.
-3. **Cite your sources** using the numbered format [1], [2], etc., corresponding to the SOURCE numbers above. Place citations immediately after the relevant information.
-4. **Current date** is ${new Date().toISOString().split('T')[0]}.
-5. If the search results are insufficient or irrelevant, acknowledge it, but still try to use the most relevant parts.
-6. **Output Language**: Respond in the language of the user's query (usually Chinese).
+${baseInstruction}
+Current date is ${new Date().toISOString().split('T')[0]}.
 `.trim()
 
               // Send citations/search results to the client
@@ -811,8 +801,6 @@ ${contextBlock}
         const systemParts: string[] = []
         systemParts.push(PPT_SYSTEM_PROMPT)
         if (deepThink) systemParts.push(DEEP_THINK_SYSTEM_PROMPT)
-        if (kbInjection) systemParts.push(kbInjection)
-        if (systemInjection) systemParts.push(systemInjection)
         
         // Add MCP tool usage instructions if tools are available
         if (Object.keys(mcpTools).length > 0) {
@@ -833,11 +821,15 @@ You have access to the following MCP tools: ${toolNames}
         // --- Persist user message to DB ---
         let activeChatId = chatId
         const lastMsg = messages?.length > 0 ? messages[messages.length - 1] : null
+        
+        // actualContent is exactly what the user typed
         let actualContent = extractContent(lastMsg) || ''
         
-        // Enrich content with file text if available
+        // dbContent includes file attachments for the UI to represent,
+        // but actively excludes ephemeral search results to prevent DB bloat.
+        let dbContent = actualContent
         if (fileInjection.trim()) {
-          actualContent = `${fileInjection}\n\nUSER QUESTION:\n${actualContent}`
+          dbContent = `${fileInjection}\n\nUSER QUESTION:\n${actualContent}`
         }
 
         if (!activeChatId) {
@@ -845,13 +837,13 @@ You have access to the following MCP tools: ${toolNames}
           const newChat = await prisma.chat.create({
             data: {
               title: firstTitle,
-              messages: { create: { role: 'user', content: actualContent } },
+              messages: { create: { role: 'user', content: dbContent } },
             },
           })
           activeChatId = newChat.id
         } else {
           await prisma.message.create({
-            data: { chatId: activeChatId, role: 'user', content: actualContent },
+            data: { chatId: activeChatId, role: 'user', content: dbContent },
           })
         }
 
@@ -862,12 +854,25 @@ You have access to the following MCP tools: ${toolNames}
           await write(sseEvent('status', { type: 'thinking', stage: 'start', message: '正在深度思考...' }))
         }
 
+        // --- Build dynamic turn injection (Search, KB, Files) ---
+        // This is sent to the LLM per-turn, bypassing the static systemPrompt limitation.
+        const turnParts: string[] = []
+        if (kbInjection) turnParts.push(kbInjection)
+        if (systemInjection) turnParts.push(systemInjection)
+        if (fileInjection) turnParts.push(fileInjection)
+        
+        const turnInjectionStr = turnParts.join('\n\n---\n\n')
+        let fullyEnrichedContent = actualContent
+        if (turnInjectionStr.trim()) {
+          fullyEnrichedContent = `${turnInjectionStr}\n\nUSER QUESTION:\n${actualContent}`
+        }
+
         // --- Build core messages for the model (AI SDK multimodal format) ---
         const coreMessages = (messages || []).map((m: any, idx: number) => {
           const role = m.role || 'user'
           
-          // Use enriched content for the last message
-          const text = (idx === messages.length - 1 && role === 'user') ? actualContent : extractContent(m)
+          // Use fully enriched context for the LAST user message
+          const text = (idx === messages.length - 1 && role === 'user') ? fullyEnrichedContent : extractContent(m)
 
           // Attach images back to the LAST user message
           if (idx === messages.length - 1 && role === 'user' && imageFiles.length > 0) {

@@ -24,8 +24,8 @@ interface ChatPanelProps {
   stop: () => void;
   selectedModel: string;
   setSelectedModel: (m: string) => void;
-  webSearch: boolean | 'auto';
-  setWebSearch: (v: boolean | 'auto') => void;
+  webSearch: boolean | 'auto' | 'deep';
+  setWebSearch: (v: boolean | 'auto' | 'deep') => void;
   deepThink: boolean;
   setDeepThink: (v: boolean) => void;
   kbId?: string | null;
@@ -182,25 +182,28 @@ export function ChatPanel({
           )}
         </div>
 
-        {/* Web Search Toggle (Three-state: Auto, On, Off) */}
+        {/* Web Search Toggle (Four-state: Auto, Deep, On, Off) */}
         <button
           type="button"
           onClick={() => {
-            if (webSearch === 'auto') setWebSearch(true)
+            if (webSearch === 'auto') setWebSearch('deep')
+            else if (webSearch === 'deep') setWebSearch(true)
             else if (webSearch === true) setWebSearch(false)
             else setWebSearch('auto')
           }}
-          title={t("Search Mode: Auto (AI Decides), On (Always), Off (Never)")}
+          title={t("Search Mode: Auto (AI Decides), Deep (Multiple Engines & Report), On (Always), Off (Never)")}
           className={`flex items-center gap-1.5 h-8 px-3 rounded-full text-xs border transition-all ${
             webSearch === 'auto'
               ? 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800'
+              : webSearch === 'deep'
+              ? 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-900/20 dark:text-purple-400 dark:border-purple-800 font-bold'
               : webSearch === true
               ? 'bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-900/20 dark:text-sky-300 dark:border-sky-800'
               : 'border-border text-muted-foreground'
           }`}
         >
           <Search className="size-3" />
-          <span>{t("Search")}: {webSearch === 'auto' ? t('Auto') : webSearch ? t('On') : t('Off')}</span>
+          <span>{t("Search")}: {webSearch === 'auto' ? t('Auto') : webSearch === 'deep' ? 'Deep' : webSearch ? t('On') : t('Off')}</span>
         </button>
 
         {/* KB Selection */}
@@ -373,7 +376,7 @@ export function ChatPanel({
       </div>
 
       <p className="text-center text-[10px] text-muted-foreground mt-2 flex items-center justify-center gap-1.5 opacity-70">
-        {webSearch !== false && <><Search className="size-2.5" />Search {webSearch === 'auto' ? 'Auto' : 'On'} · </>}
+        {webSearch !== false && <><Search className="size-2.5" />Search {webSearch === 'auto' ? 'Auto' : webSearch === 'deep' ? 'Deep' : 'On'} · </>}
         {deepThink && <><Brain className="size-2.5" />Deep think On · </>}
         AI can make mistakes. Verify important information.
       </p>
