@@ -372,6 +372,13 @@ export async function* indexKnowledgeBaseStream(
   try {
     const config = safeJsonParse<JsonObject>(kb.config, {})
     const rootPath = path.resolve(String(config.rootPath || kb.path || ''))
+    
+    // SAFETY GUARD: If path resolves to current working directory but sourceType is not 'local',
+    // it likely means a database or other source was incorrectly routed here.
+    if (rootPath === path.resolve('.') && kb.sourceType !== 'local') {
+      yield { stage: 'error', error: `Attempted to index project root for non-local source (${kb.sourceType})` }
+      return
+    }
 
     // Phase 1: scan
     yield { stage: 'scan', total: 0 }
@@ -526,7 +533,7 @@ export async function* indexDatabaseSourceStream(
 
   try {
     const config = safeJsonParse<JsonObject>(kb.config, {})
-    const dbType = String(config.dbType || 'sqlite')
+    const dbType = String(config.type || 'sqlite')
     const selectedTables = Array.isArray(config.tables) ? (config.tables as string[]) : []
 
     yield { stage: 'connect', total: 0 }
@@ -583,12 +590,14 @@ export async function* indexDatabaseSourceStream(
     const allDocs: KnowledgeDocument[] = []
     yield { stage: 'fetch_table', total: tables.length, done: 0 }
 
+    const quote = (name: string) => dbType === 'mysql' ? `\`${name}\`` : `"${name}"`
+
     for (let ti = 0; ti < tables.length; ti++) {
       const tableName = tables[ti]
       yield { stage: 'table', table: tableName, done: ti + 1, total: tables.length }
       try {
         const customSql = config.customSql ? String(config.customSql) : null
-        const sql = customSql ? customSql.replace(/\{table\}/g, `"${tableName}"`) : `SELECT * FROM "${tableName}" LIMIT 5000`
+        const sql = customSql ? customSql.replace(/\{table\}/g, quote(tableName)) : `SELECT * FROM ${quote(tableName)} LIMIT 5000`
         const rows = await queryFn(sql)
         if (rows.length > 0) {
           const headers = Object.keys(rows[0])
@@ -653,11 +662,21 @@ export async function* indexDatabaseSourceStream(
 // ── legacy compat: used by createKnowledgeBase ─────────────────────────────────
 
 export async function indexKnowledgeBase(knowledgeBaseId: string) {
-  // Drain the generator and return stats
+  const kb = await prisma.knowledgeBase.findUnique({ where: { id: knowledgeBaseId } })
+  if (!kb) return
+
+  // Dispatch to the correct streaming indexer based on sourceType
+  const generator = kb.sourceType === 'database'
+    ? indexDatabaseSourceStream(knowledgeBaseId)
+    : indexKnowledgeBaseStream(knowledgeBaseId)
+
   let lastStats: IndexProgressEvent['stats']
-  for await (const event of indexKnowledgeBaseStream(knowledgeBaseId)) {
+  for await (const event of generator) {
     if (event.stage === 'done') lastStats = event.stats
-    if (event.stage === 'error') throw new Error(event.error)
+    if (event.stage === 'error') {
+      console.error(`[Knowledge] Indexing error for ${knowledgeBaseId}:`, event.error)
+      throw new Error(event.error)
+    }
   }
   return lastStats
 }
@@ -726,7 +745,7 @@ export async function createKnowledgeBase(input: {
   }
 
   if (sourceType === 'database') {
-    const dbType = String(config.dbType || '')
+    const dbType = String(config.type || '')
     if (!['mysql', 'postgresql', 'sqlite'].includes(dbType)) {
       throw new Error('Unsupported database type. Use mysql, postgresql, or sqlite.')
     }

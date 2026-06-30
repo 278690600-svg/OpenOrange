@@ -148,6 +148,13 @@ function fallbackModels(settings: {
       { id: 'openrouter::nvidia/nemotron-3-super-120b-a12b:free', name: 'Nemotron 3 Super 120B (Free)', provider: 'openrouter' }
     )
   }
+
+  if ((settings as any).nvidiaKey) {
+    models.push(
+      { id: 'nvidia::z-ai/glm-5.1', name: 'glm-5.1 (NVIDIA)', provider: 'nvidia' },
+      { id: 'nvidia::meta/llama-3.1-405b-instruct', name: 'llama-3.1-405b (NVIDIA)', provider: 'nvidia' },
+    )
+  }
   return models
 }
 
@@ -158,6 +165,7 @@ export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url)
     const refresh = searchParams.get('refresh') === 'true'
+    const showAll = searchParams.get('all') === 'true'
     
     const now = Date.now()
     if (!refresh && modelsCache && (now - modelsCache.timestamp < MODELS_CACHE_TTL)) {
@@ -176,6 +184,7 @@ export async function GET(req: Request) {
       discoverApiModels('https://api.deepseek.com', settings?.deepseekKey || '', 'deepseek', 'deepseek::'),
       discoverApiModels('https://api.minimaxi.com', settings?.minimaxKey || '', 'minimax', 'minimax::'),
       discoverApiModels('https://openrouter.ai/api', (settings as any)?.openrouterKey || '', 'openrouter', 'openrouter::'),
+      discoverApiModels('https://integrate.api.nvidia.com', (settings as any)?.nvidiaKey || '', 'nvidia', 'nvidia::'),
     ])
 
     const localGgufs = (settings as any)?.localGgufEnabled && results[0].status === 'fulfilled' ? results[0].value : []
@@ -184,6 +193,7 @@ export async function GET(req: Request) {
     const deepseekModels = results[3].status === 'fulfilled' ? results[3].value : []
     const minimaxModels = results[4].status === 'fulfilled' ? results[4].value : []
     const openrouterModels = results[5].status === 'fulfilled' ? results[5].value : []
+    const nvidiaModels = results[6].status === 'fulfilled' ? results[6].value : []
 
     let models = dedupeModels([
       ...localGgufs,
@@ -192,8 +202,22 @@ export async function GET(req: Request) {
       ...deepseekModels,
       ...minimaxModels,
       ...openrouterModels,
+      ...nvidiaModels,
       ...fallbackModels(settings || {}),
     ])
+
+    // Filter by enabledModels if not showing all
+    if (!showAll && settings?.enabledModels) {
+      try {
+        const enabledIds = JSON.parse(settings.enabledModels)
+        if (Array.isArray(enabledIds) && enabledIds.length > 0) {
+          const enabledSet = new Set(enabledIds)
+          models = models.filter(m => enabledSet.has(m.id))
+        }
+      } catch (e) {
+        console.error("Failed to parse enabledModels:", e)
+      }
+    }
 
     if (models.length === 0) {
       models = [{ id: 'ollama::llama3', name: 'llama3 (default)', provider: 'ollama' }]

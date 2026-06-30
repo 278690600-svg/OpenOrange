@@ -1,4 +1,5 @@
 import { streamText, generateText } from 'ai'
+import { v4 as uuidv4 } from 'uuid'
 import { createOpenAI } from '@ai-sdk/openai'
 import prisma from '@/lib/db'
 import { buildKnowledgeContext } from '@/lib/knowledge'
@@ -56,13 +57,17 @@ async function handleLocalGgufChat({
   let llama: any, model: any, context: any, session: any
 
   try {
-    // Immediate feedback that we are starting the local engine
-    await onStatus({ type: 'model_load', stage: 'compiling', message: '正在启动本地推理引擎...', progress: 0, modelName: fileName })
-    
+    const isSmallModel = fileName.toLowerCase().includes('1b') || fileName.toLowerCase().includes('0.5b') || fileName.toLowerCase().includes('3b')
+    const finalSystemPrompt = isSmallModel 
+      ? 'You are a helpful AI assistant. Answer concisely.' 
+      : systemPrompt
+
     const isGemma4 = fileName.toLowerCase().includes('gemma-4')
     llama = await getLlamaInstance(isGemma4)
 
-    if (g.localGgufCache.modelPath !== modelPath) {
+    if (g.localGgufCache.modelPath !== modelPath || g.localGgufCache.systemPrompt !== finalSystemPrompt) {
+      // ... loading logic ...
+      await onStatus({ type: 'model_load', stage: 'compiling', message: '正在启动本地推理引擎...', progress: 0, modelName: fileName })
       // Dispose old model if switching
       if (g.localGgufCache.context) { try { await g.localGgufCache.context.dispose() } catch {} }
       if (g.localGgufCache.model) { try { await g.localGgufCache.model.dispose() } catch {} }
@@ -74,7 +79,6 @@ async function handleLocalGgufChat({
         modelPath,
         onLoadProgress: (progress: number) => {
           const pct = Math.round(progress * 100)
-          // Throttle: only send when changed by >=5%
           if (pct >= lastProgress + 5 || pct === 100) {
             lastProgress = pct
             onStatus({ type: 'model_load', stage: 'loading', message: `加载模型中 ${pct}%`, progress: pct, modelName: fileName }).catch(() => {})
@@ -84,31 +88,26 @@ async function handleLocalGgufChat({
 
       await onStatus({ type: 'model_load', stage: 'context', message: '正在初始化对话上下文...', progress: 100, modelName: fileName })
       
-      // Detect model family for proper chat template
       const fileNameLower = fileName.toLowerCase()
       const isGemma = fileNameLower.includes('gemma')
       const contextSize = settings?.localGgufContextSize || (isGemma ? 8192 : 4096)
-      
       context = await model.createContext({ contextSize })
 
       const { LlamaChatSession } = await import(/* webpackIgnore: true */ /* turbopackIgnore: true */ 'node-llama-cpp')
       session = new LlamaChatSession({
         contextSequence: context.getSequence(),
-        systemPrompt,
-        // Gemma 4 uses a specific chat template; node-llama-cpp auto-detects from GGUF metadata
-        // but we can hint to avoid issues
+        systemPrompt: finalSystemPrompt,
         ...(isGemma ? { autoDisposeSequence: false } : {})
       })
 
-      g.localGgufCache = { modelPath, model, context, session, isLoaded: true }
+      g.localGgufCache = { modelPath, model, context, session, isLoaded: true, systemPrompt: finalSystemPrompt }
       await onStatus({ type: 'model_load', stage: 'ready', message: `模型 ${fileName} 加载完成`, progress: 100, modelName: fileName })
     } else {
-      // Reuse cached model
+      // ... reuse logic ...
       model = g.localGgufCache.model
       context = g.localGgufCache.context
       session = g.localGgufCache.session
-      // Brief status to confirm reuse
-      await onStatus({ type: 'model_load', stage: 'ready', message: `使用已缓存模型: ${fileName}`, progress: 100, modelName: fileName })
+      await onStatus({ type: 'model_info', message: `状态: 模型已就绪 (${fileName})` })
     }
   } catch (error: any) {
     console.error('[Local GGUF] Initialization Error:', error)
@@ -134,44 +133,66 @@ async function handleLocalGgufChat({
     return
   }
 
-  // Convert history
-  const history = messages.slice(0, -1).map(m => ({
-    role: m.role === 'assistant' ? 'model' : m.role,
+  // Simplify system prompt for small models to avoid context overload and hallucinations
+  const isSmallModel = fileName.toLowerCase().includes('1b') || fileName.toLowerCase().includes('0.5b') || fileName.toLowerCase().includes('3b')
+  const finalSystemPrompt = isSmallModel 
+    ? 'You are a helpful AI assistant. Answer concisely.' 
+    : systemPrompt
+
+  // Convert history for matching
+  const isGemma = fileName.toLowerCase().includes('gemma')
+  const newHistory = messages.slice(0, -1).map(m => ({
+    role: m.role === 'assistant' ? (isGemma ? 'model' : 'assistant') : m.role,
     content: [typeof m.content === 'string' ? m.content : JSON.stringify(m.content)]
   }))
-  session.setChatHistory(history as any)
+
+  // More robust matching: only compare content and role
+  const existingHistory: any[] = session.getChatHistory()
+  let isMatch = false
+  
+  if (existingHistory.length > 0 && newHistory.length === existingHistory.length) {
+    isMatch = existingHistory.every((msg, i) => {
+      const newMsg = newHistory[i]
+      const oldContent = Array.isArray(msg.content) ? msg.content.join('') : String(msg.content)
+      const newContent = Array.isArray(newMsg.content) ? newMsg.content.join('') : String(newMsg.content)
+      return msg.role === newMsg.role && oldContent === newContent
+    })
+  } else if (existingHistory.length === 0 && newHistory.length === 0) {
+    isMatch = true
+  }
+
+  if (!isMatch) {
+    console.log('[Local GGUF] History changed or mismatch. Refreshing session...')
+    session.setChatHistory(newHistory as any)
+  }
 
   // Run the prompt
   try {
     const lastMsg = messages[messages.length - 1]
     const promptText = typeof lastMsg.content === 'string' ? lastMsg.content : JSON.stringify(lastMsg.content)
 
+    // For Gemma models, we ensure we use a temperature that doesn't cause nonsense
     await session.prompt(promptText, {
-      onToken: (tokens: any) => {
-        let text = ''
-        if (typeof tokens === 'string') {
-          text = tokens
-        } else if (model && typeof model.detokenize === 'function') {
-          text = model.detokenize(tokens)
-        } else if (llama && typeof llama.detokenize === 'function') {
-          text = llama.detokenize(tokens)
+      onToken: (token: any) => {
+        // Safe streaming segment
+        if (typeof token === 'string') {
+          if (token) onToken(token).catch(() => {})
         } else {
-          text = String(tokens)
+          try {
+            const text = model.detokenize(Array.isArray(token) ? token : [token])
+            if (text) onToken(text).catch(() => {})
+          } catch {}
         }
-        onToken(text).catch((e: any) => {
-          if (e?.name !== 'ResponseAborted' && !String(e).includes('ResponseAborted')) {
-            console.error('[Stream Error]', e)
-          }
-        })
       },
-      temperature: settings?.localGgufTemperature ?? 0.7,
-      topP: settings?.localGgufTopP ?? 0.95,
-      repeatPenalty: { penalty: settings?.localGgufRepeatPenalty ?? 1.1 },
-      maxTokens: settings?.localGgufMaxTokens ?? 1024
+      temperature: settings?.localGgufTemperature ?? (isSmallModel ? 0.2 : 0.7),
+      topP: settings?.localGgufTopP ?? 0.8,
+      topK: 40,
+      repeatPenalty: { penalty: 1.1 },
+      maxTokens: settings?.localGgufMaxTokens ?? 2048
     })
   } catch (error: any) {
     console.error('[Local GGUF] Inference Error:', error)
-    await onToken(`\n\n[推理发生异常: ${error?.message || '未知错误'}]\n\n`)
+    await onToken(`\n\n[推理发生异常: ${error?.message || '未知错误'}]\n\n`).catch(() => {})
   }
 }
 
@@ -183,44 +204,61 @@ const DEEP_THINK_SYSTEM_PROMPT = `You are a highly capable reasoning assistant. 
 
 const PPT_SYSTEM_PROMPT = `
 # PPT GENERATION MODE
-When the user asks to create a presentation or PPT, you MUST output a structured JSON block inside a \`ppt\` code block.
-The system will automatically render it as a PREMIUM interactive slide deck.
+When user asks for a PPT, you MUST output a structured JSON block inside a 'ppt' code block.
+Act as a **World-Class Visual Designer** (Swiss, Apple, Vogue editorial standards).
 
-## Technical Instructions:
-1. **Language**: Always respond in the language of the user's request (default: Chinese).
-2. **Conciseness**: Keep slide content punchy and professional.
-3. **Themes**: Choose a theme based on the topic:
-   - \`zinc\`: High-tech, minimal, clean.
-   - \`orange\`: Energetic, startup, marketing.
-   - \`blue\`: Corporate, professional, institutional.
-   - \`green\`: Growth, environment, health.
-   - \`rose\`: Creative, luxury, design.
-4. **Styles**: Choose a design style:
-   - \`pencil\`: Hand-drawn, sketch style, best for creative or brainstorming.
-   - \`gradient\`: Modern translucent glassmorphism with colorful gradients.
-   - \`brutalism\`: High-contrast, sharp, bold and black outlines.
-   - \`modern\`: Standard corporate and academic layout.
+## Design Intelligence Rules:
+1. **Background Mastery**: 
+   - Use \`background\` (hex) for solid colors.
+   - Use \`backgroundUrl\` for breathtaking full-bleed photographic backgrounds.
+   - Theme fallback colors: zinc(#18181b), orange(#ea580c), blue(#2563eb), green(#16a34a), rose(#e11d48).
+2. **Image Prompt Engineering**:
+   - \`imageUrl\` prompts MUST be detailed, English, and aesthetic.
+   - Keywords: "cinematic lighting", "minimalist architecture", "editorial photography", "vibrant gradient", "abstract 3D render".
+   - Use \`https://loremflickr.com/1280/720/[keywords]?random=[1-100]\`.
+3. **Typography Scaling**:
+   - Title: 60-80px. Subtitle: 24-32px. Body: 18-20px.
+4. **Layout Blueprints (MASTER MODE)**:
+   - **Swiss Grid**: { "layout": "custom", "blocks": [...] } with heavy usage of shapes (boxes) for structure.
+   - **Apple Dark**: Black background, white semi-bold text, centered with 3D abstract imagery.
+   - **Editorial Vogue**: Serif fonts (style:editorial), beige background, large images with tight margins.
 
 ## JSON Schema:
 \`\`\`ppt
 {
-  "title": "Main Presentation Title",
-  "theme": "orange", // zinc, orange, blue, green, rose
-  "style": "modern", // Choose one: modern, pencil, gradient, brutalism, cyberpunk, notion, retro, bauhaus, terminal, academic
+  "title": "Presentation Header",
+  "theme": "zinc", // zinc, orange, blue, green, rose
+  "style": "swiss", // swiss, apple, editorial, modern, pencil
+  "background": "#ffffff", // Global background
   "slides": [
     {
        "title": "Slide Title",
-       "subtitle": "Subtitle or context text",
-       "layout": "bullet", // "title" (cover), "section" (break), "kpi" (huge numbers), "quote" (impact), "three_column" (3 pillars), "two_column", "hero", "bullet"
-       "content": ["Point A", "Point B"], // Use for bullet/hero/three_column/kpi/quote layouts
-       "leftContent": ["..."], // Use only for two_column
-       "rightContent": ["..."], // Use only for two_column
-       "notes": "Speaker notes"
+       "layout": "custom", // Use "custom" for advanced blocks, or templates: "title", "hero", "image_left", "image_right", "two_column", "three_column", "kpi", "quote", "section", "bullet"
+       "background": "#f8f9fa",
+       "backgroundUrl": "...", // Full-slide background image
+       "blocks": [
+         { "type": "shape", "x": 0, "y": 0, "w": 400, "h": 720, "fill": "#18181b" },
+         { "type": "text", "x": 50, "y": 100, "w": 300, "h": 100, "content": "Bold Statement", "fontSize": 70, "color": "#ffffff", "fontWeight": "bold" },
+         { "type": "image", "x": 450, "y": 100, "w": 780, "h": 520, "imageUrl": "..." }
+       ],
+       "notes": "..."
     }
   ]
 }
 \`\`\`
-Only output the code block when requested. Mix different layouts for visual variety.
+CRITICAL: Use high-quality visual keywords for images. Avoid generic terms.
+
+## Interactive Interaction Rules:
+1. **Task Splitting**: Before or during a complex task (like generating a long PPT), output a \`task\` block to list milestones.
+   Example:
+   \`\`\`task
+   [x] 规划大纲内容
+   [ ] 生成核心幻灯片 (5/10)
+   [ ] 优化视觉样式
+   \`\`\`
+2. **Selectable Options**: When you need user input or offer next steps, use \`[option: Label | Value]\`.
+   Example: \`[option: 继续生成后续幻灯片 | 好的，请继续生成]\`
+   Example: \`[option: 修改主题颜色 | 帮我换一个深色主题]\`
 `
 
 /**
@@ -245,6 +283,7 @@ function cleanSSELine(line: string): string | null {
           choice.delta = {}
           if (c.delta.role) choice.delta.role = c.delta.role
           if (c.delta.content !== undefined) choice.delta.content = c.delta.content
+          if (c.delta.reasoning_content !== undefined) choice.delta.reasoning_content = c.delta.reasoning_content
           if (c.delta.tool_calls) choice.delta.tool_calls = c.delta.tool_calls
         }
         if (c.finish_reason) choice.finish_reason = c.finish_reason
@@ -265,6 +304,7 @@ async function getSmartProvider(modelId: string, settings: any) {
   const deepseekKey = settings?.deepseekKey || ''
   const minimaxKey = settings?.minimaxKey || ''
   const openrouterKey = (settings as any)?.openrouterKey || ''
+  const nvidiaKey = (settings as any)?.nvidiaKey || ''
 
   if (modelId.startsWith('openai::')) {
     return {
@@ -290,9 +330,11 @@ async function getSmartProvider(modelId: string, settings: any) {
       baseURL: 'https://api.minimaxi.com/v1',
       compatibility: 'compatible',
       fetch: async (url: string, options: any) => {
+        let isStreaming = false
         if (options && options.body && typeof options.body === 'string') {
           try {
             const parsed = JSON.parse(options.body)
+            isStreaming = !!parsed.stream
             if (parsed.input && !parsed.messages) {
               parsed.messages = []
               for (const item of (Array.isArray(parsed.input) ? parsed.input : [parsed.input])) {
@@ -310,8 +352,8 @@ async function getSmartProvider(modelId: string, settings: any) {
                 content: Array.isArray(m.content) ? m.content.map((c: any) => c.text || c.input_text || '').join('') : m.content
               }))
             }
-            if (resolvedId === 'MiniMax-M2.5') parsed.reasoning_split = true
-            parsed.stream = true
+            if (resolvedId.startsWith('MiniMax-M2.')) parsed.reasoning_split = true
+            // parsed.stream = true
             parsed.model = resolvedId
             console.log('[MiniMax] Final request keys:', Object.keys(parsed).join(', '))
             console.log('[MiniMax] Final has tools:', !!parsed.tools, 'Tool count:', parsed.tools?.length || 0)
@@ -326,7 +368,7 @@ async function getSmartProvider(modelId: string, settings: any) {
 
         const res = await fetch('https://api.minimaxi.com/v1/chat/completions', options)
 
-        if (!res.body) return res
+        if (!res.body || !isStreaming) return res
         const reader = res.body.getReader()
         const decoder = new TextDecoder()
         const encoder = new TextEncoder()
@@ -385,6 +427,36 @@ async function getSmartProvider(modelId: string, settings: any) {
     return {
       provider: openrouterProvider.chat,
       resolvedId: modelId.replace('openrouter::', ''),
+    }
+  }
+
+  if (modelId.startsWith('nvidia::')) {
+    const nvidiaBaseUrl = 'https://integrate.api.nvidia.com/v1'
+    return {
+      provider: (createOpenAI as any)({
+        apiKey: nvidiaKey,
+        baseURL: nvidiaBaseUrl,
+        compatibility: 'strict',
+        fetch: async (url: RequestInfo | URL, options?: RequestInit) => {
+          if (options && options.body && typeof options.body === 'string') {
+            try {
+              const parsed = JSON.parse(options.body)
+              // NVIDIA specific reasoning toggle
+              parsed.chat_template_kwargs = { "enable_thinking": true, "clear_thinking": false }
+              options.body = JSON.stringify(parsed)
+              console.log(`[NVIDIA] Requesting: ${url.toString()} | Model: ${parsed.model}`)
+            } catch (e) {}
+          } else {
+            console.log(`[NVIDIA] Requesting (no body): ${url.toString()}`)
+          }
+          const res = await fetch(url, options)
+          if (!res.ok) {
+            console.error(`[NVIDIA] Error ${res.status}: ${res.statusText} at ${url.toString()}`)
+          }
+          return res
+        }
+      }).chat,
+      resolvedId: modelId.replace('nvidia::', ''),
     }
   }
 
@@ -465,6 +537,25 @@ function obviouslyNoSearch(query: string): boolean {
 }
 
 /**
+ * Helper: retry generateText call with exponential backoff or simple delay
+ */
+async function retryGenerateText(params: Parameters<typeof generateText>[0], maxRetries = 2, delayMs = 1500) {
+  let lastError: any
+  for (let i = 0; i <= maxRetries; i++) {
+    try {
+      return await generateText(params)
+    } catch (e: any) {
+      lastError = e
+      if (i < maxRetries) {
+        console.warn(`[AI SDK] Retry ${i + 1}/${maxRetries} after error: ${e.message}`)
+        await new Promise(resolve => setTimeout(resolve, delayMs))
+      }
+    }
+  }
+  throw lastError
+}
+
+/**
  * Auto mode: decide if a web search is needed.
  * Logic:
  *  1. If obviously no search (pure code/math/creative) → skip
@@ -527,7 +618,7 @@ Query: ${q}
 
 Answer (YES or NO only):`
 
-    const { text } = await generateText({
+    const { text } = await retryGenerateText({
       model: provider(resolvedId),
       prompt,
       maxTokens: 3,
@@ -554,7 +645,7 @@ export async function POST(req: Request) {
     const body = await req.json()
     const reqUrl = new URL(req.url)
     const baseUrl = `${reqUrl.protocol}//${reqUrl.host}`
-    let { messages, model, chatId, deepThink, webSearch, kbId, files } = body
+    let { messages, model, chatId, deepThink, webSearch, kbId, files, promptId } = body
 
     const settings = await prisma.settings.findUnique({ where: { id: 'default' } })
     const defaultModel = settings?.defaultModel || 'ollama::llama3'
@@ -567,7 +658,7 @@ export async function POST(req: Request) {
 
     // Load MCP tools if enabled
     let mcpTools: Record<string, any> = {}
-    if (settings?.mcpEnabled) {
+    if ((settings as any)?.mcpEnabled) {
       try {
         console.log('[Chat] Loading MCP tools...')
         mcpTools = await mcpManager.getTools()
@@ -661,7 +752,7 @@ ${recentCtx}
 
 Search query:`
 
-            const { text: rewrittenQuery } = await generateText({
+            const { text: rewrittenQuery } = await retryGenerateText({
               model: provider(resolvedId),
               prompt: rewritePrompt,
               maxTokens: 40,
@@ -799,8 +890,30 @@ Current date is ${new Date().toISOString().split('T')[0]}.
 
         // --- Build System Prompt ---
         const systemParts: string[] = []
-        systemParts.push(PPT_SYSTEM_PROMPT)
+        
+        // 只在用户明确要求 PPT 或对话历史中已存在 PPT 内容时注入详细指令
+        const isPptTopic = /ppt|slide|presentation|幻灯片|演示文稿|方案汇报|课件/i.test(originalQuery || '') || 
+                          messages.some((m: any) => extractContent(m).includes('```ppt'))
+        
+        if (isPptTopic) {
+          systemParts.push(PPT_SYSTEM_PROMPT)
+        } else {
+          // 提供一个极简提醒，告知 AI 具备该能力，但不展开详细规则以减少干扰
+          systemParts.push('If the user specifically asks for a presentation or PPT, you have the capability to generate a structured JSON block inside a "ppt" code block.')
+        }
         if (deepThink) systemParts.push(DEEP_THINK_SYSTEM_PROMPT)
+
+        // 注入用户选择的角色预设
+        if (promptId) {
+          try {
+            const promptRes: any = await (prisma as any).$queryRawUnsafe(`SELECT content FROM "PromptTemplate" WHERE id = ?`, promptId)
+            if (promptRes && promptRes[0]) {
+              systemParts.push(promptRes[0].content)
+            }
+          } catch (e) {
+            console.error('[Chat API] Failed to fetch prompt template:', e)
+          }
+        }
         
         // Add MCP tool usage instructions if tools are available
         if (Object.keys(mcpTools).length > 0) {
@@ -832,16 +945,26 @@ You have access to the following MCP tools: ${toolNames}
           dbContent = `${fileInjection}\n\nUSER QUESTION:\n${actualContent}`
         }
 
-        if (!activeChatId) {
+        if (!activeChatId || activeChatId === 'new' || activeChatId.startsWith('new-')) {
+          activeChatId = uuidv4()
           const firstTitle = extractContent(lastMsg).substring(0, 60) || 'OpenOrangeAI'
-          const newChat = await prisma.chat.create({
-            data: {
-              title: firstTitle,
-              messages: { create: { role: 'user', content: dbContent } },
-            },
+          
+          // Use Raw SQL to insert new chat with selectedPromptId
+          await (prisma as any).$executeRawUnsafe(`
+            INSERT INTO "Chat" (id, title, "selectedPromptId", "createdAt", "updatedAt")
+            VALUES (?, ?, ?, datetime('now'), datetime('now'))
+          `, activeChatId, firstTitle, promptId || null)
+          
+          await prisma.message.create({
+            data: { chatId: activeChatId, role: 'user', content: dbContent },
           })
-          activeChatId = newChat.id
         } else {
+          try {
+            await (prisma as any).$executeRawUnsafe(`
+              UPDATE "Chat" SET "selectedPromptId" = ?, "updatedAt" = datetime('now') WHERE id = ?
+            `, promptId || null, activeChatId)
+          } catch (e) {}
+          
           await prisma.message.create({
             data: { chatId: activeChatId, role: 'user', content: dbContent },
           })
@@ -901,7 +1024,8 @@ You have access to the following MCP tools: ${toolNames}
         for (let i = coreMessages.length - 1; i >= 0; i--) {
           const msg = coreMessages[i]
           const msgContent = typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content)
-          const estimatedTokens = Math.ceil(msgContent.length / 3) 
+          // Better estimation for local models (roughly 4 chars per token for English/Code, more for Chinese)
+          const estimatedTokens = Math.ceil(msgContent.length / (msgContent.match(/[\u4e00-\u9fa5]/) ? 1.5 : 3.5)) 
           if (currentContextTokens + estimatedTokens > maxContextTokens && prunedMessages.length > 0) break
           currentContextTokens += estimatedTokens
           prunedMessages.unshift(msg)
@@ -996,22 +1120,48 @@ You have access to the following MCP tools: ${toolNames}
             }
           })
 
+          let lastPersistTime = Date.now()
+          let assistantMsgId: string | null = null
+
           for await (const chunk of result.textStream) {
             fullText += chunk
             // Send text chunks as SSE events
             await write(sseEvent('text', { content: chunk }))
+
+            // Periodically persist to DB (every 3 seconds or 500 chars)
+            if (activeChatId && (Date.now() - lastPersistTime > 3000 || fullText.length % 500 === 0)) {
+              if (!assistantMsgId) {
+                const msg = await prisma.message.create({
+                  data: { chatId: activeChatId, role: 'assistant', content: fullText },
+                })
+                assistantMsgId = msg.id
+              } else {
+                await prisma.message.update({
+                  where: { id: assistantMsgId },
+                  data: { content: fullText },
+                })
+              }
+              lastPersistTime = Date.now()
+            }
+          }
+
+          // Final persist
+          if (fullText && activeChatId) {
+            if (!assistantMsgId) {
+              await prisma.message.create({
+                data: { chatId: activeChatId, role: 'assistant', content: fullText },
+              })
+            } else {
+              await prisma.message.update({
+                where: { id: assistantMsgId },
+                data: { content: fullText },
+              })
+            }
           }
         }
 
         if (deepThink) {
           await write(sseEvent('status', { type: 'thinking', stage: 'done', message: '思考完成' }))
-        }
-
-        // Persist assistant message
-        if (fullText && activeChatId) {
-          await prisma.message.create({
-            data: { chatId: activeChatId, role: 'assistant', content: fullText },
-          })
         }
 
         await write(sseEvent('done', { textLength: fullText.length }))

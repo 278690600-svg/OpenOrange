@@ -37,24 +37,25 @@ function formatSize(bytes: number) { if (bytes < 1024) return `${bytes}B`; if (b
 // ── ScanProgress ──────────────────────────────────────────────────────────────
 
 function ScanProgress({ progress, onDone }: { progress: IndexProgress; onDone: () => void }) {
+  const { t } = useI18n()
   const pct = progress.total && progress.done !== undefined ? Math.round((progress.done / progress.total) * 100) : null
   const isDone = progress.stage === 'done'
   const isError = progress.stage === 'error'
 
-  useEffect(() => { if (isDone) { const t = setTimeout(onDone, 1200); return () => clearTimeout(t) } }, [isDone, onDone])
+  useEffect(() => { if (isDone) { const timer = setTimeout(onDone, 1200); return () => clearTimeout(timer) } }, [isDone, onDone])
 
   const stageLabel = () => {
     switch (progress.stage) {
-      case 'scan': return '🔍 扫描目录...'
-      case 'connect': return '🔌 连接数据库...'
-      case 'fetch_table': return '📋 获取表列表...'
-      case 'table': return `📊 导入表格: ${progress.table || ''}`
-      case 'file': return '📄 解析文件...'
-      case 'embed': return '🧠 生成向量索引...'
-      case 'save': return '💾 写入数据库...'
-      case 'done': return '✅ 索引完成！'
-      case 'error': return '❌ 出现错误'
-      default: return '处理中...'
+      case 'scan': return t('Scanning directory...')
+      case 'connect': return t('Connecting to database...')
+      case 'fetch_table': return t('Fetching tables...')
+      case 'table': return `${t('Importing table:')} ${progress.table || ''}`
+      case 'file': return t('Parsing file...')
+      case 'embed': return t('Generating vector index...')
+      case 'save': return t('Writing to database...')
+      case 'done': return t('Indexing complete!')
+      case 'error': return t('An error occurred')
+      default: return t('Processing...')
     }
   }
 
@@ -81,7 +82,7 @@ function ScanProgress({ progress, onDone }: { progress: IndexProgress; onDone: (
       )}
       {isDone && progress.stats && (
         <div className="flex items-center gap-3 text-xs text-green-700 dark:text-green-400">
-          <span>{progress.stats.documentCount} 个来源</span><span>·</span><span>{progress.stats.chunkCount} 个索引片段</span>
+          <span>{t('{{count}} documents', { count: progress.stats.documentCount || 0 })}</span><span>·</span><span>{t('{{count}} fragments', { count: progress.stats.chunkCount || 0 })}</span>
         </div>
       )}
       {isError && <p className="text-xs text-red-600 dark:text-red-400">{progress.error}</p>}
@@ -104,11 +105,11 @@ function FileBrowser({ onSelect }: { onSelect: (path: string) => void }) {
     try {
       const res = await fetch(`/api/files/browse?path=${encodeURIComponent(p)}&mode=dirs`)
       const data = await res.json()
-      if (!res.ok) { setError(data.error || '无法读取目录'); setLoading(false); return }
+      if (!res.ok) { setError(data.error || t('Failed to read directory')); setLoading(false); return }
       setEntries(data.entries || [])
       setCurrentPath(data.currentPath || p)
       setParentPath(data.parent || null)
-    } catch { setError('网络错误') }
+    } catch { setError(t('Network Error')) }
     setLoading(false)
   }, [])
 
@@ -118,7 +119,7 @@ function FileBrowser({ onSelect }: { onSelect: (path: string) => void }) {
     <div className="flex flex-col gap-2">
       {/* Breadcrumb */}
       <div className="flex items-center gap-1.5 flex-wrap text-xs text-zinc-500 min-h-[24px]">
-        <button onClick={() => browse('')} className="hover:text-indigo-500 transition-colors flex items-center gap-1"><HardDrive className="size-3" /> 根目录</button>
+        <button onClick={() => browse('')} className="hover:text-indigo-500 transition-colors flex items-center gap-1"><HardDrive className="size-3" /> {t('Root Directory')}</button>
         {currentPath && currentPath.split(/[/\\]/).filter(Boolean).map((seg, i, arr) => (
           <span key={i} className="flex items-center gap-1">
             <ChevronRight className="size-3" />
@@ -136,9 +137,9 @@ function FileBrowser({ onSelect }: { onSelect: (path: string) => void }) {
 
       {/* Dir list */}
       <div className="rounded-lg border border-zinc-200 dark:border-zinc-700 overflow-hidden max-h-52 overflow-y-auto app-scrollbar bg-white dark:bg-zinc-900">
-        {loading && <div className="flex items-center justify-center gap-2 py-8 text-zinc-400"><Loader2 className="size-4 animate-spin" /> 加载中...</div>}
+        {loading && <div className="flex items-center justify-center gap-2 py-8 text-zinc-400"><Loader2 className="size-4 animate-spin" /> {t('Loading conversations...')}</div>}
         {error && <div className="p-3 text-xs text-red-500">{error}</div>}
-        {!loading && !error && entries.length === 0 && <div className="py-8 text-center text-xs text-zinc-400">空目录</div>}
+        {!loading && !error && entries.length === 0 && <div className="py-8 text-center text-xs text-zinc-400">{t('Empty Directory')}</div>}
         {parentPath && !loading && (
           <button onClick={() => browse(parentPath)} className="w-full flex items-center gap-2 px-3 py-2 text-xs text-zinc-500 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors border-b border-zinc-100 dark:border-zinc-800">
             <ChevronLeft className="size-3" /> {t('Go to parent')}
@@ -189,7 +190,7 @@ function DatabaseForm({ onConfig }: { onConfig: (cfg: Record<string, unknown>) =
   const [fetchingTables, setFetchingTables] = useState(false)
 
   const getConfig = () => ({
-    dbType,
+    type: dbType,
     ...(dbType === 'sqlite' ? { filePath } : connMode === 'string' ? { connectionString: connStr } : { host, port: port ? Number(port) : undefined, user, password, database })
   })
 
@@ -267,7 +268,7 @@ function DatabaseForm({ onConfig }: { onConfig: (cfg: Record<string, unknown>) =
 
       {testResult && (
         <div className={`flex items-center gap-2 text-xs px-3 py-2 rounded-lg ${testResult.ok ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400' : 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400'}`}>
-          {testResult.ok ? t('Connection successful! {{version}}', { version: testResult.version ? `版本: ${testResult.version}` : '' }) : testResult.error}
+          {testResult.ok ? `${t('Connection successful!')}${testResult.version ? ` (${t('Version:')} ${testResult.version})` : ''}` : testResult.error}
         </div>
       )}
 
@@ -712,10 +713,10 @@ export function KnowledgeDialog({ open, onOpenChange }: { open: boolean; onOpenC
               <div className="size-16 rounded-2xl bg-gradient-to-br from-indigo-50 to-violet-50 dark:from-indigo-900/20 dark:to-violet-900/20 flex items-center justify-center mx-auto mb-4 border border-indigo-100 dark:border-indigo-800/40">
                 <Database className="size-8 text-indigo-400" />
               </div>
-              <p className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-1">还没有知识库</p>
-              <p className="text-xs text-zinc-500 mb-5">支持本地文件夹、直接上传文件、或接入数据库</p>
+              <p className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-1">{t("No knowledge bases yet")}</p>
+              <p className="text-xs text-zinc-500 mb-5">{t("Supports local folders, file uploads, or database access")}</p>
               <button onClick={() => setAdding(true)} className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 transition-colors shadow-sm">
-                <Plus className="size-4" /> 添加第一个知识库
+                <Plus className="size-4" /> {t("Add your first knowledge base")}
               </button>
             </div>
           )}

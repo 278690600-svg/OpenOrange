@@ -11,9 +11,16 @@ export async function GET() {
           ollamaUrl: "http://127.0.0.1:11434",
           lmstudioUrl: "http://127.0.0.1:1234",
           openaiKey: "",
-          minimaxKey: "",
+          anthropicKey: "",
+          googleKey: "",
           deepseekKey: "",
+          minimaxKey: "",
+          groqKey: "",
+          mistralKey: "",
+          zhipuKey: "",
+          lingyiKey: "",
           openrouterKey: "",
+          nvidiaKey: "",
           defaultModel: "ollama::llama3",
           searchEngine: "duckduckgo",
           searchKey: "",
@@ -21,13 +28,26 @@ export async function GET() {
           hybridSearchEnabled: true,
           mcpEnabled: true,
           mcpAutoLoad: false,
+          enabledModels: "[]",
           theme: "zinc",
+          maxConcurrentChats: 3,
         }
       })
     }
+
+    // Fallback: Fetch fields that might be missing from an out-of-sync Prisma Client
+    try {
+      const rawRes: any = await (prisma as any).$queryRawUnsafe(`SELECT "nvidiaKey", "enabledModels" FROM "Settings" WHERE id = 'default'`)
+      if (rawRes && rawRes[0]) {
+        (settings as any).nvidiaKey = rawRes[0].nvidiaKey ?? (settings as any).nvidiaKey;
+        (settings as any).enabledModels = rawRes[0].enabledModels ?? (settings as any).enabledModels;
+      }
+    } catch (e) {
+      // Silently handle missing columns
+    }
+
     return NextResponse.json(settings)
   } catch (error) {
-    console.error("Settings GET Error:", error)
     return NextResponse.json({ error: "Failed to fetch settings" }, { status: 500 })
   }
 }
@@ -41,8 +61,14 @@ export async function POST(req: Request) {
         ollamaUrl: data.ollamaUrl,
         lmstudioUrl: data.lmstudioUrl,
         openaiKey: data.openaiKey,
-        minimaxKey: data.minimaxKey,
+        anthropicKey: data.anthropicKey,
+        googleKey: data.googleKey,
         deepseekKey: data.deepseekKey,
+        minimaxKey: data.minimaxKey,
+        groqKey: data.groqKey,
+        mistralKey: data.mistralKey,
+        zhipuKey: data.zhipuKey,
+        lingyiKey: data.lingyiKey,
         openrouterKey: data.openrouterKey,
         defaultModel: data.defaultModel,
         searchEngine: data.searchEngine,
@@ -62,14 +88,21 @@ export async function POST(req: Request) {
         theme: data.theme,
         mcpEnabled: data.mcpEnabled,
         mcpAutoLoad: data.mcpAutoLoad,
+        maxConcurrentChats: data.maxConcurrentChats ?? 3,
       } as any,
       create: {
         id: "default",
         ollamaUrl: data.ollamaUrl || "http://127.0.0.1:11434",
         lmstudioUrl: data.lmstudioUrl || "http://127.0.0.1:1234",
         openaiKey: data.openaiKey || "",
-        minimaxKey: data.minimaxKey || "",
+        anthropicKey: data.anthropicKey || "",
+        googleKey: data.googleKey || "",
         deepseekKey: data.deepseekKey || "",
+        minimaxKey: data.minimaxKey || "",
+        groqKey: data.groqKey || "",
+        mistralKey: data.mistralKey || "",
+        zhipuKey: data.zhipuKey || "",
+        lingyiKey: data.lingyiKey || "",
         openrouterKey: data.openrouterKey || "",
         defaultModel: data.defaultModel || "ollama::llama3",
         searchEngine: data.searchEngine || "duckduckgo",
@@ -89,8 +122,21 @@ export async function POST(req: Request) {
         theme: data.theme || "zinc",
         mcpEnabled: data.mcpEnabled ?? true,
         mcpAutoLoad: data.mcpAutoLoad ?? false,
+        maxConcurrentChats: data.maxConcurrentChats ?? 3,
       } as any,
     })
+
+    // Fallback: Manually update fields that might be missing from an out-of-sync Prisma Client
+    try {
+      await (prisma as any).$executeRawUnsafe(`
+        UPDATE "Settings" 
+        SET "nvidiaKey" = ?, "enabledModels" = ?
+        WHERE "id" = 'default'
+      `, data.nvidiaKey || "", data.enabledModels || "[]")
+    } catch (e) {
+      console.warn("Raw SQL update failed (expected if columns don't exist yet):", e)
+    }
+
     return NextResponse.json(settings)
   } catch (error) {
     console.error("Settings POST Error:", error)

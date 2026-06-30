@@ -1,10 +1,8 @@
-"use client"
-
+import React, { useEffect, useState, useRef, useImperativeHandle, forwardRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
-import { SendHorizonal, StopCircle, Globe, Brain, ChevronDown, Search, Database, Paperclip, X, FileText, Loader2, Square } from "lucide-react"
-import { useEffect, useState, useRef } from "react"
+import { SendHorizonal, StopCircle, Globe, Brain, ChevronDown, Search, Database, Paperclip, X, FileText, Loader2, Square, Sparkles, AudioWaveform, Bot, ChevronRight } from "lucide-react"
 import { useI18n } from "@/lib/i18n"
 
 type Model = { id: string; name: string; provider: string }
@@ -16,10 +14,14 @@ const PROVIDER_COLORS: Record<string, string> = {
   'local-gguf': 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300',
 }
 
+export interface ChatPanelHandle {
+  setValue: (value: string | ((prev: string) => string)) => void;
+  focus: () => void;
+  getValue: () => string;
+}
+
 interface ChatPanelProps {
-  input: string;
-  setInput: (v: string) => void;
-  onSubmit: (e?: any) => void;
+  onSubmit: (input: string) => void;
   isLoading: boolean;
   stop: () => void;
   selectedModel: string;
@@ -32,30 +34,54 @@ interface ChatPanelProps {
   setKbId?: (v: string | null) => void;
   uploadedFiles: any[];
   setUploadedFiles: (files: any[]) => void;
+  selectedPrompt?: any;
+  setSelectedPrompt?: (p: any) => void;
 }
 
-export function ChatPanel({
-  input, setInput, onSubmit, isLoading, stop,
+export const ChatPanel = forwardRef<ChatPanelHandle, ChatPanelProps>(({
+  onSubmit, isLoading, stop,
   selectedModel, setSelectedModel,
   webSearch, setWebSearch,
   deepThink, setDeepThink,
   kbId, setKbId,
-  uploadedFiles, setUploadedFiles
-}: ChatPanelProps) {
+  uploadedFiles, setUploadedFiles,
+  selectedPrompt, setSelectedPrompt
+}, ref) => {
   const { t } = useI18n()
+  const [input, setInput] = useState("")
   const [models, setModels] = useState<Model[]>([])
   const [modelDropdownOpen, setModelDropdownOpen] = useState(false)
   const [kbs, setKbs] = useState<any[]>([])
   const [kbDropdownOpen, setKbDropdownOpen] = useState(false)
+  const [prompts, setPrompts] = useState<any[]>([])
+  const [promptDropdownOpen, setPromptDropdownOpen] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+  useImperativeHandle(ref, () => ({
+    setValue: (val) => {
+      if (typeof val === 'function') {
+        setInput(val)
+      } else {
+        setInput(val)
+      }
+    },
+    focus: () => {
+      textareaRef.current?.focus()
+    },
+    getValue: () => input
+  }))
 
   const refreshKbs = () => fetch('/api/kb').then(res => res.json()).then(data => { if(Array.isArray(data)) setKbs(data) }).catch(() => {})
 
   useEffect(() => {
     refreshKbs()
     refreshModels()
+    refreshPrompts()
   }, [])
+
+  const refreshPrompts = () => fetch('/api/prompts').then(res => res.json()).then(data => { if(Array.isArray(data)) setPrompts(data) }).catch(() => {})
 
   const refreshModels = () => {
     fetch('/api/models?refresh=true')
@@ -73,8 +99,15 @@ export function ChatPanel({
   const onKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
-      onSubmit(e)
+      handleSubmit(e)
     }
+  }
+
+  const handleSubmit = (e?: any) => {
+    e?.preventDefault()
+    if (!input.trim() && uploadedFiles.length === 0) return
+    onSubmit(input)
+    setInput("")
   }
 
   const currentModel = models.find(m => m.id === selectedModel)
@@ -83,6 +116,7 @@ export function ChatPanel({
     acc[m.provider].push(m)
     return acc
   }, {} as Record<string, Model[]>)
+  
   const providerLabel: Record<string, string> = { 
     ollama: 'Ollama', 
     lmstudio: 'LM Studio', 
@@ -122,172 +156,10 @@ export function ChatPanel({
   }
 
   return (
-    <div className="flex flex-col gap-2">
-      {/* Toolbar Row */}
-      <div className="flex items-center gap-1.5 flex-wrap">
-        {/* Model Picker - custom dropdown (no asChild) */}
-        <div className="relative">
-          <button 
-            onClick={() => {
-              setModelDropdownOpen(!modelDropdownOpen)
-              if (!modelDropdownOpen) refreshModels()
-            }}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-all shadow-sm"
-          >
-            {currentModel ? (
-              <>
-                <span className={`inline-block rounded-full px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${PROVIDER_COLORS[currentModel.provider] || 'bg-zinc-100'}`}>
-                  {currentModel.provider === 'lmstudio' ? 'LMS' : currentModel.provider === 'local-gguf' ? 'GGUF' : currentModel.provider.toUpperCase()}
-                </span>
-                <span className="max-w-[140px] truncate">{currentModel.name}</span>
-              </>
-            ) : (
-              <span className="text-zinc-400">{t("Select model")}</span>
-            )}
-            <ChevronDown className="size-3 text-zinc-400" />
-          </button>
-
-          {modelDropdownOpen && (
-            <>
-              <div className="fixed inset-0 z-40" onClick={() => setModelDropdownOpen(false)} />
-              <div className="absolute bottom-full left-0 mb-1 w-64 max-h-80 overflow-y-auto bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-lg z-50 py-1">
-                {Object.entries(groupedModels).map(([provider, pModels]) => (
-                  <div key={provider}>
-                    <div className="px-3 py-1.5 text-xs uppercase tracking-wide text-zinc-400 font-medium">
-                      {providerLabel[provider] || provider}
-                    </div>
-                    {pModels.map(m => (
-                      <button
-                        key={m.id}
-                        onClick={() => { setSelectedModel(m.id); setModelDropdownOpen(false) }}
-                        className="w-full flex items-center gap-2 px-3 py-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-left transition-colors"
-                      >
-                        <span className={`shrink-0 rounded px-1 py-0.5 text-[10px] font-bold ${PROVIDER_COLORS[m.provider] || ''}`}>
-                          {m.provider === 'lmstudio' ? 'LMS' : m.provider === 'local-gguf' ? 'GGUF' : m.provider.toUpperCase()}
-                        </span>
-                        <span className="truncate text-sm text-zinc-700 dark:text-zinc-300">{m.name}</span>
-                        {m.id === selectedModel && <span className="ml-auto text-xs text-primary font-bold">✓</span>}
-                      </button>
-                    ))}
-                    <div className="border-b border-border my-0.5" />
-                  </div>
-                ))}
-                {models.length === 0 && (
-                   <div className="px-3 py-2 text-xs text-muted-foreground">
-                     {t("No models found. Put .gguf files in /models folder or start Ollama/LM Studio.")}
-                   </div>
-                )}
-              </div>
-            </>
-          )}
-        </div>
-
-        {/* Web Search Toggle (Four-state: Auto, Deep, On, Off) */}
-        <button
-          type="button"
-          onClick={() => {
-            if (webSearch === 'auto') setWebSearch('deep')
-            else if (webSearch === 'deep') setWebSearch(true)
-            else if (webSearch === true) setWebSearch(false)
-            else setWebSearch('auto')
-          }}
-          title={t("Search Mode: Auto (AI Decides), Deep (Multiple Engines & Report), On (Always), Off (Never)")}
-          className={`flex items-center gap-1.5 h-8 px-3 rounded-full text-xs border transition-all ${
-            webSearch === 'auto'
-              ? 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800'
-              : webSearch === 'deep'
-              ? 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-900/20 dark:text-purple-400 dark:border-purple-800 font-bold'
-              : webSearch === true
-              ? 'bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-900/20 dark:text-sky-300 dark:border-sky-800'
-              : 'border-border text-muted-foreground'
-          }`}
-        >
-          <Search className="size-3" />
-          <span>{t("Search")}: {webSearch === 'auto' ? t('Auto') : webSearch === 'deep' ? 'Deep' : webSearch ? t('On') : t('Off')}</span>
-        </button>
-
-        {/* KB Selection */}
-        {setKbId && (
-          <div className="relative">
-            <button
-              type="button"
-              onClick={() => { setKbDropdownOpen(!kbDropdownOpen); if (!kbDropdownOpen) refreshKbs() }}
-              className={`flex items-center gap-1.5 h-8 px-3 rounded-full text-xs border transition-all font-medium ${
-                kbId
-                  ? 'bg-primary/10 text-primary border-primary/20 shadow-sm'
-                  : 'border-border text-muted-foreground hover:border-zinc-300'
-              }`}
-            >
-              <Database className={`size-3 ${kbId ? 'text-primary' : 'text-zinc-400'}`} />
-              {kbId ? (
-                <span className="max-w-[120px] truncate">
-                  {kbs.find(k => k.id === kbId)?.name}
-                  {kbs.find(k => k.id === kbId)?.chunkCount ? (
-                    <span className="opacity-60 ml-1 font-normal">· {kbs.find(k => k.id === kbId)?.chunkCount}</span>
-                  ) : null}
-                </span>
-              ) : (
-                <span>{t("Knowledge Base")}</span>
-              )}
-            </button>
-            {kbDropdownOpen && (
-              <>
-                <div className="fixed inset-0 z-40" onClick={() => setKbDropdownOpen(false)} />
-                <div className="absolute bottom-full left-0 mb-2 w-56 max-h-64 overflow-y-auto bg-white dark:bg-zinc-900 border border-border rounded-xl shadow-xl z-50 py-1.5">
-                  <div className="px-3 pb-1 pt-0.5">
-                    <span className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">{t("Select Knowledge Base")}</span>
-                  </div>
-                  <button
-                    onClick={() => { setKbId(null); setKbDropdownOpen(false) }}
-                    className={`w-full flex items-center justify-between px-3 py-2 hover:bg-zinc-50 dark:hover:bg-zinc-800 text-left text-sm transition-colors ${!kbId ? 'text-primary font-bold' : 'text-muted-foreground'}`}
-                  >
-                    <span>{t("Do not use knowledge base")}</span>
-                    {!kbId && <span className="text-[11px] font-bold text-primary">✓</span>}
-                  </button>
-                  {kbs.length > 0 && <div className="mx-3 my-1 border-t border-border" />}
-                  {kbs.map(kb => (
-                    <button
-                      key={kb.id}
-                      onClick={() => { setKbId(kb.id); setKbDropdownOpen(false) }}
-                      className={`w-full flex items-center justify-between px-3 py-2 hover:bg-zinc-50 dark:hover:bg-zinc-800 text-left text-sm transition-colors ${kb.id === kbId ? 'text-primary bg-primary/5 font-bold' : 'text-foreground'}`}
-                    >
-                      <div className="min-w-0">
-                        <div className="truncate text-sm">{kb.name}</div>
-                        {kb.chunkCount > 0 && (
-                          <div className="text-[11px] text-muted-foreground font-normal">{kb.chunkCount} {t("segments")}</div>
-                        )}
-                      </div>
-                      {kb.id === kbId && <span className="text-[11px] font-bold text-primary shrink-0 ml-2">✓</span>}
-                    </button>
-                  ))}
-                  {kbs.length === 0 && (
-                    <div className="px-3 py-3 text-xs text-muted-foreground text-center">{t("No knowledge base yet")}</div>
-                  )}
-                </div>
-              </>
-            )}
-          </div>
-        )}
-
-        {/* Deep Think Toggle */}
-        <button
-          type="button"
-          onClick={() => setDeepThink(!deepThink)}
-          title={t("Deep Think: Forces step-by-step reasoning")}
-          className={`flex items-center gap-1.5 h-8 px-3 rounded-full text-xs border transition-colors ${
-            deepThink
-              ? 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-900/20 dark:text-purple-300 dark:border-purple-800'
-              : 'border-border text-muted-foreground'
-          }`}
-        >
-          <Brain className="size-3.5" />
-          {t("Deep Think")}
-        </button>
-      </div>
-
+    <div className="w-full flex flex-col gap-4">
       {/* File Chips */}
       {uploadedFiles.length > 0 && (
-        <div className="flex flex-wrap gap-2 mb-2 px-1">
+        <div className="flex flex-wrap gap-2 px-1">
           {uploadedFiles.map((file, i) => (
             <div 
               key={i} 
@@ -321,11 +193,11 @@ export function ChatPanel({
         </div>
       )}
 
-      {/* Input Form */}
-      <div className="relative flex w-full flex-col overflow-hidden rounded-[1.5rem] bg-white dark:bg-zinc-900 border border-border transition-all focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary shadow-sm hover:shadow-md">
+      {/* Main Integrated Container */}
+      <div className="relative flex w-full flex-col rounded-[2rem] bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xl transition-all focus-within:ring-4 focus-within:ring-primary/5 focus-within:border-primary/40">
         <form
-          onSubmit={(e) => { e.preventDefault(); onSubmit(e) }}
-          className="relative flex items-end"
+          onSubmit={handleSubmit}
+          className="relative flex flex-col"
         >
           <input
             type="file"
@@ -334,52 +206,221 @@ export function ChatPanel({
             multiple
             className="hidden"
           />
-          <button
-            type="button"
-            disabled={isUploading}
-            onClick={() => fileInputRef.current?.click()}
-            className="ml-3 mb-3 p-2 rounded-xl text-muted-foreground hover:text-primary hover:bg-primary/5 transition-all disabled:opacity-50"
-            title={t("Upload file")}
-          >
-            {isUploading ? <Loader2 className="size-5 animate-spin" /> : <Paperclip className="size-5" />}
-          </button>
-          
-          <Textarea
-            value={input}
-            onChange={e => setInput(e.target.value)}
-            onKeyDown={onKeyDown}
-            placeholder={uploadedFiles.length > 0 ? t("Describe or ask questions about these files...") : t("Message {{modelName}}...", { modelName: currentModel?.name || 'OpenOrangeAI' })}
-            className="min-h-[64px] max-h-64 w-full resize-none border-0 bg-transparent px-2 pt-5 pb-4 pr-16 focus-visible:ring-0 text-base leading-relaxed"
-            rows={1}
-          />
-          <div className="absolute right-3 bottom-3">
-            {isLoading ? (
-              <Button
-                size="icon" variant="ghost" type="button"
-                className="rounded-full size-10 bg-destructive/10 text-destructive hover:bg-destructive/20 transition-colors shadow-sm"
-                onClick={stop}
-                title="停止生成"
+
+          {/* Textarea Row */}
+          <div className="flex items-start px-2">
+            <Textarea
+              ref={textareaRef}
+              value={input}
+              onChange={e => setInput(e.target.value)}
+              onKeyDown={onKeyDown}
+              placeholder={uploadedFiles.length > 0 ? t("Describe or ask questions about these files...") : t("Message {{modelName}}...", { modelName: currentModel?.name || 'OpenOrangeAI' })}
+              className="min-h-[80px] max-h-64 w-full resize-none border-0 bg-transparent px-4 pt-6 pb-2 focus-visible:ring-0 text-lg leading-relaxed placeholder:text-zinc-400"
+              rows={1}
+            />
+          </div>
+
+          {/* Integrated Toolbar & Actions row */}
+          <div className="flex items-center justify-between px-3 pb-3 pt-1">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {/* Upload Pill */}
+              <button
+                type="button"
+                disabled={isUploading}
+                onClick={() => fileInputRef.current?.click()}
+                className="p-2 rounded-full text-zinc-500 hover:text-primary hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all disabled:opacity-50"
               >
-                <Square className="size-4 fill-current" />
-              </Button>
-            ) : (
-              <Button
-                type="submit" size="icon" variant="default"
-                disabled={!input.trim() && uploadedFiles.length === 0}
-                className="rounded-full size-10 bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-30 transition-all shadow-md active:scale-95"
+                {isUploading ? <Loader2 className="size-5 animate-spin" /> : <Paperclip className="size-5" />}
+              </button>
+
+              {/* Model Picker Pill */}
+              <div className="relative">
+                <button 
+                  type="button"
+                  onClick={() => {
+                    setModelDropdownOpen(!modelDropdownOpen)
+                    if (!modelDropdownOpen) refreshModels()
+                  }}
+                  className="flex items-center gap-1.5 h-9 px-3 rounded-full border border-zinc-100 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all text-xs font-medium text-zinc-600 dark:text-zinc-300 shadow-sm"
+                >
+                  {currentModel && <Sparkles className="size-3 text-purple-500" />}
+                  <span className="max-w-[120px] truncate">{currentModel?.name || t("Select model")}</span>
+                  <ChevronDown className="size-3 text-zinc-400" />
+                </button>
+
+                {modelDropdownOpen && (
+                  <>
+                    <div className="fixed inset-0 z-40" onClick={() => setModelDropdownOpen(false)} />
+                    <div className="absolute bottom-full left-0 mb-2 w-64 max-h-80 overflow-y-auto bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-2xl shadow-2xl z-50 py-2">
+                      {Object.entries(groupedModels).map(([provider, pModels]) => (
+                        <div key={provider}>
+                          <div className="px-3 py-1.5 text-[10px] uppercase tracking-wider text-zinc-400 font-bold">
+                            {providerLabel[provider] || provider}
+                          </div>
+                          {pModels.map(m => (
+                            <button
+                              key={m.id}
+                              onClick={() => { setSelectedModel(m.id); setModelDropdownOpen(false) }}
+                              className="w-full flex items-center gap-2 px-3 py-2 hover:bg-zinc-50 dark:hover:bg-zinc-800 text-left transition-colors"
+                            >
+                              <span className={`shrink-0 rounded px-1.5 py-0.5 text-[9px] font-bold uppercase ${PROVIDER_COLORS[m.provider] || ''}`}>
+                                {m.provider === 'lmstudio' ? 'LMS' : m.provider === 'local-gguf' ? 'GGUF' : m.provider.toUpperCase()}
+                              </span>
+                              <span className="truncate text-sm text-zinc-700 dark:text-zinc-300">{m.name}</span>
+                              {m.id === selectedModel && <span className="ml-auto text-xs text-primary font-bold">✓</span>}
+                            </button>
+                          ))}
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {/* Web Search Pill */}
+              <button
+                type="button"
+                onClick={() => {
+                  if (webSearch === 'auto') setWebSearch('deep')
+                  else if (webSearch === 'deep') setWebSearch(true)
+                  else if (webSearch === true) setWebSearch(false)
+                  else setWebSearch('auto')
+                }}
+                className={`flex items-center gap-1.5 h-9 px-4 rounded-full border transition-all text-xs font-semibold ${
+                  webSearch === 'auto'
+                    ? 'bg-amber-50/50 text-amber-700 border-amber-200/50'
+                    : webSearch === 'deep'
+                    ? 'bg-purple-50/50 text-purple-700 border-purple-200/50'
+                    : webSearch === true
+                    ? 'bg-sky-50/50 text-sky-700 border-sky-200/50'
+                    : 'bg-zinc-50/50 text-zinc-500 border-zinc-100 dark:bg-zinc-900/50 dark:border-zinc-800'
+                }`}
               >
-                <SendHorizonal className="size-5" />
-              </Button>
-            )}
+                <Search className="size-3.5" />
+                <span>{webSearch === 'auto' ? t('Auto') : webSearch === 'deep' ? 'Deep' : webSearch ? t('On') : t('Off')}</span>
+              </button>
+
+              {/* KB Pill */}
+              {setKbId && (
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => { setKbDropdownOpen(!kbDropdownOpen); if (!kbDropdownOpen) refreshKbs() }}
+                    className={`flex items-center gap-1.5 h-9 px-4 rounded-full border transition-all text-xs font-semibold ${
+                      kbId ? 'bg-primary/5 text-primary border-primary/20' : 'bg-zinc-50/50 text-zinc-500 border-zinc-100 dark:bg-zinc-900/50 dark:border-zinc-800'
+                    }`}
+                  >
+                    <Database className="size-3.5" />
+                    <span className="max-w-[100px] truncate">{kbId ? kbs.find(k => k.id === kbId)?.name : t("Knowledge")}</span>
+                  </button>
+                  {kbDropdownOpen && (
+                    <>
+                      <div className="fixed inset-0 z-40" onClick={() => setKbDropdownOpen(false)} />
+                      <div className="absolute bottom-full left-0 mb-2 w-56 max-h-64 overflow-y-auto bg-white dark:bg-zinc-900 border border-border rounded-2xl shadow-2xl z-50 py-2">
+                        <button
+                          onClick={() => { setKbId(null); setKbDropdownOpen(false) }}
+                          className={`w-full px-4 py-2 hover:bg-zinc-50 text-left text-sm ${!kbId ? 'text-primary font-bold' : 'text-muted-foreground'}`}
+                        >
+                          {t("None")}
+                        </button>
+                        {kbs.map(kb => (
+                          <button
+                            key={kb.id}
+                            onClick={() => { setKbId(kb.id); setKbDropdownOpen(false) }}
+                            className={`w-full px-4 py-2 hover:bg-zinc-50 text-left text-sm ${kb.id === kbId ? 'text-primary font-bold' : ''}`}
+                          >
+                            {kb.name}
+                          </button>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
+
+              {/* Deep Think Pill */}
+              <button
+                type="button"
+                onClick={() => setDeepThink(!deepThink)}
+                className={`flex items-center gap-1.5 h-9 px-4 rounded-full border transition-all text-xs font-semibold ${
+                  deepThink ? 'bg-indigo-50/50 text-indigo-700 border-indigo-200/50' : 'bg-zinc-50/50 text-zinc-500 border-zinc-100 dark:bg-zinc-900/50 dark:border-zinc-800'
+                }`}
+              >
+                <Brain className="size-3.5" />
+                <span>{t("Thinking")}</span>
+              </button>
+
+              {/* Prompt Hub Pill */}
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => { setPromptDropdownOpen(!promptDropdownOpen); if (!promptDropdownOpen) refreshPrompts() }}
+                  className={`flex items-center gap-1.5 h-9 px-4 rounded-full border transition-all text-xs font-semibold ${
+                    selectedPrompt ? 'bg-amber-50/50 text-amber-700 border-amber-200/50' : 'bg-zinc-50/50 text-zinc-500 border-zinc-100 dark:bg-zinc-900/50 dark:border-zinc-800'
+                  }`}
+                >
+                  <Sparkles className={`size-3.5 ${selectedPrompt ? 'text-amber-500' : 'text-zinc-400'}`} />
+                  <span className="max-w-[100px] truncate">{selectedPrompt ? selectedPrompt.name : t("Default Role")}</span>
+                </button>
+                {promptDropdownOpen && (
+                  <>
+                    <div className="fixed inset-0 z-40" onClick={() => setPromptDropdownOpen(false)} />
+                    <div className="absolute bottom-full left-0 mb-2 w-64 max-h-80 overflow-y-auto bg-white dark:bg-zinc-900 border border-border rounded-2xl shadow-2xl z-50 py-2">
+                      <button
+                        onClick={() => { setSelectedPrompt?.(null); setPromptDropdownOpen(false) }}
+                        className={`w-full px-4 py-2 hover:bg-zinc-50 dark:hover:bg-zinc-800 text-left text-sm flex items-center gap-2 ${!selectedPrompt ? 'text-primary font-bold bg-primary/5' : 'text-zinc-600 dark:text-zinc-400'}`}
+                      >
+                         <Bot className="size-3.5" />
+                         <span>{t("Default General Assistant")}</span>
+                      </button>
+                      <div className="h-px bg-zinc-100 dark:bg-zinc-800 my-1" />
+                      {prompts.map(p => (
+                        <button
+                          key={p.id}
+                          onClick={() => { setSelectedPrompt?.(p); setPromptDropdownOpen(false) }}
+                          className={`w-full px-4 py-2 hover:bg-zinc-50 dark:hover:bg-zinc-800 text-left transition-colors flex flex-col gap-0.5 ${p.id === selectedPrompt?.id ? 'bg-primary/5 border-l-2 border-primary' : ''}`}
+                        >
+                          <div className="flex items-center gap-2">
+                             <Sparkles className="size-3 text-amber-500" />
+                             <span className={`text-sm ${p.id === selectedPrompt?.id ? 'text-primary font-bold' : 'text-zinc-700 dark:text-zinc-200 font-medium'}`}>{p.name}</span>
+                          </div>
+                          {p.description && <span className="text-[10px] text-zinc-400 truncate pl-5">{p.description}</span>}
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* Action Buttons (Far Right) */}
+            <div className="flex items-center ml-auto pr-1">
+              {isLoading ? (
+                <Button
+                  size="icon" variant="ghost" type="button"
+                  className="rounded-full size-10 bg-destructive/10 text-destructive hover:bg-destructive/20 transition-colors shadow-sm"
+                  onClick={stop}
+                >
+                  <Square className="size-4 fill-current" />
+                </Button>
+              ) : (
+                <Button
+                  type="submit"
+                  size="icon"
+                  disabled={!input.trim() && uploadedFiles.length === 0}
+                  className="rounded-full h-10 w-14 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 hover:opacity-90 disabled:opacity-30 transition-all shadow-lg active:scale-95 flex items-center justify-center p-0"
+                >
+                  <AudioWaveform className="size-5" />
+                </Button>
+              )}
+            </div>
           </div>
         </form>
       </div>
 
-      <p className="text-center text-[10px] text-muted-foreground mt-2 flex items-center justify-center gap-1.5 opacity-70">
-        {webSearch !== false && <><Search className="size-2.5" />Search {webSearch === 'auto' ? 'Auto' : webSearch === 'deep' ? 'Deep' : 'On'} · </>}
-        {deepThink && <><Brain className="size-2.5" />Deep think On · </>}
+      <p className="text-center text-[10px] text-muted-foreground mt-2 flex items-center justify-center gap-1.5 opacity-60">
         AI can make mistakes. Verify important information.
       </p>
     </div>
   )
-}
+})

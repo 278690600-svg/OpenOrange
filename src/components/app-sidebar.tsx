@@ -1,16 +1,17 @@
 "use client"
 
-import { Bot, MessageSquare, Plus, Settings, Trash2, CalendarDays, Bot as BotIcon } from "lucide-react"
+import { Bot, MessageSquare, Plus, Settings, Trash2, CalendarDays, Bot as BotIcon, Loader2, Brain, Search, Sparkles, Database, X, Calendar, Clock, PanelLeft, File, Folder, ChevronDown, ChevronRight } from "lucide-react"
 import {
   Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent,
   SidebarGroupLabel, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem,
+  SidebarRail,
 } from "@/components/ui/sidebar"
 import { useEffect, useState, useRef } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { SettingsDialog } from "@/components/settings-dialog"
 import { KnowledgeDialog } from "@/components/knowledge-dialog"
-import { Database, Search, X, Calendar } from "lucide-react"
+import { useChatState, useChatActions } from "@/lib/chat-context"
 import { useI18n } from "@/lib/i18n"
 import { Input } from "@/components/ui/input"
 import {
@@ -55,6 +56,7 @@ function groupByDate(chats: Chat[]) {
 }
 
 export function AppSidebar() {
+  const chatStates = useChatState()
   const [chats, setChats] = useState<Chat[]>([])
   const [searchQuery, setSearchQuery] = useState("")
   const [dateFilter, setDateFilter] = useState<DateFilterType>("all")
@@ -66,6 +68,7 @@ export function AppSidebar() {
 
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [kbOpen, setKbOpen] = useState(false)
+  const { stopAll } = useChatActions()
   const router = useRouter()
   const { t } = useI18n()
 
@@ -111,13 +114,22 @@ export function AppSidebar() {
 
   useEffect(() => { fetchChats() }, [debouncedSearch, dateFilter, dateRange])
 
-  const handleDateFilterChange = (value: string) => {
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const handleChatUpdated = () => {
+      fetchChats()
+    }
+    window.addEventListener('chat-updated', handleChatUpdated)
+    return () => window.removeEventListener('chat-updated', handleChatUpdated)
+  }, [])
+
+  const handleDateFilterChange = (value: DateFilterType | null) => {
     if (value === "custom") {
       setShowDatePicker(true)
       setDateFilter("custom")
     } else {
       setShowDatePicker(false)
-      setDateFilter(value as DateFilterType)
+      if (value) setDateFilter(value)
     }
   }
 
@@ -143,7 +155,18 @@ export function AppSidebar() {
     router.push('/')
   }
 
-  const grouped = groupByDate(chats)
+  const combinedChats = [...chats]
+  Object.entries(chatStates).forEach(([id, state]) => {
+    if (state.status !== 'idle' && !combinedChats.find(c => c.id === id)) {
+      combinedChats.unshift({
+        id,
+        title: state.messages[0]?.content?.substring(0, 40) || t('New Chat'),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      } as Chat)
+    }
+  })
+  const grouped = groupByDate(combinedChats)
 
   const getDateFilterLabel = () => {
     if (dateFilter === "custom" && dateRange.start && dateRange.end) {
@@ -158,44 +181,71 @@ export function AppSidebar() {
     <>
       <Sidebar className="border-r border-zinc-200 dark:border-zinc-800">
         {/* Header */}
-        <SidebarHeader className="px-4 py-6">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="size-8 transition-transform hover:scale-105 active:scale-95">
-              <img src="/logo.png" alt="Logo" className="size-full object-contain" />
+        <SidebarHeader className="px-4 py-8">
+          <div className="flex items-center justify-between mb-8 px-2">
+            <div className="flex items-center gap-3">
+              <div className="size-8 bg-black dark:bg-white rounded-xl flex items-center justify-center shrink-0 transition-transform hover:scale-105 active:scale-95 shadow-sm">
+                <BotIcon className="size-5 text-white dark:text-black" />
+              </div>
+              <span className="font-bold text-foreground text-lg tracking-tight">OpenOrangeAI</span>
             </div>
-            <span className="font-bold text-foreground text-lg tracking-tight">OpenOrangeAI</span>
-          </div>
-          <SidebarMenuButton 
-            className="w-full gap-2 h-10 bg-primary hover:brightness-125 text-primary-foreground rounded-xl justify-center font-semibold shadow-sm transition-all active:scale-[0.98] mb-4"
-            render={<Link href="/" onClick={() => { setSearchQuery(""); setDateFilter("all"); fetchChats(); }} />}
-          >
-            <Plus className="size-4" />
-            <span className="text-sm">{t('New Chat')}</span>
-          </SidebarMenuButton>
 
-          <div className="space-y-2">
+            {/* Task Center Pill */}
+            {Object.values(chatStates).filter(c => c.status !== 'idle').length > 0 && (
+              <div className="flex items-center gap-2 bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-100 dark:border-indigo-800 px-2.5 py-1 rounded-full animate-in fade-in zoom-in duration-300">
+                <div className="relative flex items-center justify-center">
+                  <div className="size-2 bg-indigo-500 rounded-full animate-ping absolute" />
+                  <div className="size-2 bg-indigo-500 rounded-full relative" />
+                </div>
+                <span className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400">
+                  {Object.values(chatStates).filter(c => c.status !== 'idle').length}
+                </span>
+                <button 
+                  onClick={stopAll}
+                  className="p-1 hover:bg-indigo-100 dark:hover:bg-indigo-800 rounded-full transition-colors group"
+                  title={t("Stop All Tasks")}
+                >
+                  <X className="size-3 text-indigo-400 group-hover:text-indigo-600" />
+                </button>
+              </div>
+            )}
+          </div>
+
+          <button 
+            className="w-full flex items-center justify-center gap-2 h-11 bg-zinc-900 dark:bg-white text-white dark:text-black hover:bg-zinc-800 dark:hover:bg-zinc-100 rounded-full font-semibold mb-8 shadow-md transition-all active:scale-[0.98] group"
+            onClick={() => { setSearchQuery(""); setDateFilter("all"); fetchChats(); router.push("/chat/new"); }}
+          >
+            <div className="size-6 rounded-full bg-white/10 dark:bg-black/10 flex items-center justify-center transition-transform group-hover:scale-110">
+              <Plus className="size-4" />
+            </div>
+            <span className="text-sm tracking-wide">{t('New Chat')}</span>
+          </button>
+
+          <div className="space-y-4 px-1">
             <div className="relative group">
-              <Search className="absolute left-2.5 top-2.5 size-4 text-zinc-400" />
+              <Search className="absolute left-3.5 top-3 size-4 text-zinc-400 group-focus-within:text-black dark:group-focus-within:text-white transition-colors" />
               <Input
                 placeholder={t("Search chats")}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9 pr-8 h-9 bg-zinc-100/50 dark:bg-zinc-800/50 border-none rounded-lg text-sm focus-visible:ring-1 focus-visible:ring-primary/20 transition-all"
+                className="pl-11 pr-8 h-10 bg-zinc-100/70 dark:bg-zinc-800/70 border-none rounded-xl text-sm focus-visible:ring-2 focus-visible:ring-zinc-200 dark:focus-visible:ring-zinc-700 transition-all placeholder:text-zinc-400"
               />
               {searchQuery && (
                 <button 
                   onClick={() => setSearchQuery("")}
-                  className="absolute right-2.5 top-2.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200"
+                  className="absolute right-3 top-3 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors"
                 >
                   <X className="size-4" />
                 </button>
               )}
             </div>
-            <div className="flex items-center gap-1.5">
+            <div className="relative flex items-center gap-1.5 w-full">
               <Select value={dateFilter} onValueChange={handleDateFilterChange}>
-                <SelectTrigger className="h-8 text-[11px] bg-transparent border-none text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors px-1 w-fit shadow-none focus:ring-0">
-                  <Calendar className="size-3 mr-1.5" />
-                  <SelectValue placeholder={getDateFilterLabel()} />
+                <SelectTrigger className="h-10 text-xs bg-zinc-100/50 dark:bg-zinc-800/50 border-none text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all px-3.5 w-full rounded-xl shadow-none focus:ring-0 group">
+                  <div className="flex items-center gap-2">
+                    <Calendar className="size-4 text-zinc-400 group-hover:text-zinc-600 dark:group-hover:text-zinc-200 transition-colors" />
+                    <SelectValue placeholder={getDateFilterLabel()} />
+                  </div>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">{t("All time")}</SelectItem>
@@ -214,10 +264,10 @@ export function AppSidebar() {
               {(dateFilter === "custom" || dateFilter !== "all") && (
                 <button
                   onClick={handleDateRangeClear}
-                  className="text-[10px] text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors px-1"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors p-1 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-md"
                   title={t("Clear filter")}
                 >
-                  <X className="size-3" />
+                  <X className="size-3.5" />
                 </button>
               )}
             </div>
@@ -268,69 +318,107 @@ export function AppSidebar() {
         </SidebarHeader>
 
         {/* Chat List */}
-        <SidebarContent className="px-1">
+        <SidebarContent className="px-2 app-scrollbar">
           {Object.entries(grouped).map(([group, items]) =>
             items.length === 0 ? null : (
-              <SidebarGroup key={group}>
-                <SidebarGroupLabel className="text-xs text-zinc-400 uppercase tracking-wider px-2">{t(group)}</SidebarGroupLabel>
+              <SidebarGroup key={group} className="pb-4">
+                <SidebarGroupLabel className="text-[10px] font-bold text-zinc-400 uppercase tracking-[0.12em] px-3 mb-2">
+                  {t(group)}
+                </SidebarGroupLabel>
                 <SidebarGroupContent>
-                  <SidebarMenu>
-                    {items.map((chat) => (
-                      <SidebarMenuItem key={chat.id}>
-                        <div className="flex items-center w-full group relative">
-                          <SidebarMenuButton 
-                            className="w-full px-3 rounded-lg flex-1"
-                            render={<Link href={`/chat/${chat.id}`} />}
-                          >
-                            <MessageSquare className="mr-2 size-3.5 text-zinc-400 shrink-0" />
-                            <span className="truncate text-sm pr-6">{chat.title || 'New Chat'}</span>
-                          </SidebarMenuButton>
+                  <SidebarMenu className="gap-1">
+                    {items.map((chat) => {
+                      const chatState = chatStates[chat.id]
+                      const isRunning = chatState && (chatState.status === 'streaming' || chatState.status === 'submitted')
+                      const isQueued = chatState?.status === 'queued'
+
+                      return (
+                        <SidebarMenuItem key={chat.id}>
+                          <div className="group/item relative flex items-center w-full">
+                            <Link 
+                              href={`/chat/${chat.id}`}
+                              className="flex-1 flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-300 hover:bg-zinc-100/80 dark:hover:bg-zinc-900/60 group/link"
+                            >
+                              <div className={`size-8 rounded-lg flex items-center justify-center shrink-0 border transition-all shadow-sm ${
+                                isRunning ? 'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-200/50 dark:border-indigo-700/50' : 
+                                isQueued ? 'bg-zinc-50 dark:bg-zinc-800/30 border-dashed border-zinc-300 dark:border-zinc-700' :
+                                'bg-zinc-50 dark:bg-zinc-800/50 border-zinc-200/50 dark:border-zinc-700/50 group-hover/link:bg-white dark:group-hover/link:bg-zinc-800'
+                              }`}>
+                                {chatState?.currentSearch?.length > 0 ? (
+                                  <Search className="size-4 text-indigo-500 animate-pulse" />
+                                ) : chatState?.isThinking ? (
+                                  <Brain className="size-4 text-purple-500 animate-bounce" style={{ animationDuration: '2s' }} />
+                                ) : chatState?.status === 'streaming' ? (
+                                  <Sparkles className="size-4 text-amber-500 animate-spin" style={{ animationDuration: '3s' }} />
+                                ) : chatState?.status === 'queued' ? (
+                                  <Clock className="size-4 text-zinc-400 animate-pulse" />
+                                ) : isRunning ? (
+                                  <Loader2 className="size-4 text-indigo-500 animate-spin" />
+                                ) : (
+                                  <MessageSquare className="size-4 text-zinc-500 dark:text-zinc-400 group-hover/link:text-black dark:group-hover/link:text-white transition-colors" />
+                                )}
+                              </div>
+                              <span className="flex-1 truncate text-sm font-medium text-zinc-600 dark:text-zinc-400 group-hover/link:text-zinc-900 dark:group-hover/link:text-zinc-100 transition-all group-hover/link:translate-x-1.5 pr-8">
+                                {chat.title || t('New Chat')}
+                              </span>
+                            <div className="absolute right-12 opacity-0 -translate-x-2 group-hover/link:opacity-100 group-hover/link:translate-x-0 transition-all duration-300">
+                              <div className="size-6 rounded-full bg-zinc-200/50 dark:bg-zinc-700/50 flex items-center justify-center">
+                                <Plus className="size-3 text-zinc-500 rotate-45" />
+                              </div>
+                            </div>
+                          </Link>
+                          
                           <button
                             onClick={(e) => deleteChat(chat.id, e)}
-                            className="absolute right-1 opacity-0 group-hover:opacity-100 p-1.5 rounded-md hover:bg-red-100 dark:hover:bg-red-900/30 transition-all z-10"
+                            className="absolute right-3 opacity-0 group-hover/item:opacity-100 p-2 rounded-lg bg-white/80 dark:bg-zinc-900/80 hover:bg-red-50 dark:hover:bg-red-900/20 text-zinc-400 hover:text-red-500 transition-all z-20 shadow-sm border border-zinc-200/50 dark:border-zinc-700/50 active:scale-90"
                             title={t('Delete this chat?')}
                           >
-                            <Trash2 className="size-3.5 text-red-500" />
+                            <Trash2 className="size-4" />
                           </button>
                         </div>
-                      </SidebarMenuItem>
-                    ))}
+                        </SidebarMenuItem>
+                      )
+                    })}
                   </SidebarMenu>
                 </SidebarGroupContent>
               </SidebarGroup>
             )
           )}
           {chats.length === 0 && (
-            <div className="px-4 py-8 text-center text-xs text-zinc-400">
-              {t("No chats yet. Start a new conversation!")}
+            <div className="px-6 py-12 text-center">
+              <div className="size-12 bg-zinc-50 dark:bg-zinc-900/50 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-zinc-100 dark:border-zinc-800">
+                <BotIcon className="size-6 text-zinc-300" />
+              </div>
+              <div className="text-[11px] font-medium text-zinc-400 leading-relaxed uppercase tracking-wider">
+                {t("No chats yet")}
+              </div>
             </div>
           )}
         </SidebarContent>
 
         {/* Footer */}
-        <SidebarFooter className="px-3 py-3 border-t border-zinc-200 dark:border-zinc-800 space-y-1">
-          <SidebarMenuButton
+        <SidebarFooter className="p-4 border-t border-zinc-100 dark:border-zinc-800 space-y-2">
+          <button
             onClick={() => setKbOpen(true)}
-            className="w-full justify-start gap-2.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 px-3"
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-zinc-50 dark:hover:bg-zinc-900/50 transition-all group"
           >
-            <Database className="size-4 text-indigo-500" />
-            <span className="text-sm text-zinc-600 dark:text-zinc-400">{t("Knowledge Base")}</span>
-          </SidebarMenuButton>
-          <SidebarMenuButton
-        onClick={() => setSettingsOpen(true)}
-        className="w-full justify-start gap-2.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 px-3"
-      >
-        <Settings className="size-4 text-zinc-500" />
-        <span className="text-sm text-zinc-600 dark:text-zinc-400">{t("Settings")}</span>
-      </SidebarMenuButton>
-      <SidebarMenuButton
-        className="w-full justify-start gap-2.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 px-3"
-        render={<Link href="/agent" />}
-      >
-        <BotIcon className="size-4 text-amber-500" />
-        <span className="text-sm text-zinc-600 dark:text-zinc-400">{t("Agent")}</span>
-      </SidebarMenuButton>
+            <div className="size-8 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center transition-transform group-hover:scale-110">
+              <Database className="size-4 text-indigo-500" />
+            </div>
+            <span className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 group-hover:text-zinc-900 dark:group-hover:text-zinc-100 truncate">{t("Knowledge Base")}</span>
+          </button>
+          
+          <button
+            onClick={() => setSettingsOpen(true)}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-zinc-50 dark:hover:bg-zinc-900/50 transition-all group"
+          >
+            <div className="size-8 rounded-xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center transition-transform group-hover:scale-110">
+              <Settings className="size-4 text-zinc-500" />
+            </div>
+            <span className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 group-hover:text-zinc-900 dark:group-hover:text-zinc-100 truncate">{t("Settings")}</span>
+          </button>
         </SidebarFooter>
+        <SidebarRail />
       </Sidebar>
       <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
       <KnowledgeDialog open={kbOpen} onOpenChange={setKbOpen} />

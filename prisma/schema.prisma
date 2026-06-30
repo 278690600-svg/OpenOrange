@@ -13,6 +13,7 @@ model Chat {
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   messages  Message[]
+  selectedPromptId String?
 }
 
 model Message {
@@ -29,9 +30,16 @@ model Settings {
   ollamaUrl            String  @default("http://127.0.0.1:11434")
   lmstudioUrl          String  @default("http://127.0.0.1:1234")
   openaiKey            String  @default("")
-  minimaxKey           String  @default("")
+  anthropicKey         String  @default("")
+  googleKey            String  @default("")
   deepseekKey          String  @default("")
+  minimaxKey           String  @default("")
+  groqKey              String  @default("")
+  mistralKey           String  @default("")
+  zhipuKey             String  @default("")
+  lingyiKey            String  @default("")
   openrouterKey        String  @default("")
+  nvidiaKey            String  @default("")
   defaultModel         String  @default("llama3")
   searchEngine         String  @default("duckduckgo")
   searchKey            String  @default("")
@@ -50,6 +58,8 @@ model Settings {
   theme                String  @default("zinc")
   mcpEnabled           Boolean @default(true)
   mcpAutoLoad          Boolean @default(false)
+  enabledModels        String  @default("[]")
+  maxConcurrentChats   Int     @default(3)
 }
 
 model KnowledgeBase {
@@ -94,3 +104,28 @@ model McpServer {
   updatedAt DateTime @updatedAt
 }
 
+model DataSource {
+  id            String    @id @default(cuid())
+  name          String
+  type          String    // database, api, file, backup
+  engine        String    // postgres, mysql, sqlserver, sqlite, rest, csv, xlsx, json
+  path          String?   // file path for sqlite/file sources
+  config        String    @default("{}") // JSON config (host, port, credentials - sensitive keys sanitized)
+  metadata      String    @default("{}") // JSON metadata (schema snapshots, table lists)
+  status        String    @default("idle") // idle, syncing, ready, error
+  lastError     String    @default("")
+  lastSyncedAt  DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model PromptTemplate {
+  id          String   @id @default(cuid())
+  name        String
+  content     String
+  description String?
+  icon        String?  @default("Sparkles")
+  isSystem    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}

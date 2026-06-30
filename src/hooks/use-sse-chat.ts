@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useRef, useCallback, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 
 export type SearchStage = 'intent' | 'skip' | 'rewrite' | 'rewrite_done' | 'searching' | 'found' | 'read_page' | 'reading' | 'done' | 'error' | 'loading' | 'call' | 'result' | 'compiling' | 'context' | 'ready'
 export type ThinkingStage = 'start' | 'done'
@@ -47,74 +48,140 @@ function generateId() {
   return `msg-${Date.now()}-${++messageIdCounter}`
 }
 
-export function useSSEChat() {
-  const [messages, setMessages] = useState<ChatMessage[]>([])
-  const [status, setStatus] = useState<'idle' | 'submitted' | 'streaming'>('idle')
-  const [error, setError] = useState<Error | null>(null)
-  const [currentSearch, setCurrentSearch] = useState<StatusEvent[]>([])
-  const [isThinking, setIsThinking] = useState(false)
-  const abortRef = useRef<AbortController | null>(null)
-  const chatIdRef = useRef<string | null>(null)
+import { useChatState, useChatActions } from '@/lib/chat-context'
+import { useEffect as useLayoutEffect } from 'react'
 
-  // --- Typewriter State ---
-  const typewriterQueue = useRef<string>('')
-  const isTypewriterRunning = useRef<boolean>(false)
-  const assistantIdRef = useRef<string | null>(null)
-  const currentTextRef = useRef<string>('')
+export function useSSEChat(initialChatId?: string | null, initialMessages: ChatMessage[] = []) {
+  const chats = useChatState()
+  const { registerChat, updateChat, migrateChat, triggerTypewriter, watchChat, unwatchChat } = useChatActions()
+  const router = useRouter()
+  
+  // Local active chat ID being viewed
+  const [activeChatId, setActiveChatId] = useState<string | null>(initialChatId || null)
 
-  const startTypewriter = useCallback(() => {
-    if (isTypewriterRunning.current) return
-    isTypewriterRunning.current = true
-
-    const pump = () => {
-      if (!assistantIdRef.current) {
-        isTypewriterRunning.current = false
-        return
-      }
-
-      const queueLen = typewriterQueue.current.length
-      if (queueLen === 0) {
-        if (status === 'idle') {
-          isTypewriterRunning.current = false
-          return
-        }
-        // Wait for more tokens
-        setTimeout(pump, 50)
-        return
-      }
-
-      // Dynamic speed: if queue is large, drain faster
-      let charsToTake = 2
-      if (queueLen > 100) charsToTake = 12
-      else if (queueLen > 50) charsToTake = 6
-      else if (queueLen > 10) charsToTake = 3
-
-      const nextChars = typewriterQueue.current.slice(0, charsToTake)
-      typewriterQueue.current = typewriterQueue.current.slice(charsToTake)
-      currentTextRef.current += nextChars
-
-      setMessages(prev => prev.map(m =>
-        m.id === assistantIdRef.current ? { ...m, content: currentTextRef.current } : m
-      ))
-
-      // Fixed interval for smooth visual flow
-      // 33ms gives ~30fps which is smooth and saves massive CPU vs 15ms
-      setTimeout(pump, 33)
+  // Register chat on mount if ID is provided
+  useLayoutEffect(() => {
+    if (initialChatId) {
+      setActiveChatId(initialChatId)
+      registerChat(initialChatId, {
+        messages: initialMessages,
+        status: 'idle',
+        error: null,
+        currentSearch: [],
+        isThinking: false,
+        chatId: initialChatId,
+        typewriterQueue: '',
+        currentText: ''
+      })
     }
-
-    pump()
-  }, [status])
+  }, [initialChatId, registerChat]) // initialMessages purposefully excluded to avoid reset on every change
 
   useEffect(() => {
-    if (status === 'streaming') {
-      startTypewriter()
+    if (activeChatId) {
+      watchChat(activeChatId)
+      return () => {
+        unwatchChat(activeChatId)
+      }
     }
-  }, [status, startTypewriter])
+  }, [activeChatId, watchChat, unwatchChat])
+
+
+  // Get current state from context or default
+  const currentState = activeChatId ? chats[activeChatId] : null
+  
+  const messages = currentState?.messages || []
+  const status = currentState?.status || 'idle'
+  const error = currentState?.error || null
+  const currentSearch = currentState?.currentSearch || []
+  const isThinking = currentState?.isThinking || false
+
+  const abortRef = useRef<AbortController | null>(null)
+  const chatIdRef = useRef<string | null>(activeChatId || null)
+
+  // Synchronize chatIdRef with initialChatId
+  useLayoutEffect(() => {
+    if (initialChatId) chatIdRef.current = initialChatId
+  }, [initialChatId])
+
+  // --- Helper Setters (Atomic updates to global context) ---
+  const setMessages = useCallback((updater: ChatMessage[] | ((prev: ChatMessage[]) => ChatMessage[])) => {
+    const currentId = chatIdRef.current
+    if (!currentId) return
+    updateChat(currentId, (current) => ({
+      ...current,
+      messages: typeof updater === 'function' ? updater(current.messages) : updater
+    }))
+  }, [updateChat])
+
+  const setStatus = useCallback((s: 'idle' | 'submitted' | 'streaming' | 'queued') => {
+    const currentId = chatIdRef.current
+    if (currentId) updateChat(currentId, { status: s })
+  }, [updateChat])
+
+  const setError = useCallback((e: Error | null) => {
+    const currentId = chatIdRef.current
+    if (currentId) updateChat(currentId, { error: e })
+  }, [updateChat])
+
+  const setCurrentSearch = useCallback((s: StatusEvent[]) => {
+    const currentId = chatIdRef.current
+    if (currentId) updateChat(currentId, { currentSearch: s })
+  }, [updateChat])
+
+  const setIsThinking = useCallback((t: boolean) => {
+    const currentId = chatIdRef.current
+    if (currentId) updateChat(currentId, { isThinking: t })
+  }, [updateChat])
+
+  // Typewriter state updates
+  const setTypewriterQueue = useCallback((q: string | ((prev: string) => string)) => {
+    const currentId = chatIdRef.current
+    if (currentId) {
+      updateChat(currentId, (prev) => ({
+        ...prev,
+        typewriterQueue: typeof q === 'function' ? q(prev.typewriterQueue) : q
+      }))
+    }
+  }, [updateChat])
+
+  const setCurrentText = useCallback((t: string | ((prev: string) => string)) => {
+    const currentId = chatIdRef.current
+    if (currentId) {
+      updateChat(currentId, (prev) => ({
+        ...prev,
+        currentText: typeof t === 'function' ? t(prev.currentText) : t
+      }))
+    }
+  }, [updateChat])
+
+  const deleteMessage = useCallback((messageId: string) => {
+    setMessages(prev => prev.filter(m => m.id !== messageId))
+  }, [setMessages])
+
+
+  // Global typewriter triggered via actions.triggerTypewriter
+  useEffect(() => {
+    if (activeChatId && chats[activeChatId]?.status === 'streaming') {
+      const assistantMsg = [...(chats[activeChatId]?.messages || [])].reverse().find(m => m.role === 'assistant')
+      if (assistantMsg) {
+        triggerTypewriter(activeChatId, assistantMsg.id)
+      }
+    }
+  }, [activeChatId, chats, triggerTypewriter])
 
   const stop = useCallback(() => {
     abortRef.current?.abort()
     setStatus('idle')
-  }, [])
+  }, [setStatus])
+
+  // Listen for global stop event
+  useEffect(() => {
+    const handleStopAll = () => {
+      stop()
+    }
+    window.addEventListener('stop-all-chats', handleStopAll)
+    return () => window.removeEventListener('stop-all-chats', handleStopAll)
+  }, [stop])
 
   const sendMessage = useCallback(async (
     text: string,
@@ -125,12 +192,16 @@ export function useSSEChat() {
       deepThink: boolean
       kbId?: string | null
       files?: any[]
+      promptId?: string | null
     },
     editMessageId?: string
   ) => {
     
     const targetIdx = editMessageId ? messages.findIndex(m => m.id === editMessageId) : -1
     const baseMessages = targetIdx !== -1 ? messages.slice(0, targetIdx) : messages
+
+    const targetChatId = options.chatId || activeChatId
+    if (!targetChatId) return
 
     const userMsg: ChatMessage = {
       id: generateId(),
@@ -139,18 +210,28 @@ export function useSSEChat() {
       attachments: options.files?.map(f => ({ name: f.name, type: f.type, dataUrl: f.dataUrl })),
     }
 
-    setMessages([...baseMessages, userMsg])
-    setStatus('submitted')
-    setError(null)
-    setCurrentSearch([])
-    setIsThinking(false)
-    
-    // Reset typewriter state
-    typewriterQueue.current = ''
-    currentTextRef.current = ''
+    const activeTasks = Object.values(chats).filter(c => c.status === 'streaming' || c.status === 'submitted')
+    const MAX_CONCURRENT = 2 
+
+    if (activeTasks.length >= MAX_CONCURRENT && chats[targetChatId]?.status !== 'submitted') {
+       updateChat(targetChatId, {
+         status: 'queued',
+         pendingMessage: { content: text, options }
+       })
+       return
+    }
+
+    updateChat(targetChatId, {
+      messages: [...baseMessages, userMsg],
+      status: 'submitted',
+      error: null,
+      currentSearch: [],
+      isThinking: false,
+      typewriterQueue: '',
+      currentText: ''
+    })
 
     const assistantId = generateId()
-    assistantIdRef.current = assistantId
     const assistantMsg: ChatMessage = {
       id: assistantId,
       role: 'assistant',
@@ -159,7 +240,9 @@ export function useSSEChat() {
       citations: [],
     }
 
-    setMessages([...baseMessages, userMsg, assistantMsg])
+    updateChat(targetChatId, {
+      messages: [...baseMessages, userMsg, assistantMsg]
+    })
 
     const abortController = new AbortController()
     abortRef.current = abortController
@@ -168,6 +251,8 @@ export function useSSEChat() {
     const timeoutId = setTimeout(() => {
       abortController.abort()
     }, 600000) // 10 minute timeout
+
+    let currentStreamChatId = targetChatId
 
     try {
       const allMessages = [...baseMessages, userMsg].map(m => ({
@@ -186,6 +271,7 @@ export function useSSEChat() {
           deepThink: options.deepThink,
           kbId: options.kbId,
           files: options.files,
+          promptId: options.promptId,
         }),
         signal: abortController.signal,
       })
@@ -197,7 +283,9 @@ export function useSSEChat() {
         throw new Error(errData.error || `HTTP ${res.status}`)
       }
 
-      setStatus('streaming')
+
+      updateChat(currentStreamChatId, { status: 'streaming' })
+      triggerTypewriter(currentStreamChatId, assistantId)
 
       const reader = res.body!.getReader()
       const decoder = new TextDecoder()
@@ -224,8 +312,11 @@ export function useSSEChat() {
 
               switch (eventType) {
                 case 'text': {
-                  // Add to typewriter queue instead of updating messages directly
-                  typewriterQueue.current += data.content
+                  updateChat(currentStreamChatId, prev => ({ 
+                    ...prev, 
+                    typewriterQueue: prev.typewriterQueue + data.content 
+                  }))
+                  triggerTypewriter(currentStreamChatId, assistantId)
                   break
                 }
 
@@ -233,35 +324,60 @@ export function useSSEChat() {
                   const statusEvt = data as StatusEvent
                   if (statusEvt.type === 'search' || statusEvt.type === 'mcp' || statusEvt.type === 'model_load') {
                     accSearchSteps = [...accSearchSteps, statusEvt]
-                    setCurrentSearch([...accSearchSteps])
-                    setMessages(prev => prev.map(m =>
-                      m.id === assistantId ? { ...m, searchSteps: [...accSearchSteps] } : m
-                    ))
+                    updateChat(currentStreamChatId, prev => ({
+                      ...prev,
+                      currentSearch: [...accSearchSteps],
+                      messages: prev.messages.map(m =>
+                        m.id === assistantId ? { ...m, searchSteps: [...accSearchSteps] } : m
+                      )
+                    }))
                   }
                   if (statusEvt.type === 'thinking') {
-                    setIsThinking(statusEvt.stage === 'start')
-                    setMessages(prev => prev.map(m =>
-                      m.id === assistantId ? { ...m, isThinking: statusEvt.stage === 'start' } : m
-                    ))
+                    updateChat(currentStreamChatId, prev => ({
+                      ...prev,
+                      isThinking: statusEvt.stage === 'start',
+                      messages: prev.messages.map(m =>
+                        m.id === assistantId ? { ...m, isThinking: statusEvt.stage === 'start' } : m
+                      )
+                    }))
                   }
                   break
                 }
 
                 case 'citations': {
                   accCitations = data.results || []
-                  setMessages(prev => prev.map(m =>
-                    m.id === assistantId ? { ...m, citations: accCitations } : m
-                  ))
+                  updateChat(currentStreamChatId, prev => ({
+                    ...prev,
+                    messages: prev.messages.map(m =>
+                      m.id === assistantId ? { ...m, citations: accCitations } : m
+                    )
+                  }))
                   break
                 }
 
                 case 'chatId': {
-                  chatIdRef.current = data.id
+                  const newId = data.id
+                  if (currentStreamChatId.startsWith('new') && newId && currentStreamChatId !== newId) {
+                    migrateChat(currentStreamChatId, newId)
+                    currentStreamChatId = newId
+                    
+                    // 迁移后也需要触发打字机，确保在新的 ID 下继续输出
+                    triggerTypewriter(newId, assistantId)
+
+                    // 通知当前组件更新它所展示的 activeChatId，从而拉取全局的 chats[newId]
+                    setActiveChatId(newId)
+                    chatIdRef.current = newId
+
+                    // 使用 router.replace 替换地址栏 URL，确保 Next.js 路由状态同步
+                    router.replace(`/chat/${newId}`, { scroll: false })
+                  } else {
+                    chatIdRef.current = newId
+                  }
                   break
                 }
 
                 case 'error': {
-                  setError(new Error(data.message))
+                  updateChat(currentStreamChatId, { error: new Error(data.message) })
                   break
                 }
 
@@ -280,24 +396,22 @@ export function useSSEChat() {
       clearTimeout(timeoutId)
       if (e.name !== 'AbortError') {
         console.error('[useSSEChat] Error:', e)
-        setError(e)
+        updateChat(currentStreamChatId, { error: e })
       } else if (status === 'streaming') {
-        // Only set error if we were already streaming (real network error)
-        // If aborted during submitted state, it's likely a hot-reload
         console.warn('[useSSEChat] Request aborted during streaming')
-        setError(new Error('Connection interrupted. Please try again.'))
-      } else {
-        console.warn('[useSSEChat] Request aborted (likely hot-reload in dev mode)')
+        updateChat(currentStreamChatId, { error: new Error('Connection interrupted. Please try again.') })
       }
     } finally {
       clearTimeout(timeoutId)
-      setStatus('idle')
-      setIsThinking(false)
-      setCurrentSearch([])
+      updateChat(currentStreamChatId, {
+        status: 'idle',
+        isThinking: false,
+        currentSearch: []
+      })
       abortRef.current = null
       // Assistant ID remains until next message to let typewriter finish the last bits
     }
-  }, [messages, startTypewriter])
+  }, [triggerTypewriter])
 
   const reset = useCallback(() => {
     setMessages([])
@@ -306,9 +420,8 @@ export function useSSEChat() {
     setCurrentSearch([])
     setIsThinking(false)
     chatIdRef.current = null
-    typewriterQueue.current = ''
-    currentTextRef.current = ''
-    assistantIdRef.current = null
+    setTypewriterQueue('')
+    setCurrentText('')
   }, [])
 
   const regenerate = useCallback(async (options: Omit<Parameters<typeof sendMessage>[1], 'files' | 'chatId'>) => {
@@ -328,6 +441,23 @@ export function useSSEChat() {
     }, userMsg.id)
   }, [messages, status, sendMessage])
 
+  // Removed auto-abort on unmount to allow background execution
+
+  // Queue processor
+  useEffect(() => {
+    if (!activeChatId) return
+    const chat = chats[activeChatId]
+    if (chat?.status === 'queued') {
+      const activeCount = Object.values(chats).filter(c => c.status === 'streaming' || c.status === 'submitted').length
+      const MAX_CONCURRENT = 2
+      if (activeCount < MAX_CONCURRENT) {
+        if (chat.pendingMessage) {
+          sendMessage(chat.pendingMessage.content, chat.pendingMessage.options)
+        }
+      }
+    }
+  }, [chats, activeChatId, sendMessage])
+
   return {
     messages,
     status,
@@ -340,5 +470,6 @@ export function useSSEChat() {
     stop,
     reset,
     setMessages,
+    deleteMessage,
   }
 }

@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Save, ExternalLink, Loader2, CheckCircle2, XCircle, Server, Plus, Trash2, Edit2, Globe, Cpu, Terminal, Search, RefreshCw, ChevronDown, ChevronUp, Package, Wrench, Activity, LayoutGrid, Info } from "lucide-react"
+import { Save, ExternalLink, Loader2, CheckCircle2, XCircle, Server, Plus, Trash2, Edit2, Globe, Cpu, Terminal, Search, RefreshCw, ChevronDown, ChevronUp, Package, Wrench, Activity, LayoutGrid, Info, ShieldCheck, Sparkles, Bot, Check, X } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { useI18n } from "@/lib/i18n"
 import { Checkbox } from "./ui/checkbox"
@@ -19,8 +19,8 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 
 const MIN_WIDTH = 520
 const MIN_HEIGHT = 400
-const DEFAULT_WIDTH = 520
-const DEFAULT_HEIGHT = 640
+const DEFAULT_WIDTH = 800
+const DEFAULT_HEIGHT = 900
 
 const SEARCH_ENGINES = [
   { id: 'bing', label: 'Bing', free: true, desc: 'No API key required, works in China' },
@@ -30,13 +30,34 @@ const SEARCH_ENGINES = [
   { id: 'serpapi', label: 'SerpAPI (Google)', free: false, desc: 'Real Google results', url: 'https://serpapi.com' },
 ]
 
+const LLM_PROVIDERS = [
+  { id: 'openai', label: 'OpenAI', placeholder: 'sk-...' },
+  { id: 'anthropic', label: 'Anthropic', placeholder: 'sk-ant-...' },
+  { id: 'google', label: 'Google Gemini', placeholder: 'AIza...' },
+  { id: 'deepseek', label: 'DeepSeek', placeholder: 'sk-...' },
+  { id: 'minimax', label: 'MiniMax', placeholder: 'Key...' },
+  { id: 'groq', label: 'Groq', placeholder: 'gsk_...' },
+  { id: 'mistral', label: 'Mistral AI', placeholder: 'Key...' },
+  { id: 'zhipu', label: '智谱 AI (Zhipu)', placeholder: 'API Key...' },
+  { id: 'lingyi', label: '零一万物 (Lingyi)', placeholder: 'API Key...' },
+  { id: 'openrouter', label: 'OpenRouter', placeholder: 'sk-or-...' },
+  { id: 'nvidia', label: 'NVIDIA', placeholder: 'nvapi-...' },
+]
+
 export function SettingsDialog({ open, onOpenChange }: { open: boolean, onOpenChange: (open: boolean) => void }) {
   const [ollamaUrl, setOllamaUrl] = useState("http://127.0.0.1:11434")
   const [lmstudioUrl, setLmstudioUrl] = useState("http://127.0.0.1:1234")
   const [openaiKey, setOpenaiKey] = useState("")
+  const [anthropicKey, setAnthropicKey] = useState("")
+  const [googleKey, setGoogleKey] = useState("")
   const [minimaxKey, setMinimaxKey] = useState("")
   const [deepseekKey, setDeepseekKey] = useState("")
+  const [groqKey, setGroqKey] = useState("")
+  const [mistralKey, setMistralKey] = useState("")
+  const [zhipuKey, setZhipuKey] = useState("")
+  const [lingyiKey, setLingyiKey] = useState("")
   const [openrouterKey, setOpenrouterKey] = useState("")
+  const [nvidiaKey, setNvidiaKey] = useState("")
   const [defaultModel, setDefaultModel] = useState("")
   const [searchEngine, setSearchEngine] = useState("duckduckgo")
   const [searchKey, setSearchKey] = useState("")
@@ -53,15 +74,19 @@ export function SettingsDialog({ open, onOpenChange }: { open: boolean, onOpenCh
   const [theme, setTheme] = useState("zinc")
   const [mcpEnabled, setMcpEnabled] = useState(true)
   const [mcpAutoLoad, setMcpAutoLoad] = useState(false)
+  const [maxConcurrentChats, setMaxConcurrentChats] = useState(3)
+  const [enabledModels, setEnabledModels] = useState<string[]>([])
+  const [allModels, setAllModels] = useState<any[]>([])
   const [saving, setSaving] = useState(false)
   const [testing, setTesting] = useState(false)
   const [testResult, setTestResult] = useState<'ok' | 'fail' | null>(null)
   const [mcpServers, setMcpServers] = useState<any[]>([])
   const [editingServer, setEditingServer] = useState<any>(null)
   const [showAddForm, setShowAddForm] = useState(false)
-  const [mcpTab, setMcpTab] = useState<'my' | 'market'>('my')
+  const [mcpTab, setMcpTab] = useState<'my' | 'market' | 'raw' | 'model_market'>('my')
   const [marketSearch, setMarketSearch] = useState("")
-  const [marketSource, setMarketSource] = useState<'github' | 'modelscope' | 'smithery' | 'glama'>('github')
+  const [marketSource, setMarketSource] = useState<'github' | 'smithery'>('github')
+  const [selectedSecurityProvider, setSelectedSecurityProvider] = useState("openai")
   const [marketServers, setMarketServers] = useState<any[]>([])
   const [loadingMarket, setLoadingMarket] = useState(false)
   const [modelMarketModels, setModelMarketModels] = useState<any[]>([])
@@ -77,6 +102,41 @@ export function SettingsDialog({ open, onOpenChange }: { open: boolean, onOpenCh
   const [selectedMcpDetails, setSelectedMcpDetails] = useState<Record<string, any>>({})
   const [loadingMcpDetails, setLoadingMcpDetails] = useState<Record<string, boolean>>({})
   const [expandedMcp, setExpandedMcp] = useState<string | null>(null)
+
+  const [rawMcpConfig, setRawMcpConfig] = useState("")
+  const [loadingRawConfig, setLoadingRawConfig] = useState(false)
+
+  // MCP Form State
+  const [mcpName, setMcpName] = useState("")
+  const [mcpCommand, setMcpCommand] = useState("")
+  const [mcpArgs, setMcpArgs] = useState("")
+  const [mcpUrl, setMcpUrl] = useState("")
+  
+  const [prompts, setPrompts] = useState<any[]>([])
+  const [editingPromptId, setEditingPromptId] = useState<string | null>(null)
+  const [isAddingPrompt, setIsAddingPrompt] = useState(false)
+  const [deletingPromptId, setDeletingPromptId] = useState<string | null>(null)
+  const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null)
+  const [promptForm, setPromptForm] = useState({ name: "", content: "", description: "" })
+
+  useEffect(() => {
+    if (editingServer) {
+       setMcpName(editingServer.name || "")
+       setMcpCommand(editingServer.command || "")
+       setMcpArgs(Array.isArray(editingServer.args) ? editingServer.args.join(" ") : (editingServer.args || ""))
+       setMcpUrl(editingServer.url || "")
+    } else {
+       setMcpName("")
+       setMcpCommand("")
+       setMcpArgs("")
+       setMcpUrl("")
+    }
+  }, [editingServer])
+   const refreshPrompts = () => {
+     fetch(`/api/prompts?t=${Date.now()}`).then(res => res.json()).then(data => { 
+       if(Array.isArray(data)) setPrompts(data) 
+     }).catch(console.error)
+   }
 
   const fetchModels = async () => {
     setIsLoadingModels(true)
@@ -96,7 +156,6 @@ export function SettingsDialog({ open, onOpenChange }: { open: boolean, onOpenCh
       const res = await fetch(`/api/models/local?fileName=${encodeURIComponent(fileName)}`, { method: 'DELETE' })
       if (res.ok) {
         fetchModels()
-        // If it was the downloaded list in market, we might want to refresh that too if we separate them
       }
     } catch (e) {
       console.error('Delete model error:', e)
@@ -122,20 +181,12 @@ export function SettingsDialog({ open, onOpenChange }: { open: boolean, onOpenCh
       .catch(console.error)
   }
 
-  const unloadLocalModel = async () => {
-    setUnloadingLocal(true)
-    try {
-      await fetch('/api/models/local/status', { method: 'DELETE' })
-      setLocalModelStatus({ isLoaded: false })
-    } catch(e) {}
-    setUnloadingLocal(false)
-  }
-
   useEffect(() => {
     if (open) {
       setTestResult(null)
       fetchLocalModelStatus()
       fetchModels()
+      refreshPrompts()
 
       fetch('/api/settings')
         .then(res => res.json())
@@ -143,9 +194,16 @@ export function SettingsDialog({ open, onOpenChange }: { open: boolean, onOpenCh
           setOllamaUrl(data.ollamaUrl || "http://127.0.0.1:11434")
           setLmstudioUrl(data.lmstudioUrl || "http://127.0.0.1:1234")
           setOpenaiKey(data.openaiKey || "")
+          setAnthropicKey(data.anthropicKey || "")
+          setGoogleKey(data.googleKey || "")
           setMinimaxKey(data.minimaxKey || "")
           setDeepseekKey(data.deepseekKey || "")
+          setGroqKey(data.groqKey || "")
+          setMistralKey(data.mistralKey || "")
+          setZhipuKey(data.zhipuKey || "")
+          setLingyiKey(data.lingyiKey || "")
           setOpenrouterKey(data.openrouterKey || "")
+          setNvidiaKey(data.nvidiaKey || "")
           setDefaultModel(data.defaultModel || "")
           setSearchEngine(data.searchEngine || "duckduckgo")
           setSearchKey(data.searchKey || "")
@@ -162,7 +220,18 @@ export function SettingsDialog({ open, onOpenChange }: { open: boolean, onOpenCh
           setTheme(data.theme || "zinc")
           setMcpEnabled(data.mcpEnabled ?? true)
           setMcpAutoLoad(data.mcpAutoLoad ?? false)
+          setMaxConcurrentChats(data.maxConcurrentChats ?? 3)
+          try {
+            setEnabledModels(JSON.parse(data.enabledModels || "[]"))
+          } catch (e) {
+            setEnabledModels([])
+          }
         })
+        .catch(console.error)
+      
+      fetch('/api/models?all=true')
+        .then(res => res.json())
+        .then(data => setAllModels(Array.isArray(data) ? data : []))
         .catch(console.error)
       
       fetch('/api/settings/mcp')
@@ -172,7 +241,6 @@ export function SettingsDialog({ open, onOpenChange }: { open: boolean, onOpenCh
     }
   }, [open])
 
-  // Auto-load MCP details when toggle is enabled
   useEffect(() => {
     if (mcpEnabled && mcpServers.length > 0) {
       const enabledServers = mcpServers.filter((s: any) => s.enabled)
@@ -186,60 +254,59 @@ export function SettingsDialog({ open, onOpenChange }: { open: boolean, onOpenCh
 
   const saveSettings = async () => {
     setSaving(true)
-    await fetch('/api/settings', {
+    const res = await fetch('/api/settings', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
-        ollamaUrl, lmstudioUrl, openaiKey, minimaxKey, deepseekKey, openrouterKey, 
+        ollamaUrl, lmstudioUrl, 
+        openaiKey, anthropicKey, googleKey, minimaxKey, deepseekKey, 
+        groqKey, mistralKey, zhipuKey, lingyiKey, openrouterKey, nvidiaKey,
         defaultModel, searchEngine, searchKey, localGgufEnabled,
         localGgufContextSize, localGgufTemperature, localGgufTopP, localGgufRepeatPenalty, localGgufMaxTokens,
         apiTemperature, apiTopP, apiMaxTokens, apiContextSize, theme,
-        mcpEnabled, mcpAutoLoad
+        mcpEnabled, mcpAutoLoad, maxConcurrentChats, enabledModels: JSON.stringify(enabledModels)
       })
     })
+
+    if (!res.ok) {
+      console.error("Save settings failed")
+    }
+
     document.documentElement.setAttribute('data-theme', theme)
     setSaving(false)
     onOpenChange(false)
   }
 
-  const testSearch = async () => {
-    setTesting(true)
-    setTestResult(null)
+  const fetchRawMcpConfig = async () => {
+    setLoadingRawConfig(true)
     try {
-      // Save first so the server picks up the latest settings
-      await fetch('/api/settings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          ollamaUrl, lmstudioUrl, openaiKey, minimaxKey, deepseekKey, openrouterKey, 
-          defaultModel, searchEngine, searchKey, localGgufEnabled,
-          localGgufContextSize, localGgufTemperature, localGgufTopP, localGgufRepeatPenalty, localGgufMaxTokens,
-          apiTemperature, apiTopP, apiMaxTokens, apiContextSize
-        })
-      })
-      const res = await fetch('/api/search', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query: 'hello world' })
-      })
+      const res = await fetch('/api/settings/mcp/config')
       const data = await res.json()
-      setTestResult(data.results?.length > 0 ? 'ok' : 'fail')
-    } catch {
-      setTestResult('fail')
+      setRawMcpConfig(JSON.stringify(data, null, 2))
+    } catch (e) {
+      console.error("Fetch raw config error:", e)
     }
-    setTesting(false)
+    setLoadingRawConfig(false)
   }
 
-  const selectedEngine = SEARCH_ENGINES.find(e => e.id === searchEngine)
-  const needsKey = selectedEngine && !selectedEngine.free
-
-  const handleDeleteServer = async (id: string) => {
+  const saveRawMcpConfig = async () => {
+    setSaving(true)
     try {
-      await fetch(`/api/settings/mcp/${id}`, { method: 'DELETE' })
-      setMcpServers(prev => prev.filter(s => s.id !== id))
-    } catch (error) {
-      console.error("Delete MCP error:", error)
+      let parsed
+      try { parsed = JSON.parse(rawMcpConfig) } catch { throw new Error("Invalid JSON") }
+      const res = await fetch('/api/settings/mcp/config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(parsed)
+      })
+      if (res.ok) {
+        const updated = await (await fetch('/api/settings/mcp')).json()
+        setMcpServers(updated)
+      }
+    } catch (error: any) {
+      alert("Save failed: " + error.message)
     }
+    setSaving(false)
   }
 
   const handleSaveServer = async (server: any) => {
@@ -263,9 +330,18 @@ export function SettingsDialog({ open, onOpenChange }: { open: boolean, onOpenCh
     }
   }
 
+  const handleDeleteServer = async (id: string) => {
+    if (!confirm("确定要删除此服务器吗？")) return
+    try {
+      await fetch(`/api/settings/mcp/${id}`, { method: 'DELETE' })
+      setMcpServers(prev => prev.filter(s => s.id !== id))
+    } catch (error) {
+      console.error("Delete MCP error:", error)
+    }
+  }
+
   const fetchMarket = async (q?: string) => {
     setLoadingMarket(true)
-    setMarketServers([]) // Clear current list to prevent UI flicker/inconsistency
     try {
       const res = await fetch(`/api/settings/mcp/market?search=${encodeURIComponent(q || '')}&source=${marketSource}`)
       const data = await res.json()
@@ -317,7 +393,7 @@ export function SettingsDialog({ open, onOpenChange }: { open: boolean, onOpenCh
               setDownloadProgress(data)
               if (data.status === 'done') {
                 setDownloadingModelId(null)
-                // Refresh local models list if possible
+                fetchModels()
               }
             } catch (e) {}
           }
@@ -332,14 +408,10 @@ export function SettingsDialog({ open, onOpenChange }: { open: boolean, onOpenCh
   useEffect(() => {
     if (mcpTab === 'market') {
       fetchMarket(marketSearch)
+    } else if (mcpTab === 'raw') {
+      fetchRawMcpConfig()
     }
-  }, [marketSource])
-
-  useEffect(() => {
-    if (mcpTab === 'market' && marketServers.length === 0) {
-      fetchMarket()
-    }
-  }, [mcpTab])
+  }, [mcpTab, marketSource])
 
   const [dialogSize, setDialogSize] = useState<{ width: number; height: number }>({
     width: DEFAULT_WIDTH,
@@ -347,8 +419,11 @@ export function SettingsDialog({ open, onOpenChange }: { open: boolean, onOpenCh
   })
 
   useEffect(() => {
-    if (!open) {
-      setDialogSize({ width: DEFAULT_WIDTH, height: DEFAULT_HEIGHT })
+    if (open) {
+      setDialogSize({ 
+        width: DEFAULT_WIDTH, 
+        height: typeof window !== 'undefined' ? window.innerHeight - 48 : DEFAULT_HEIGHT 
+      })
     }
   }, [open])
 
@@ -379,7 +454,7 @@ export function SettingsDialog({ open, onOpenChange }: { open: boolean, onOpenCh
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent 
-        className="sm:max-w-none p-0"
+        className="sm:max-w-none p-0 flex flex-col"
         style={{ 
           width: dialogSize.width, 
           maxWidth: 'calc(100vw - 2rem)',
@@ -387,874 +462,779 @@ export function SettingsDialog({ open, onOpenChange }: { open: boolean, onOpenCh
           maxHeight: 'calc(100vh - 2rem)',
           minWidth: MIN_WIDTH,
           minHeight: MIN_HEIGHT,
-          resize: 'none',
         }}
       >
         <DialogHeader className="p-6 pb-0">
           <DialogTitle className="text-lg font-semibold">{t("Settings Title")}</DialogTitle>
         </DialogHeader>
+
         <div className="flex-1 overflow-hidden flex flex-col p-6 pt-2">
-        <Tabs defaultValue="general">
-          <TabsList className="w-full mb-4">
-             <TabsTrigger value="general" className="flex-1">{t("General")}</TabsTrigger>
-            <TabsTrigger value="providers" className="flex-1">{t("Providers")}</TabsTrigger>
-            <TabsTrigger value="local_gguf" className="flex-1">{t("Local GGUF")}</TabsTrigger>
-            <TabsTrigger value="market" className="flex-1">{t("Model Market")}</TabsTrigger>
-            <TabsTrigger value="search" className="flex-1">{t("Search")}</TabsTrigger>
-            <TabsTrigger value="mcp" className="flex-1">MCP</TabsTrigger>
-          </TabsList>
+          <Tabs defaultValue="general" className="flex-1 flex flex-col min-h-0">
+            <TabsList className="w-full mb-4 shrink-0">
+              <TabsTrigger value="general" className="flex-1">{t("General")}</TabsTrigger>
+              <TabsTrigger value="models" className="flex-1">{t("Models")}</TabsTrigger>
+              <TabsTrigger value="prompts" className="flex-1">{t("Prompts")}</TabsTrigger>
+              <TabsTrigger value="security" className="flex-1">{t("Security")}</TabsTrigger>
+              <TabsTrigger value="experimental" className="flex-1">{t("Experimental")}</TabsTrigger>
+            </TabsList>
 
-          {/* GENERAL TAB */}
-          <TabsContent value="general" className="space-y-6 pt-2">
-            <div className="grid gap-3">
-              <Label className="text-xs font-bold text-zinc-500 uppercase tracking-wider">{t("Appearance")}</Label>
-              <div className="grid grid-cols-5 gap-2">
-                {[
-                  { id: 'zinc', name: 'OpenOrange', color: 'bg-zinc-500' },
-                  { id: 'orange', name: 'Orange', color: 'bg-orange-500' },
-                  { id: 'blue', name: 'Blue', color: 'bg-blue-500' },
-                  { id: 'green', name: 'Green', color: 'bg-emerald-500' },
-                  { id: 'rose', name: 'Rose', color: 'bg-rose-500' },
-                ].map((t) => (
-                  <button
-                    key={t.id}
-                    onClick={() => {
-                      setTheme(t.id)
-                      document.documentElement.setAttribute('data-theme', t.id)
-                    }}
-                    className={`group relative flex flex-col items-center gap-2 p-2 rounded-xl border-2 transition-all ${
-                      theme === t.id 
-                        ? 'border-primary bg-primary/5' 
-                        : 'border-transparent hover:bg-zinc-100 dark:hover:bg-zinc-800'
-                    }`}
-                  >
-                    <div className={`size-8 rounded-full shadow-sm ${t.color} group-hover:scale-110 transition-transform`} />
-                    <span className="text-[10px] font-medium">{t.name}</span>
-                    {theme === t.id && (
-                      <div className="absolute -top-1 -right-1 size-4 rounded-full bg-primary flex items-center justify-center text-[10px] text-white">
-                        <CheckCircle2 className="size-2.5" />
-                      </div>
-                    )}
-                  </button>
-                ))}
-              </div>
-            </div>
+            <div className="flex-1 overflow-y-auto pr-1 -mr-1 custom-scrollbar min-h-0">
+              <TabsContent value="general" className="space-y-6 mt-0">
+                <div className="grid gap-3">
+                  <Label className="text-xs font-bold text-zinc-500 uppercase tracking-wider">{t("Appearance")}</Label>
+                  <div className="grid grid-cols-5 gap-2">
+                    {[
+                      { id: 'zinc', name: 'OpenOrange', color: 'bg-zinc-500' },
+                      { id: 'orange', name: 'Orange', color: 'bg-orange-500' },
+                      { id: 'blue', name: 'Blue', color: 'bg-blue-500' },
+                      { id: 'green', name: 'Green', color: 'bg-emerald-500' },
+                      { id: 'rose', name: 'Rose', color: 'bg-rose-500' },
+                    ].map((themeItem) => (
+                      <button
+                        key={themeItem.id}
+                        onClick={() => {
+                          setTheme(themeItem.id)
+                          document.documentElement.setAttribute('data-theme', themeItem.id)
+                        }}
+                        className={`group relative flex flex-col items-center gap-2 p-2 rounded-xl border-2 transition-all ${
+                          theme === themeItem.id ? 'border-primary bg-primary/5' : 'border-transparent hover:bg-zinc-100 dark:hover:bg-zinc-800'
+                        }`}
+                      >
+                        <div className={`size-8 rounded-full shadow-sm ${themeItem.color} group-hover:scale-110 transition-transform`} />
+                        <span className="text-[10px] font-medium">{themeItem.name}</span>
+                        {theme === themeItem.id && (
+                          <div className="absolute -top-1 -right-1 size-4 rounded-full bg-primary flex items-center justify-center text-[10px] text-white">
+                            <CheckCircle2 className="size-2.5" />
+                          </div>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
 
-            <div className="grid gap-3 pt-2">
-              <Label className="text-xs font-bold text-zinc-500 uppercase tracking-wider">{t("Language")}</Label>
-              <Select value={language} onValueChange={(v) => { if (v) setLanguage(v as any) }}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="en">English</SelectItem>
-                  <SelectItem value="zh">中文 (简体)</SelectItem>
-                  <SelectItem value="es">Español</SelectItem>
-                  <SelectItem value="fr">Français</SelectItem>
-                  <SelectItem value="de">Deutsch</SelectItem>
-                  <SelectItem value="ja">日本語</SelectItem>
-                  <SelectItem value="ko">한국어</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </TabsContent>
-
-          {/* PROVIDERS TAB (Renamed from Models) */}
-          <TabsContent value="providers" className="space-y-4">
-            <div className="grid gap-4 max-h-[500px] overflow-y-auto px-1">
-              <div className="grid gap-2">
-                <Label>{t("Default Model")}</Label>
-                <div className="flex gap-2">
-                  <Select value={defaultModel} onValueChange={v => { if (v) setDefaultModel(v); setTestResult(null) }}>
-                    <SelectTrigger className="flex-1">
+                <div className="grid gap-3 pt-2">
+                  <Label className="text-xs font-bold text-zinc-500 uppercase tracking-wider">{t("Language")}</Label>
+                  <Select value={language} onValueChange={(v) => { if (v) setLanguage(v as any) }}>
+                    <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {models.map(m => (
-                        <SelectItem key={m.id} value={m.id}>
-                          <div className="flex items-center gap-2">
-                            <Badge variant="outline" className="text-[10px] scale-90 opacity-50">{m.provider}</Badge>
-                            {m.name}
-                          </div>
-                        </SelectItem>
-                      ))}
+                      <SelectItem value="en">English</SelectItem>
+                      <SelectItem value="zh">中文 (简体)</SelectItem>
+                      <SelectItem value="es">Español</SelectItem>
+                      <SelectItem value="fr">Français</SelectItem>
+                      <SelectItem value="de">Deutsch</SelectItem>
+                      <SelectItem value="ja">日本語</SelectItem>
+                      <SelectItem value="ko">한국어</SelectItem>
                     </SelectContent>
                   </Select>
-                  <Button variant="outline" size="icon" onClick={fetchModels} disabled={isLoadingModels}>
-                    <RefreshCw className={`size-4 ${isLoadingModels ? "animate-spin" : ""}`} />
-                  </Button>
                 </div>
-              </div>
 
-              <div className="space-y-4 py-2">
-                <div className="space-y-2">
-                  <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Local Providers</h4>
-                  <div className="grid gap-3 p-3 rounded-xl border border-zinc-100 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/30">
-                    <div className="grid gap-1.5">
-                      <Label className="text-xs">{t("Ollama URL")}</Label>
-                      <Input value={ollamaUrl} onChange={e => setOllamaUrl(e.target.value)} placeholder="http://127.0.0.1:11434" />
-                    </div>
-                    <div className="grid gap-1.5">
-                      <Label className="text-xs">{t("LM Studio URL")}</Label>
-                      <Input value={lmstudioUrl} onChange={e => setLmstudioUrl(e.target.value)} placeholder="http://127.0.0.1:1234" />
-                    </div>
+                <div className="grid gap-3 pt-4 border-t border-zinc-100 dark:border-zinc-800">
+                  <Label className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">{t("Max Concurrent Tasks") || "最大并发任务数"}</Label>
+                  <div className="flex items-center gap-4">
+                    <Input 
+                      type="number" 
+                      min={1} 
+                      max={10} 
+                      value={maxConcurrentChats} 
+                      onChange={(e) => setMaxConcurrentChats(Math.min(10, Math.max(1, parseInt(e.target.value) || 3)))}
+                      className="w-24 h-9 text-xs"
+                    />
+                    <span className="text-xs text-zinc-400">
+                      {t("Concurrent limit description") || "允许后台同时运行的 AI 任务数上限（1-10）"}
+                    </span>
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-wider">API Providers</h4>
-                  <div className="grid gap-3 p-3 rounded-xl border border-zinc-100 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/30">
-                    <div className="grid gap-1.5">
-                      <Label className="text-xs">{t("OpenAI API Key (optional)")}</Label>
-                      <Input type="password" value={openaiKey} onChange={e => setOpenaiKey(e.target.value)} placeholder="sk-..." />
-                    </div>
-                    <div className="grid gap-1.5">
-                      <Label className="text-xs">{t("DeepSeek API Key (optional)")}</Label>
-                      <Input type="password" value={deepseekKey} onChange={e => setDeepseekKey(e.target.value)} placeholder="sk-..." />
-                    </div>
-                    <div className="grid gap-1.5">
-                      <Label className="text-xs">{t("MiniMax API Key (optional)")}</Label>
-                      <Input type="password" value={minimaxKey} onChange={e => setMinimaxKey(e.target.value)} placeholder="Key..." />
-                    </div>
-                    <div className="grid gap-1.5">
-                      <Label className="text-xs">{t("OpenRouter API Key (optional)")}</Label>
-                      <Input type="password" value={openrouterKey} onChange={e => setOpenrouterKey(e.target.value)} placeholder="sk-or-v1-..." />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-wider">{t("Model Parameters")}</h4>
-                  <div className="grid gap-4 p-4 rounded-xl border border-zinc-100 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/30">
-                    <div className="grid gap-3">
-                      <div className="flex justify-between items-center">
-                        <Label className="text-[10px] text-zinc-500">{t("Global Temperature")}</Label>
-                        <span className="text-[10px] font-mono font-bold text-indigo-500">{apiTemperature}</span>
-                      </div>
-                      <Slider 
-                        min={0} max={1.5} step={0.1} 
-                        value={[apiTemperature]} 
-                        onValueChange={(v: number[]) => setApiTemperature(v[0])} 
-                        className="py-1"
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="grid gap-1.5">
-                        <Label className="text-[10px] text-zinc-500">{t("Context Length")}</Label>
-                        <Input 
-                          type="number" 
-                          value={apiContextSize} 
-                          onChange={e => setApiContextSize(parseInt(e.target.value) || 8192)}
-                          className="h-7 text-[10px] font-mono"
-                        />
-                      </div>
-                      <div className="grid gap-1.5">
-                        <Label className="text-[10px] text-zinc-500">{t("Max Tokens")}</Label>
-                        <Input 
-                          type="number" 
-                          value={apiMaxTokens} 
-                          onChange={e => setApiMaxTokens(parseInt(e.target.value) || 2048)}
-                          className="h-7 text-[10px] font-mono"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </TabsContent>
-
-          {/* LOCAL GGUF TAB (Dedicated) */}
-          <TabsContent value="local_gguf" className="space-y-4">
-            <div className="space-y-4 max-h-[500px] overflow-y-auto px-1">
-              <div className="p-4 rounded-xl border border-amber-200 dark:border-amber-900/50 bg-amber-50/50 dark:bg-amber-950/20 space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label className="text-sm font-bold flex items-center gap-2">
-                      <Cpu className="size-4 text-amber-600" />
-                      {t("Enable Local GGUF Engine")}
-                    </Label>
-                    <p className="text-[10px] text-zinc-500">{t("Disable this to save memory and speed up development.")}</p>
-                  </div>
-                  <Switch checked={localGgufEnabled} onCheckedChange={setLocalGgufEnabled} />
-                </div>
-              </div>
-
-              {localGgufEnabled && (
-                <div className="space-y-4 animate-in fade-in slide-in-from-top-1 duration-300">
-                  <div className="grid gap-2">
-                    <Label className="text-[10px] font-bold text-zinc-400 uppercase">{t("Engine Status")}</Label>
-                    <div className="p-3 rounded-xl border border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-950 flex flex-col gap-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-medium text-zinc-500">
-                          {t("Current Status")}
-                        </span>
-                        <span className="flex items-center gap-1.5 text-xs font-semibold">
-                          {localModelStatus?.isLoaded ? (
-                            <><span className="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-pulse"></span> {t("Loaded in VRAM")}</>
-                          ) : (
-                            <><span className="w-2 h-2 rounded-full bg-zinc-300 dark:bg-zinc-700 inline-block"></span> {t("Standby")}</>
-                          )}
-                        </span>
-                      </div>
-                      {localModelStatus?.isLoaded && localModelStatus?.modelName && (
-                        <div className="text-[10px] font-mono text-zinc-500 px-2 py-1.5 bg-zinc-50 dark:bg-zinc-900 rounded border border-zinc-100 dark:border-zinc-800 truncate">
-                          {localModelStatus.modelName}
-                        </div>
-                      )}
-                      {localModelStatus?.isLoaded && (
-                        <Button 
-                          variant="destructive" 
-                          size="sm" 
-                          className="w-full mt-1 h-8 text-xs font-bold" 
-                          onClick={unloadLocalModel}
-                          disabled={unloadingLocal}
-                        >
-                          {unloadingLocal ? t("Releasing...") : t("Force Eject from VRAM")}
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="grid gap-2">
-                    <Label className="text-[10px] font-bold text-zinc-400 uppercase">{t("Inference Parameters")}</Label>
-                    <div className="grid grid-cols-2 gap-4 p-4 rounded-xl border border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-950">
-                      <div className="space-y-2">
-                        <div className="flex justify-between items-center">
-                          <Label className="text-[10px] text-zinc-500">{t("Context Size")}</Label>
-                          <span className="text-[10px] font-mono font-bold text-orange-500">{localGgufContextSize}</span>
-                        </div>
-                        <Slider 
-                          min={512} max={32768} step={512} 
-                          value={[localGgufContextSize]} 
-                          onValueChange={(v: number[]) => setLocalGgufContextSize(v[0])} 
-                          className="py-1"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <div className="flex justify-between items-center">
-                          <Label className="text-[10px] text-zinc-500">{t("Max Tokens")}</Label>
-                          <span className="text-[10px] font-mono font-bold text-orange-500">{localGgufMaxTokens}</span>
-                        </div>
-                        <Slider 
-                          min={128} max={8192} step={128} 
-                          value={[localGgufMaxTokens]} 
-                          onValueChange={(v: number[]) => setLocalGgufMaxTokens(v[0])} 
-                          className="py-1"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <div className="flex justify-between items-center">
-                          <Label className="text-[10px] text-zinc-500">{t("Temperature")}</Label>
-                          <span className="text-[10px] font-mono font-bold text-orange-500">{localGgufTemperature}</span>
-                        </div>
-                        <Slider 
-                          min={0} max={2} step={0.1} 
-                          value={[localGgufTemperature]} 
-                          onValueChange={(v: number[]) => setLocalGgufTemperature(v[0])} 
-                          className="py-1"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <div className="flex justify-between items-center">
-                          <Label className="text-[10px] text-zinc-500">{t("Repeat Penalty")}</Label>
-                          <span className="text-[10px] font-mono font-bold text-orange-500">{localGgufRepeatPenalty}</span>
-                        </div>
-                        <Slider 
-                          min={1} max={2} step={0.05} 
-                          value={[localGgufRepeatPenalty]} 
-                          onValueChange={(v: number[]) => setLocalGgufRepeatPenalty(v[0])} 
-                          className="py-1"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="p-4 rounded-xl border border-zinc-100 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/30 flex items-start gap-3">
-                    <Cpu className="size-4 text-zinc-400 mt-0.5" />
-                    <p className="text-[10px] text-zinc-500 leading-relaxed">
-                      {t("To use local models, place your .gguf files in the following directory. They will appear in the model list automatically.")}
-                      <br />
-                      <code className="text-[9px] bg-white dark:bg-zinc-950 px-1 py-0.5 rounded border border-zinc-200 dark:border-zinc-800 mt-1 inline-block">.models/</code>
-                    </p>
-                  </div>
-                </div>
-              )}
-            </div>
-          </TabsContent>
-
-          {/* MODEL MARKET TAB */}
-          <TabsContent value="market" className="space-y-4">
-            <div className="flex flex-col gap-4 h-[500px]">
-              <div className="flex items-center gap-2">
-                <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-zinc-400" />
-                  <Input 
-                    value={modelMarketSearch}
-                    onChange={e => setModelMarketSearch(e.target.value)}
-                    onKeyDown={e => e.key === 'Enter' && searchModelMarket(modelMarketSearch)}
-                    placeholder={t("Search Hugging Face models (e.g. qwen, llama)...")} 
-                    className="pl-9"
-                  />
-                  {loadingMarket && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 size-3 animate-spin text-orange-500" />}
-                </div>
-                <Button variant="outline" size="icon" onClick={() => searchModelMarket(modelMarketSearch)}>
-                  <Search className="size-4" />
-                </Button>
-              </div>
-
-              <ScrollArea className="flex-1 h-[300px] -mx-1 px-1 custom-scrollbar">
-                <div className="grid gap-3">
-                  {modelMarketModels.map(model => (
-                    <div key={model.id} className="p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 flex flex-col gap-3 group hover:border-orange-200 dark:hover:border-orange-900/50 transition-all">
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-0.5">
-                            <h4 className="text-xs font-bold truncate">{model.id.split('/')[1]}</h4>
-                            <Badge variant="outline" className="text-[9px] font-mono py-0 h-4">{model.author}</Badge>
-                          </div>
-                          <p className="text-[9px] text-zinc-500 line-clamp-2 mt-1">{model.description || t("No description provided")}</p>
-                          <p className="text-[8px] text-zinc-400 mt-1 font-mono">{model.id}</p>
-                        </div>
-                        <div className="flex items-center gap-1.5 text-[9px] text-zinc-400 font-medium">
-                          <Activity className="size-3" /> {model.downloads?.toLocaleString() || '0'}
-                        </div>
-                      </div>
-                      
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                        {(model.siblings || model.ggufFiles || []).filter((s: any) => (s.rfilename || s).endsWith('.gguf')).slice(0, 3).map((file: any) => {
-                          const fileName = file.rfilename || file
-                          const isDownloading = downloadingModelId === `${model.id}/${fileName}`
-                          return (
-                            <div key={fileName} className="flex-1 min-w-[140px] p-2 rounded-lg bg-zinc-50 dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800">
-                              <div className="flex items-center justify-between gap-2 mb-1.5">
-                                <span className="text-[10px] font-mono truncate max-w-[80px]" title={fileName}>{fileName}</span>
-                                <Button 
-                                  size="icon" 
-                                  variant="ghost" 
-                                  className="size-6 text-orange-600 hover:text-orange-700 hover:bg-orange-100 dark:hover:bg-orange-900/30"
-                                  disabled={!!downloadingModelId}
-                                  onClick={() => downloadGguf(model.id, fileName)}
-                                >
-                                  {isDownloading ? <Loader2 className="size-3 animate-spin" /> : <Plus className="size-3" />}
-                                </Button>
-                              </div>
-                              {isDownloading && downloadProgress && (
-                                <div className="space-y-1">
-                                  <div className="w-full bg-zinc-200 dark:bg-zinc-800 h-1 rounded-full overflow-hidden">
-                                    <div className="bg-orange-500 h-full transition-all duration-300" style={{ width: `${downloadProgress.progress}%` }} />
-                                  </div>
-                                  <div className="flex justify-between text-[8px] text-zinc-500 font-mono">
-                                    <span>{downloadProgress.progress}%</span>
-                                    <span>{downloadProgress.downloadedMB || '0'} / {downloadProgress.totalMB || '0'}MB</span>
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          )
-                        })}
-                      </div>
-                    </div>
-                  ))}
-                  
-                  {modelMarketModels.length === 0 && !loadingMarket && (
-                    <div className="py-12 text-center text-zinc-400">
-                      <Search className="size-8 mx-auto mb-2 opacity-20" />
-                      <p className="text-xs">{t("Search for models on Hugging Face")}</p>
-                    </div>
-                  )}
-                </div>
-              </ScrollArea>
-
-              <div className="pt-4 border-t">
-                <h4 className="text-xs font-bold text-zinc-500 uppercase tracking-wider mb-3 flex items-center gap-2">
-                  <Package className="size-3.5" />
-                  {t("Downloaded Models")}
-                </h4>
-                <div className="grid gap-2 max-h-[120px] overflow-y-auto pr-1 custom-scrollbar">
-                  {models.filter(m => m.provider === 'local').map(m => (
-                    <div key={m.id} className="flex items-center justify-between p-2 rounded-lg bg-zinc-50 dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <Terminal className="size-3 text-zinc-400" />
-                        <span className="text-xs font-mono truncate">{m.name}</span>
-                      </div>
-                      <Button 
-                        size="icon" 
-                        variant="ghost" 
-                        className="size-7 text-zinc-400 hover:text-red-500"
-                        onClick={() => deleteLocalModel(m.name)}
-                      >
-                        <Trash2 className="size-3.5" />
-                      </Button>
-                    </div>
-                  ))}
-                  {models.filter(m => m.provider === 'local').length === 0 && (
-                    <p className="text-[10px] text-zinc-400 italic text-center py-2">{t("No local models found")}</p>
-                  )}
-                </div>
-              </div>
-            </div>
-          </TabsContent>
-
-          {/* SEARCH TAB */}
-          <TabsContent value="search" className="space-y-4">
-            <div className="grid gap-2">
-              <Label>{t("Search Engine")}</Label>
-              <Select value={searchEngine} onValueChange={v => { if (v) setSearchEngine(v); setTestResult(null) }}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {SEARCH_ENGINES.map(e => (
-                    <SelectItem key={e.id} value={e.id}>
-                      <div className="flex items-center gap-2">
-                        {e.label}
-                        {e.free ? (
-                          <Badge variant="secondary" className="text-[10px] h-4">Free</Badge>
-                        ) : (
-                          <Badge variant="outline" className="text-[10px] h-4">Paid</Badge>
-                        )}
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {selectedEngine && (
-                <p className="text-xs text-muted-foreground">
-                  {selectedEngine.desc}
-                  {selectedEngine.url && (
-                    <a href={selectedEngine.url} target="_blank" rel="noreferrer" className="ml-1 inline-flex items-center gap-1 text-blue-500 hover:underline">
-                      Sign up <ExternalLink className="size-3" />
-                    </a>
-                  )}
-                </p>
-              )}
-            </div>
-
-            {needsKey && (
-              <div className="grid gap-2">
-                <Label>{selectedEngine?.label} API Key</Label>
-                <Input type="password" value={searchKey} onChange={e => setSearchKey(e.target.value)} placeholder="API key..." />
-              </div>
-            )}
-
-            <div className="flex items-center gap-2 pt-2">
-              <Button variant="outline" size="sm" onClick={testSearch} disabled={testing}>
-                {testing ? <Loader2 className="size-4 mr-2 animate-spin" /> : null}
-                {t("Test Search")}
-              </Button>
-              {testResult === 'ok' && <span className="flex items-center gap-1 text-sm text-green-600"><CheckCircle2 className="size-4" /> {t("Working!")}</span>}
-              {testResult === 'fail' && <span className="flex items-center gap-1 text-sm text-red-500"><XCircle className="size-4" /> {t("Failed")}</span>}
-            </div>
-          </TabsContent>
-
-          {/* MCP TAB */}
-          <TabsContent value="mcp" className="space-y-4 min-h-[400px]">
-            <div className="flex items-center justify-between border-b pb-2">
-              <div className="flex items-center gap-4">
-                <button
-                  onClick={() => setMcpTab('my')}
-                  className={`text-sm font-medium pb-1.5 transition-colors border-b-2 ${mcpTab === 'my' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-zinc-500 hover:text-zinc-700'}`}
-                >
-                  {t("My Servers")}
-                </button>
-                <button
-                  onClick={() => setMcpTab('market')}
-                  className={`text-sm font-medium pb-1.5 transition-colors border-b-2 ${mcpTab === 'market' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-zinc-500 hover:text-zinc-700'}`}
-                >
-                  {t("Market")}
-                </button>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-zinc-500">MCP</span>
-                  <button
-                    onClick={async () => {
-                      const newEnabled = !mcpEnabled
-                      setMcpEnabled(newEnabled)
-                      await fetch('/api/settings', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ mcpEnabled: newEnabled, mcpAutoLoad })
-                      })
-                      if (newEnabled && mcpServers.length > 0) {
-                        const enabledServers = mcpServers.filter((s: any) => s.enabled)
-                        enabledServers.forEach((server: any) => {
-                          if (!selectedMcpDetails[server.id] && !loadingMcpDetails[server.id]) {
-                            fetchMcpDetails(server.id)
-                          }
-                        })
-                      }
-                    }}
-                    className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${mcpEnabled ? 'bg-indigo-600' : 'bg-zinc-300 dark:bg-zinc-600'}`}
-                  >
-                    <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${mcpEnabled ? 'translate-x-5' : 'translate-x-1'}`} />
-                  </button>
-                </div>
-                {mcpEnabled && (
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-zinc-500">Auto</span>
-                    <button
-                      onClick={async () => {
-                        const newAuto = !mcpAutoLoad
-                        setMcpAutoLoad(newAuto)
-                        await fetch('/api/settings', {
-                          method: 'POST',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({ mcpEnabled, mcpAutoLoad: newAuto })
-                        })
-                      }}
-                      className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${mcpAutoLoad ? 'bg-indigo-600' : 'bg-zinc-300 dark:bg-zinc-600'}`}
-                    >
-                      <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${mcpAutoLoad ? 'translate-x-5' : 'translate-x-1'}`} />
-                    </button>
-                  </div>
-                )}
-                {mcpTab === 'my' && !showAddForm && (
-                  <Button size="sm" variant="outline" className="h-7 text-[10px] gap-1" onClick={() => { setEditingServer({ name: '', type: 'stdio', command: '', args: '[]', env: '{}', enabled: true }); setShowAddForm(true); }}>
-                    <Plus className="size-3" />
-                    {t("Add Server")}
-                  </Button>
-                )}
-              </div>
-            </div>
-
-            {showAddForm ? (
-              <div className="p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50 space-y-4 animate-in slide-in-from-top-2 duration-200">
-                <div className="grid gap-3">
-                  <div className="grid gap-1.5">
-                    <Label className="text-xs">{t("Server Name")}</Label>
-                    <Input size={1} value={editingServer?.name} onChange={e => setEditingServer({ ...editingServer, name: e.target.value })} placeholder="e.g. Postgres tools" className="h-8 text-sm" />
-                  </div>
-                  <div className="grid gap-1.5">
-                    <Label className="text-xs">{t("Type")}</Label>
-                    <Select value={editingServer?.type || 'stdio'} onValueChange={(v: string) => setEditingServer({ ...editingServer, type: v })}>
-                      <SelectTrigger className="h-8 text-sm">
+                <div className="grid gap-3 pt-4 border-t border-zinc-100 dark:border-zinc-800">
+                  <Label className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">{t("Web Search Service")}</Label>
+                  <div className="grid gap-3">
+                    <Select value={searchEngine} onValueChange={(v) => { if (v) setSearchEngine(v) }}>
+                      <SelectTrigger className="w-full h-9">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="stdio">stdio (Local Command)</SelectItem>
-                        <SelectItem value="sse">sse (HTTP Server)</SelectItem>
+                        {SEARCH_ENGINES.map(e => (
+                          <SelectItem key={e.id} value={e.id}>{e.label}</SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
+                    <p className="text-[10px] text-zinc-500 bg-zinc-50 dark:bg-zinc-900/50 p-2 rounded-lg border border-zinc-100 dark:border-zinc-800">
+                      {SEARCH_ENGINES.find(e => e.id === searchEngine)?.desc}
+                      {SEARCH_ENGINES.find(e => e.id === searchEngine)?.free ? ` (${t("No key required")})` : ` (${t("Need to configure key in Security page")})`}
+                    </p>
                   </div>
-                  {editingServer?.type === 'stdio' ? (
-                    <>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="models" className="space-y-6 mt-0 flex-1 flex flex-col min-h-0">
+                <div className="flex-1 overflow-y-auto pr-1 -mr-1 custom-scrollbar space-y-6">
+                  <div className="grid gap-2">
+                    <Label className="text-xs font-bold text-zinc-500 uppercase tracking-wider">{t("Default Model")}</Label>
+                    <div className="flex gap-2">
+                      <Select value={defaultModel} onValueChange={v => { if (v) setDefaultModel(v) }}>
+                        <SelectTrigger className="flex-1 h-9">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {models.map(m => (
+                            <SelectItem key={m.id} value={m.id}>
+                              <div className="flex items-center gap-2">
+                                <Badge variant="outline" className="text-[10px] scale-90 opacity-50">{m.provider}</Badge>
+                                {m.name}
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Button variant="outline" size="icon" onClick={fetchModels} disabled={isLoadingModels} className="h-9 w-9">
+                        <RefreshCw className={`size-4 ${isLoadingModels ? "animate-spin" : ""}`} />
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-xs font-bold text-zinc-500 uppercase tracking-wider">{t("Model Whitelist")}</Label>
+                      <div className="flex gap-2">
+                        <Button variant="ghost" size="sm" className="h-7 text-[10px]" onClick={() => setEnabledModels(allModels.map(m => m.id))}>
+                          {t("Enable All")}
+                        </Button>
+                        <Button variant="ghost" size="sm" className="h-7 text-[10px]" onClick={() => setEnabledModels([])}>
+                          {t("Disable All")}
+                        </Button>
+                      </div>
+                    </div>
+                    <p className="text-[10px] text-zinc-400">{t("Only enabled models will appear in the chat selector.")}</p>
+                    <div className="grid grid-cols-2 gap-2 max-h-[160px] overflow-y-auto p-3 rounded-xl border border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-950/50 custom-scrollbar">
+                      {allModels.map(model => (
+                        <div key={model.id} className="flex items-center space-x-2 p-1.5 rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-900 border border-transparent hover:border-zinc-100 dark:hover:border-zinc-800 group transition-all">
+                          <Checkbox 
+                            id={`model-${model.id}`} 
+                            checked={enabledModels.includes(model.id)}
+                            onCheckedChange={(checked) => {
+                              if (checked) setEnabledModels(prev => [...prev, model.id])
+                              else setEnabledModels(prev => prev.filter(id => id !== model.id))
+                            }}
+                          />
+                          <Label 
+                            htmlFor={`model-${model.id}`}
+                            className="text-[11px] font-medium leading-none cursor-pointer flex-1 truncate flex items-center gap-1.5"
+                          >
+                            <Badge variant="outline" className="scale-75 origin-left opacity-60 text-[9px] px-1 h-4">{model.provider}</Badge>
+                            <span className="truncate group-hover:text-primary transition-colors">{model.name || model.id}</span>
+                          </Label>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="p-4 rounded-xl border border-amber-200/50 dark:border-amber-900/30 bg-amber-50/20 dark:bg-amber-900/10 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <Label className="text-sm font-bold flex items-center gap-2 text-amber-700 dark:text-amber-500">
+                          <Cpu className="size-4" />
+                          {t("Embedded GGUF Engine")}
+                        </Label>
+                        <p className="text-[10px] text-zinc-500">{t("Run local .gguf files directly without external services")}</p>
+                      </div>
+                      <Switch checked={localGgufEnabled} onCheckedChange={setLocalGgufEnabled} />
+                    </div>
+                    {localGgufEnabled && (
+                      <div className="flex items-center justify-between text-[11px] bg-white dark:bg-zinc-900/50 rounded-lg p-2 border border-amber-100 dark:border-amber-900/20">
+                        <span className="text-zinc-500">{t("Engine Status:")}</span>
+                        <span className="font-semibold flex items-center gap-1">
+                          {localModelStatus?.isLoaded ? (
+                            <><span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> {t("Loaded")}</>
+                          ) : (
+                            <span className="text-zinc-400">{t("Idle")}</span>
+                          )}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="space-y-3">
+                    <Label className="text-xs font-bold text-zinc-500 uppercase tracking-wider">{t("Local Servers")}</Label>
+                    <div className="grid gap-3 p-4 rounded-xl border border-zinc-100 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/30">
                       <div className="grid gap-1.5">
-                        <Label className="text-xs">{t("Command")}</Label>
-                        <Input size={1} value={editingServer?.command} onChange={e => setEditingServer({ ...editingServer, command: e.target.value })} placeholder="npx, python, etc." className="h-8 text-sm" />
+                        <Label className="text-[11px] font-medium">{t("Ollama URL")}</Label>
+                        <Input value={ollamaUrl} onChange={e => setOllamaUrl(e.target.value)} placeholder="http://127.0.0.1:11434" className="h-8 text-xs font-mono" />
                       </div>
                       <div className="grid gap-1.5">
-                        <Label className="text-xs">{t("Arguments (JSON array)")}</Label>
-                        <Input size={1} value={editingServer?.args} onChange={e => setEditingServer({ ...editingServer, args: e.target.value })} placeholder='["-y", "@modelcontextprotocol/server-postgres"]' className="h-8 text-sm" />
+                        <Label className="text-[11px] font-medium">{t("LM Studio URL")}</Label>
+                        <Input value={lmstudioUrl} onChange={e => setLmstudioUrl(e.target.value)} placeholder="http://127.0.0.1:1234" className="h-8 text-xs font-mono" />
                       </div>
-                    </>
-                  ) : (
-                    <div className="grid gap-1.5">
-                      <Label className="text-xs">{t("URL (for SSE)")}</Label>
-                      <Input size={1} value={editingServer?.url} onChange={e => setEditingServer({ ...editingServer, url: e.target.value })} placeholder="http://localhost:3001/sse" className="h-8 text-sm" />
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                     <Label className="text-xs font-bold text-zinc-500 uppercase tracking-wider">{t("Local Model Management")}</Label>
+                     <div className="space-y-2">
+                        {models.filter(m => m.provider === 'local').map((model: any) => (
+                          <div key={model.id} className="flex items-center justify-between p-3 border border-zinc-100 dark:border-zinc-800 rounded-xl bg-white dark:bg-zinc-950">
+                             <div className="flex flex-col min-w-0">
+                                <span className="text-xs font-medium truncate">{model.name}</span>
+                                <span className="text-[10px] text-zinc-400 font-mono">GGUF Model</span>
+                             </div>
+                             <Button variant="ghost" size="icon" className="size-7 hover:text-red-500" onClick={() => deleteLocalModel(model.id)}>
+                               <Trash2 className="size-3" />
+                             </Button>
+                          </div>
+                        ))}
+                        {models.filter(m => m.provider === 'local').length === 0 && (
+                          <div className="py-8 text-center text-zinc-400 text-xs border border-dashed border-zinc-200 dark:border-zinc-800 rounded-xl">
+                             {t("No downloaded models yet")}
+                          </div>
+                        )}
+                     </div>
+                  </div>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="prompts" className="space-y-6 mt-0 flex-1 flex flex-col min-h-0">
+                <div className="flex items-center justify-between shrink-0">
+                   <div className="space-y-0.5">
+                     <Label className="text-xs font-bold text-zinc-500 uppercase tracking-wider">{t("Prompt Hub / Character Presets")}</Label>
+                     <p className="text-[10px] text-zinc-400">{t("Manage your system prompts and professional character presets")}</p>
+                   </div>
+                   <Button size="sm" variant="outline" className="h-8 text-[11px] bg-primary/5 hover:bg-primary/10 border-primary/20 text-primary" onClick={() => {
+                     setIsAddingPrompt(true)
+                     setPromptForm({ name: "", content: "", description: "用户自定义预设" })
+                   }}>
+                     <Plus className="size-3.5 mr-1" />{t("Add")}
+                   </Button>
+                </div>
+                
+                <div className="flex-1 overflow-y-auto pr-1 -mr-1 custom-scrollbar space-y-4">
+                  {/* 新增表单 */}
+                  {isAddingPrompt && (
+                    <div className="p-4 rounded-2xl border-2 border-dashed border-primary/30 bg-primary/5 space-y-4 animate-in fade-in slide-in-from-top-2">
+                       <div className="grid gap-3">
+                         <div className="grid gap-1.5">
+                           <Label className="text-[11px] font-bold text-primary">{t("Preset Name")}</Label>
+                           <Input 
+                             value={promptForm.name} 
+                             onChange={e => setPromptForm(prev => ({ ...prev, name: e.target.value }))}
+                             placeholder={t("e.g., Frontend Expert")}
+                             className="h-8 text-xs bg-white dark:bg-zinc-950"
+                           />
+                         </div>
+                         <div className="grid gap-1.5">
+                           <Label className="text-[11px] font-bold text-primary">{t("Role Instructions (System Prompt)")}</Label>
+                           <textarea 
+                             value={promptForm.content} 
+                             onChange={e => setPromptForm(prev => ({ ...prev, content: e.target.value }))}
+                             placeholder={t("You are an experienced frontend engineer...")}
+                             className="min-h-[100px] w-full rounded-md border border-zinc-200 bg-white px-3 py-2 text-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary dark:border-zinc-800 dark:bg-zinc-950"
+                           />
+                         </div>
+                       </div>
+                       <div className="flex justify-end gap-2 text-[11px]">
+                         <Button variant="ghost" size="sm" className="h-8" onClick={() => setIsAddingPrompt(false)}>{t("Cancel")}</Button>
+                         <Button size="sm" className="h-8" onClick={() => {
+                           if(!promptForm.name || !promptForm.content) return alert(t("Please fill in all fields"));
+                           fetch('/api/prompts', {
+                             method: 'POST',
+                             body: JSON.stringify(promptForm)
+                           }).then(() => {
+                             setIsAddingPrompt(false)
+                             refreshPrompts()
+                           });
+                         }}>{t("Save Preset")}</Button>
+                       </div>
                     </div>
                   )}
-                  <div className="flex items-center gap-2 pt-1">
-                    <Checkbox id="mcp-enabled" checked={editingServer?.enabled} onCheckedChange={v => setEditingServer({ ...editingServer, enabled: !!v })} />
-                    <Label htmlFor="mcp-enabled" className="text-xs font-normal cursor-pointer">{t("Enabled")}</Label>
-                  </div>
-                </div>
-                <div className="flex justify-end gap-2">
-                  <Button size="sm" variant="ghost" onClick={() => { setShowAddForm(false); setEditingServer(null); }}>{t("Cancel")}</Button>
-                  <Button size="sm" className="bg-indigo-600 hover:bg-indigo-700 h-8" onClick={() => {
-                    const final = { ...editingServer };
-                    try { final.args = typeof final.args === 'string' ? JSON.parse(final.args) : final.args; } catch { final.args = []; }
-                    try { final.env = typeof final.env === 'string' ? JSON.parse(final.env) : final.env; } catch { final.env = {}; }
-                    handleSaveServer(final);
-                  }}>{t("Save Server")}</Button>
-                </div>
-              </div>
-            ) : mcpTab === 'my' ? (
-              <ScrollArea className="h-[400px] -mx-1 px-1">
-                <div className="space-y-2">
-                  {mcpServers.length === 0 ? (
-                    <div className="py-12 text-center text-zinc-400">
-                      <Server className="size-8 mx-auto mb-2 opacity-20" />
-                      <p className="text-xs">{t("No servers added yet")}</p>
-                      <Button variant="link" className="text-xs text-indigo-500" onClick={() => setMcpTab('market')}>{t("Browse Market")}</Button>
-                    </div>
-                  ) : (
-                    mcpServers.map((server: any, idx: number) => (
-                      <Collapsible
-                        key={`${server.id}-${idx}`}
-                        open={expandedMcp === server.id}
-                        onOpenChange={(open) => {
-                          setExpandedMcp(open ? server.id : null)
-                          if (open && !selectedMcpDetails[server.id]) fetchMcpDetails(server.id)
-                        }}
-                        className="group p-1 rounded-xl border border-zinc-200 dark:border-zinc-800 hover:border-indigo-200 dark:hover:border-indigo-900/50 hover:bg-indigo-50/10 dark:hover:bg-indigo-900/5 transition-all"
-                      >
-                        <div className="flex items-center justify-between p-2">
-                          <CollapsibleTrigger className="flex items-center gap-3 flex-1 cursor-pointer text-left">
-                            <div className={`p-2 rounded-lg ${server.enabled ? 'bg-indigo-100/50 text-indigo-600 dark:bg-indigo-900/30' : 'bg-zinc-100 text-zinc-400 dark:bg-zinc-800'}`}>
-                              {server.type === 'stdio' ? <Terminal className="size-4" /> : <Globe className="size-4" />}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2">
-                                <p className="text-sm font-bold truncate">{server.name || 'Untitled Server'}</p>
-                                {server.source === 'config' && (
-                                  <Badge variant="outline" className="text-[9px] py-0 h-4 bg-indigo-50/50 text-indigo-600 border-indigo-100 uppercase tracking-tighter font-bold">Config</Badge>
-                                )}
-                                {mcpEnabled && selectedMcpDetails[server.id] && (
-                                  selectedMcpDetails[server.id].error ? (
-                                    <Badge variant="outline" className="text-[9px] py-0 h-4 bg-red-50 text-red-600 border-red-100">
-                                      <XCircle className="size-2.5 mr-0.5" />Failed
-                                    </Badge>
-                                  ) : (
-                                    <Badge variant="outline" className="text-[9px] py-0 h-4 bg-green-50 text-green-600 border-green-100">
-                                      <CheckCircle2 className="size-2.5 mr-0.5" />
-                                      {selectedMcpDetails[server.id].tools?.length || 0} tools
-                                    </Badge>
-                                  )
-                                )}
-                                {mcpEnabled && loadingMcpDetails[server.id] && (
-                                  <Badge variant="outline" className="text-[9px] py-0 h-4 bg-yellow-50 text-yellow-600 border-yellow-100">
-                                    <Loader2 className="size-2.5 mr-0.5 animate-spin" />Loading
-                                  </Badge>
-                                )}
-                                {!mcpEnabled && (
-                                  <Badge variant="outline" className="text-[9px] py-0 h-4 bg-zinc-50 text-zinc-400 border-zinc-200">
-                                    Disabled
-                                  </Badge>
-                                )}
-                                <Checkbox checked={server.enabled} onCheckedChange={(v) => handleSaveServer({ ...server, enabled: !!v })} className="size-3.5" onClick={e => e.stopPropagation()} disabled={server.source === 'config'} />
-                              </div>
-                              <p className="text-[10px] text-zinc-400 font-mono truncate max-w-[200px]">
-                                {server.type === 'stdio' ? (() => {
-                                  let args = server.args
-                                  if (typeof args === 'string') {
-                                    try { args = JSON.parse(args) } catch {}
-                                  }
-                                  const argsStr = Array.isArray(args) ? args.join(' ') : ''
-                                  return `${server.command} ${argsStr}`.trim()
-                                })() : server.url}
-                              </p>
-                            </div>
-                            <div className="ml-auto">
-                              {expandedMcp === server.id ? <ChevronUp className="size-3.5 text-zinc-400" /> : <ChevronDown className="size-3.5 text-zinc-400" />}
-                            </div>
-                          </CollapsibleTrigger>
-                          
-                          {server.source !== 'config' && (
-                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <Button size="icon" variant="ghost" className="size-8 text-zinc-400 hover:text-indigo-600" onClick={() => {
-                                setEditingServer({ ...server, args: typeof server.args === 'string' ? server.args : JSON.stringify(server.args) });
-                                setShowAddForm(true);
-                              }}>
-                                <Edit2 className="size-3.5" />
-                              </Button>
-                              <Button size="icon" variant="ghost" className="size-8 text-zinc-400 hover:text-red-500" onClick={() => handleDeleteServer(server.id)}>
-                                <Trash2 className="size-3.5" />
-                              </Button>
-                            </div>
-                          )}
-                        </div>
 
-                        <CollapsibleContent className="px-3 pb-3 animate-in fade-in slide-in-from-top-1">
-                          <div className="mt-2 pt-2 border-t border-zinc-100 dark:border-zinc-800 space-y-3">
-                            {loadingMcpDetails[server.id] ? (
-                              <div className="flex items-center justify-center py-4">
-                                <Loader2 className="size-4 animate-spin text-indigo-500" />
-                              </div>
-                            ) : selectedMcpDetails[server.id] ? (
-                              <div className="grid gap-4">
-                                {selectedMcpDetails[server.id].error && (
-                                  <div className="text-[10px] text-red-500 bg-red-50 dark:bg-red-900/20 rounded-lg p-2">
-                                    {selectedMcpDetails[server.id].error.includes('timeout') 
-                                      ? '连接超时，请检查命令是否正确或网络是否正常' 
-                                      : selectedMcpDetails[server.id].error}
+                  {prompts.map((p: any) => (
+                    <div key={p.id} className={`p-4 rounded-2xl border transition-all shadow-sm ${
+                      editingPromptId === p.id 
+                        ? 'border-primary bg-primary/5 ring-1 ring-primary/20' 
+                        : 'border-zinc-100 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/30 hover:bg-zinc-100/50 dark:hover:bg-zinc-900/50'
+                    } flex flex-col gap-3 group relative border-l-4 ${p.isSystem ? 'border-l-zinc-300' : 'border-l-indigo-500'}`}>
+                      
+                      {editingPromptId === p.id ? (
+                        /* 编辑表单 */
+                        <div className="space-y-4 w-full">
+                          <div className="grid gap-3">
+                             <div className="grid gap-1.5">
+                               <Label className="text-[11px] font-medium">{t("Preset Name")}</Label>
+                               <Input 
+                                 value={promptForm.name} 
+                                 onChange={e => setPromptForm(prev => ({ ...prev, name: e.target.value }))}
+                                 className="h-8 text-xs bg-white dark:bg-zinc-950"
+                               />
+                             </div>
+                             <div className="grid gap-1.5">
+                               <Label className="text-[11px] font-medium">{t("Role Instructions")}</Label>
+                               <textarea 
+                                 value={promptForm.content} 
+                                 onChange={e => setPromptForm(prev => ({ ...prev, content: e.target.value }))}
+                                 className="min-h-[100px] w-full rounded-md border border-zinc-200 bg-white px-3 py-2 text-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary dark:border-zinc-800 dark:bg-zinc-950"
+                               />
+                             </div>
+                          </div>
+                          <div className="flex justify-end gap-2">
+                             <Button variant="ghost" size="sm" className="h-7 text-[10px]" onClick={() => setEditingPromptId(null)}>{t("Cancel")}</Button>
+                             <Button size="sm" className="h-7 text-[10px]" onClick={() => {
+                               fetch('/api/prompts', {
+                                 method: 'PUT',
+                                 body: JSON.stringify({ id: p.id, ...promptForm })
+                               }).then(() => {
+                                 setEditingPromptId(null)
+                                 refreshPrompts()
+                               });
+                             }}>{t("Update")}</Button>
+                          </div>
+                        </div>
+                      ) : (
+                        /* 展示内容 */
+                        <div className="flex items-start justify-between">
+                          <div className="flex flex-col gap-1 min-w-0 flex-1">
+                            <div className="flex items-center gap-2">
+                              <Sparkles className={`size-3.5 ${p.isSystem ? 'text-zinc-400' : 'text-amber-500'}`} />
+                              <span className="text-sm font-bold truncate group-hover:text-primary transition-colors">{p.name}</span>
+                              {p.isSystem && <Badge variant="secondary" className="text-[9px] h-4 opacity-70">SYSTEM</Badge>}
+                            </div>
+                            <p className="text-[11px] text-zinc-500 leading-relaxed line-clamp-3">{p.content}</p>
+                          </div>
+                          
+                          <div className="ml-4 flex items-center gap-1 shrink-0">
+                                <Button size="sm" variant="ghost" className="size-8 p-0 text-zinc-400 hover:text-primary hover:bg-primary/5 transition-all" 
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setEditingPromptId(p.id);
+                                    setPromptForm({ name: p.name, content: p.content, description: p.description || "" });
+                                  }}>
+                                  <Edit2 className="size-3.5" />
+                                </Button>
+
+                                {confirmingDeleteId === p.id ? (
+                                  <div className="flex items-center gap-1 animate-in fade-in zoom-in-95 duration-200">
+                                    <Button size="sm" variant="ghost" className="size-8 p-0 text-red-500 hover:bg-red-50 transition-all" 
+                                      disabled={deletingPromptId === p.id}
+                                      title="确认删除"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setDeletingPromptId(p.id)
+                                        fetch(`/api/prompts?id=${p.id}&t=${Date.now()}`, { method: 'DELETE' })
+                                          .then(res => res.json())
+                                          .then(data => {
+                                            if (data.success) {
+                                              refreshPrompts()
+                                              setConfirmingDeleteId(null)
+                                            } else {
+                                              alert("删除失败: " + (data.error || "服务器未返回原因"))
+                                            }
+                                          })
+                                          .catch(err => alert("网络错误: " + err.message))
+                                          .finally(() => setDeletingPromptId(null))
+                                      }}>
+                                      {deletingPromptId === p.id ? <Loader2 className="size-3.5 animate-spin" /> : <Check className="size-3.5" />}
+                                    </Button>
+                                    <Button size="sm" variant="ghost" className="size-8 p-0 text-zinc-400 hover:bg-zinc-100 transition-all" 
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setConfirmingDeleteId(null);
+                                      }}>
+                                      <X className="size-3.5" />
+                                    </Button>
                                   </div>
+                                ) : (
+                                  <Button size="sm" variant="ghost" className="size-8 p-0 text-zinc-400 hover:text-red-500 hover:bg-red-50 transition-all disabled:opacity-50" 
+                                    disabled={deletingPromptId === p.id}
+                                    title="删除"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setConfirmingDeleteId(p.id);
+                                    }}>
+                                    <Trash2 className="size-3.5" />
+                                  </Button>
                                 )}
-                                {selectedMcpDetails[server.id].tools?.length > 0 && (
-                                  <div className="space-y-1.5">
-                                    <div className="flex items-center gap-1.5 text-[10px] font-bold text-zinc-400 uppercase tracking-tight">
-                                      <Wrench className="size-3" />
-                                      {t("Tools")} ({selectedMcpDetails[server.id].tools.length})
-                                    </div>
-                                    <div className="flex flex-wrap gap-1.5">
-                                      {selectedMcpDetails[server.id].tools.map((tool: any) => (
-                                        <Badge key={tool.name} variant="secondary" className="text-[9px] py-0 px-1.5 bg-indigo-50 text-indigo-700 dark:bg-indigo-900/20 dark:text-indigo-300 border-none">
-                                          {tool.name}
-                                        </Badge>
-                                      ))}
-                                    </div>
-                                  </div>
-                                )}
-                                {selectedMcpDetails[server.id].resources?.length > 0 && (
-                                  <div className="space-y-1.5">
-                                    <div className="flex items-center gap-1.5 text-[10px] font-bold text-zinc-400 uppercase tracking-tight">
-                                      <Package className="size-3" />
-                                      {t("Resources")} ({selectedMcpDetails[server.id].resources.length})
-                                    </div>
-                                    <div className="flex flex-wrap gap-1.5">
-                                      {selectedMcpDetails[server.id].resources.map((res: any) => (
-                                        <Badge key={res.uri} variant="outline" className="text-[9px] py-0 px-1.5 opacity-70">
-                                          {res.name}
-                                        </Badge>
-                                      ))}
-                                    </div>
-                                  </div>
-                                )}
-                                {(!selectedMcpDetails[server.id].tools?.length && !selectedMcpDetails[server.id].resources?.length && !selectedMcpDetails[server.id].error) && (
-                                  <p className="text-[10px] text-zinc-400 italic text-center py-2">{t("No tools or resources available")}</p>
-                                )}
-                              </div>
-                            ) : (
-                              <p className="text-[10px] text-zinc-400 italic text-center py-2">{t("Failed to load details")}</p>
+                            
+                            {/* 系统预设额外功能保留 */}
+                            {p.isSystem && !confirmingDeleteId && (
+                              <Button size="sm" variant="ghost" className="size-8 p-0 text-zinc-300 hover:text-primary transition-all" 
+                                title="复制并以此为模板创建"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setIsAddingPrompt(true)
+                                  setPromptForm({ name: `${p.name} (副本)`, content: p.content, description: '基于系统预设克隆' })
+                                  window.scrollTo({ top: 0, behavior: 'smooth' })
+                                }}>
+                                <ExternalLink className="size-3.5" />
+                              </Button>
                             )}
                           </div>
-                        </CollapsibleContent>
-                      </Collapsible>
-                    ))
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                  
+                  {prompts.length === 0 && !isAddingPrompt && (
+                    <div className="py-16 text-center space-y-3 border border-dashed border-zinc-200 dark:border-zinc-800 rounded-2xl bg-zinc-50/20">
+                      <div className="size-12 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center mx-auto">
+                        <Bot className="size-6 text-zinc-300" />
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-xs font-medium text-zinc-500">{t("No preset roles yet")}</p>
+                        <p className="text-[10px] text-zinc-400">{t("Click the 'Add' button in the top right to start your professional workflow")}</p>
+                      </div>
+                    </div>
                   )}
                 </div>
-              </ScrollArea>
-            ) : (
-              <div className="space-y-4 animate-in fade-in duration-300">
-                <div className="flex items-center gap-2">
-                  <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-zinc-400" />
-                    <Input
-                      value={marketSearch}
-                      onChange={e => setMarketSearch(e.target.value)}
-                      onKeyDown={e => { if (e.key === 'Enter') fetchMarket(marketSearch) }}
-                      placeholder={t("Search Servers") + "..."}
-                      className="pl-9 h-9"
-                    />
-                    {loadingMarket && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 size-4 animate-spin text-indigo-500" />}
-                  </div>
-                  <Select value={marketSource} onValueChange={(v: any) => setMarketSource(v)}>
-                    <SelectTrigger className="w-[120px] h-9 text-xs">
-                      <SelectValue placeholder={t("Source")} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="github">{t("GitHub")}</SelectItem>
-                      <SelectItem value="modelscope">{t("ModelScope")}</SelectItem>
-                      <SelectItem value="smithery">{t("Smithery")}</SelectItem>
-                      <SelectItem value="glama">{t("Glama")}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+              </TabsContent>
 
-                <div className="grid gap-3 max-h-[350px] overflow-y-auto pr-2 custom-scrollbar">
-                  {marketServers.length === 0 && !loadingMarket ? (
-                    <div className="py-8 text-center text-zinc-400 text-xs">
-                      {t("Registry")}: {marketSource === 'github' ? t("GitHub") : t("ModelScope")}
+              <TabsContent value="security" className="space-y-4 mt-0">
+                <div className="grid gap-4">
+                  <div className="p-4 rounded-xl bg-indigo-50/30 dark:bg-indigo-900/10 border border-indigo-100 dark:border-indigo-900/30 flex items-start gap-3">
+                    <ShieldCheck className="size-5 text-indigo-500 shrink-0 mt-0.5" />
+                    <div className="space-y-1">
+                      <div className="text-sm font-semibold">{t("Privacy & Security Settings")}</div>
+                      <p className="text-[11px] text-zinc-500 leading-relaxed">{t("Your API keys are stored locally and used only for communication. Local models are recommended for data privacy.")}</p>
                     </div>
-                  ) : (
-                    marketServers.map((item: any) => {
-                      const server = item.server || item
-                      const isInstalled = mcpServers.some(s => s.name === server.name)
-                      return (
-                        <div key={server.name} className="p-3 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 flex items-start gap-3">
-                          <div className="shrink-0 size-10 rounded-lg bg-zinc-100 dark:bg-zinc-900 flex items-center justify-center text-zinc-500">
-                            <Server className="size-5" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center justify-between gap-2">
-                              <h4 className="text-sm font-semibold truncate">{server.name}</h4>
-                              {server.homepage && (
-                                <a href={server.homepage} target="_blank" rel="noreferrer" className="text-zinc-400 hover:text-indigo-500 transition-colors">
-                                  <ExternalLink className="size-3.5" />
-                                </a>
-                              )}
-                            </div>
-                            <p className="text-xs text-zinc-500 line-clamp-2 mt-0.5 leading-relaxed">
-                              {server.description}
-                            </p>
-                            <div className="mt-3 flex items-center justify-between">
-                              <span className="text-[10px] text-zinc-400 font-medium">by {server.vendor || 'Community'}</span>
-                              <Button
-                                size="sm"
-                                variant={isInstalled ? "outline" : "default"}
-                                disabled={isInstalled}
-                                className={`h-7 px-3 text-[10px] ${isInstalled ? '' : 'bg-indigo-600 hover:bg-indigo-700 text-white'}`}
-                                onClick={async () => {
-                                  const repoUrl = server.repository?.url || server.githubUrl || ''
-                                  let command = server.command || 'npx'
-                                  let args: string[] = []
-                                  
-                                  if (!args || args.length === 0) {
-                                    const pkgName = server.packageName || server.name
-                                    const safePkgName = pkgName.toLowerCase().replace(/\s+/g, '-')
-                                    
-                                    if (marketSource === 'modelscope') {
-                                      args = ['-y', `@modelscope/mcp-server-${safePkgName}`]
-                                    } else if (marketSource === 'smithery') {
-                                      args = ['-y', `@smithery/mcp-server-${safePkgName}`]
-                                    } else {
-                                      args = ['-y', repoUrl.replace('https://github.com/', '')]
-                                    }
-                                  }
+                  </div>
 
-                                  try {
-                                    const res = await fetch('/api/settings/mcp/market', {
-                                      method: 'POST',
-                                      headers: { 'Content-Type': 'application/json' },
-                                      body: JSON.stringify({
-                                        name: server.name,
-                                        description: server.description,
-                                        transport: server.transport === 'sse' ? 'sse' : 'stdio',
-                                        command,
-                                        args: JSON.stringify(args),
-                                        url: server.url || '',
-                                        env: JSON.stringify({}),
-                                        homepage: server.homepage,
-                                        source: marketSource,
-                                      })
-                                    })
-                                    
-                                    if (res.ok) {
-                                      const saved = await res.json()
-                                      setMcpServers(prev => [saved, ...prev])
-                                      setMcpTab('my')
-                                    } else {
-                                      const err = await res.json()
-                                      alert(err.error || 'Failed to install')
-                                    }
-                                  } catch (error) {
-                                    console.error('Install MCP error:', error)
-                                    alert('Failed to install server')
-                                  }
-                                }}
-                              >
-                                {isInstalled ? t("Installed") : t("Install")}
-                              </Button>
-                            </div>
+                  <div className="space-y-6">
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                         <Label className="text-xs font-bold text-zinc-500 uppercase tracking-wider">{t("LLM Providers")}</Label>
+                         <Select value={selectedSecurityProvider} onValueChange={v => v && setSelectedSecurityProvider(v)}>
+                           <SelectTrigger className="w-[180px] h-8 text-[11px] font-mono bg-white dark:bg-zinc-950">
+                             <SelectValue />
+                           </SelectTrigger>
+                           <SelectContent>
+                             {LLM_PROVIDERS.map(p => (
+                               <SelectItem key={p.id} value={p.id} className="text-[11px]">{p.label}</SelectItem>
+                             ))}
+                           </SelectContent>
+                         </Select>
+                      </div>
+
+                      <div className="p-4 rounded-xl border border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-950 shadow-sm animate-in fade-in slide-in-from-top-1 duration-200">
+                        {selectedSecurityProvider === 'openai' && (
+                          <div className="grid gap-2">
+                             <Label className="text-[11px] font-medium">OpenAI API Key</Label>
+                             <Input type="password" value={openaiKey} onChange={e => setOpenaiKey(e.target.value)} placeholder="sk-..." className="h-9 text-xs" />
+                          </div>
+                        )}
+                        {selectedSecurityProvider === 'anthropic' && (
+                          <div className="grid gap-2">
+                             <Label className="text-[11px] font-medium">Anthropic API Key</Label>
+                             <Input type="password" value={anthropicKey} onChange={e => setAnthropicKey(e.target.value)} placeholder="sk-ant-..." className="h-9 text-xs" />
+                          </div>
+                        )}
+                        {selectedSecurityProvider === 'google' && (
+                          <div className="grid gap-2">
+                             <Label className="text-[11px] font-medium">Google Gemini Key</Label>
+                             <Input type="password" value={googleKey} onChange={e => setGoogleKey(e.target.value)} placeholder="AIza..." className="h-9 text-xs" />
+                          </div>
+                        )}
+                        {selectedSecurityProvider === 'deepseek' && (
+                          <div className="grid gap-2">
+                             <Label className="text-[11px] font-medium">DeepSeek API Key</Label>
+                             <Input type="password" value={deepseekKey} onChange={e => setDeepseekKey(e.target.value)} placeholder="sk-..." className="h-9 text-xs" />
+                          </div>
+                        )}
+                        {selectedSecurityProvider === 'minimax' && (
+                          <div className="grid gap-2">
+                             <Label className="text-[11px] font-medium">MiniMax API Key</Label>
+                             <Input type="password" value={minimaxKey} onChange={e => setMinimaxKey(e.target.value)} placeholder="Key..." className="h-9 text-xs" />
+                          </div>
+                        )}
+                        {selectedSecurityProvider === 'groq' && (
+                          <div className="grid gap-2">
+                             <Label className="text-[11px] font-medium">Groq API Key</Label>
+                             <Input type="password" value={groqKey} onChange={e => setGroqKey(e.target.value)} placeholder="gsk_..." className="h-9 text-xs" />
+                          </div>
+                        )}
+                        {selectedSecurityProvider === 'mistral' && (
+                          <div className="grid gap-2">
+                             <Label className="text-[11px] font-medium">Mistral AI Key</Label>
+                             <Input type="password" value={mistralKey} onChange={e => setMistralKey(e.target.value)} placeholder="Key..." className="h-9 text-xs" />
+                          </div>
+                        )}
+                        {selectedSecurityProvider === 'zhipu' && (
+                          <div className="grid gap-2">
+                             <Label className="text-[11px] font-medium">智谱 AI (Zhipu) Key</Label>
+                             <Input type="password" value={zhipuKey} onChange={e => setZhipuKey(e.target.value)} placeholder="API Key..." className="h-9 text-xs" />
+                          </div>
+                        )}
+                        {selectedSecurityProvider === 'lingyi' && (
+                          <div className="grid gap-2">
+                             <Label className="text-[11px] font-medium">零一万物 (Lingyi) Key</Label>
+                             <Input type="password" value={lingyiKey} onChange={e => setLingyiKey(e.target.value)} placeholder="API Key..." className="h-9 text-xs" />
+                          </div>
+                        )}
+                        {selectedSecurityProvider === 'openrouter' && (
+                          <div className="grid gap-2">
+                             <Label className="text-[11px] font-medium">OpenRouter Key</Label>
+                             <Input type="password" value={openrouterKey} onChange={e => setOpenrouterKey(e.target.value)} placeholder="sk-or-..." className="h-9 text-xs" />
+                          </div>
+                        )}
+                        {selectedSecurityProvider === 'nvidia' && (
+                          <div className="grid gap-2">
+                             <Label className="text-[11px] font-medium">NVIDIA API Key</Label>
+                             <div className="flex gap-2">
+                               <Input type="password" value={nvidiaKey} onChange={e => setNvidiaKey(e.target.value)} placeholder="nvapi-..." className="h-9 text-xs" />
+                               <Button variant="outline" size="sm" onClick={() => window.open('https://build.nvidia.com/explore/discover', '_blank')} className="h-9 text-[10px] gap-1 px-2">
+                                 <ExternalLink className="size-3" /> {t("Get")}
+                               </Button>
+                             </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="space-y-3">
+                        <Label className="text-xs font-bold text-zinc-500 uppercase tracking-wider">{t("Search Services (Search Tools)")}</Label>
+                        <div className="p-4 rounded-xl border border-zinc-100 dark:border-zinc-800 bg-zinc-50/30 dark:bg-zinc-900/10">
+                          <div className="grid gap-2">
+                            <Label className="text-[11px] font-medium">{t("Tavily / SerpAPI Key")}</Label>
+                            <Input type="password" value={searchKey} onChange={e => setSearchKey(e.target.value)} placeholder="Key..." className="h-8 text-xs bg-white dark:bg-zinc-950" />
                           </div>
                         </div>
-                      )
-                    })
-                  )}
+                    </div>
+                  </div>
                 </div>
-              </div>
-            )}
-          </TabsContent>
-        </Tabs>
+              </TabsContent>
 
-        <div className="flex justify-end pt-2 border-t">
-          <Button onClick={saveSettings} disabled={saving}>
-            {saving ? <Loader2 className="size-4 mr-2 animate-spin" /> : <Save className="size-4 mr-2" />}
-            {t("Save changes")}
-          </Button>
+              <TabsContent value="experimental" className="space-y-4 mt-0 min-h-0">
+                <div className="p-3 bg-amber-50/30 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/30 rounded-xl flex gap-3 items-center mb-2">
+                   <Activity className="size-4 text-amber-600 shrink-0" />
+                   <p className="text-[10px] text-amber-700 dark:text-amber-400">{t("These features are for advanced users to extend system productivity. Use with caution in Beta.")}</p>
+                </div>
+                
+                <Tabs defaultValue="mcp_list" className="w-full flex-1" onValueChange={v => setMcpTab(v as any)}>
+                   <TabsList className="w-full h-8 p-0.5 bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 mb-4 shrink-0">
+                     <TabsTrigger value="mcp_list" className="flex-1 text-[10px] h-7">{t("MCP Servers")}</TabsTrigger>
+                     <TabsTrigger value="market" className="flex-1 text-[10px] h-7">{t("MCP Market")}</TabsTrigger>
+                     <TabsTrigger value="model_market" className="flex-1 text-[10px] h-7">{t("Model Market")}</TabsTrigger>
+                     <TabsTrigger value="raw" className="flex-1 text-[10px] h-7">{t("Raw Config")}</TabsTrigger>
+                   </TabsList>
+                   
+                   <div className="flex-1 overflow-y-auto">
+                     <TabsContent value="mcp_list" className="mt-0 space-y-4">
+                        <div className="flex items-center justify-between px-1">
+                           <div className="flex items-center gap-2">
+                             <Label className="text-xs font-bold font-mono tracking-tighter">{t("ENABLE MCP")}</Label>
+                             <Switch checked={mcpEnabled} onCheckedChange={setMcpEnabled} className="scale-75" />
+                           </div>
+                           <Button size="sm" variant="ghost" className="h-7 text-[10px] text-primary" onClick={() => { setEditingServer(null); setShowAddForm(true); }}>
+                             <Plus className="size-3 mr-1" /> {t("Add Custom")}
+                           </Button>
+                        </div>
+                        
+                        {showAddForm ? (
+                           <div className="p-4 border border-zinc-200 dark:border-zinc-800 rounded-xl bg-zinc-50/50 dark:bg-zinc-900/30 space-y-3">
+                              <div className="flex items-center justify-between mb-1">
+                                 <h4 className="text-xs font-bold uppercase tracking-tight">{editingServer ? t('Edit Server') : t('Add Custom')}</h4>
+                                 <Button variant="ghost" size="sm" className="h-6 text-[10px]" onClick={() => setShowAddForm(false)}>{t("Cancel")}</Button>
+                              </div>
+                              <div className="grid gap-3">
+                                 <div className="grid gap-1.5">
+                                    <Label className="text-[10px]">{t("Name")}</Label>
+                                    <Input value={mcpName} onChange={e => setMcpName(e.target.value)} placeholder="My Server" className="h-8 text-xs font-mono" />
+                                 </div>
+                                 <div className="grid gap-1.5">
+                                    <Label className="text-[10px]">{t("Command / URL")}</Label>
+                                    <Input value={mcpCommand || mcpUrl} onChange={e => { if (mcpCommand) setMcpCommand(e.target.value); else setMcpUrl(e.target.value); }} placeholder="npx atau http://" className="h-8 text-xs font-mono" />
+                                 </div>
+                                 <div className="grid gap-1.5">
+                                    <Label className="text-[10px]">{t("Arguments (Space separated)")}</Label>
+                                    <Input value={mcpArgs} onChange={e => setMcpArgs(e.target.value)} placeholder="-y @modelcontextprotocol/server-fetch" className="h-8 text-xs font-mono" />
+                                 </div>
+                              </div>
+                              <div className="pt-2 flex gap-2">
+                                 <Button size="sm" className="flex-1 h-8 text-[11px]" onClick={() => handleSaveServer({
+                                    ...editingServer,
+                                    name: mcpName,
+                                    command: mcpCommand,
+                                    args: mcpArgs.split(" ").filter(a => a.trim() !== ""),
+                                    url: mcpUrl,
+                                    enabled: true
+                                 })}>保存服务器</Button>
+                                 {editingServer && (
+                                    <Button size="sm" variant="ghost" className="h-8 text-[11px] text-red-500 hover:text-red-600 hover:bg-red-50" onClick={() => {
+                                       handleDeleteServer(editingServer.id)
+                                       setShowAddForm(false)
+                                    }}>删除</Button>
+                                 )}
+                              </div>
+                           </div>
+                        ) : (
+                        <div className="space-y-2">
+                           {mcpServers.length === 0 ? (
+                             <div className="py-12 text-center text-zinc-400 text-xs border border-dashed border-zinc-200 dark:border-zinc-800 rounded-xl">{t("No plugin servers yet")}</div>
+                           ) : (
+                             mcpServers.map((server: any, idx: number) => (
+                               <Collapsible
+                                  key={`server-${server.id || idx}`}
+                                  open={expandedMcp === server.id}
+                                  onOpenChange={(open) => {
+                                    setExpandedMcp(open ? server.id : null)
+                                    if (open && !selectedMcpDetails[server.id]) fetchMcpDetails(server.id)
+                                  }}
+                                  className="group border border-zinc-100 dark:border-zinc-800 rounded-xl overflow-hidden hover:border-indigo-200 dark:hover:border-indigo-900/50 transition-all bg-white dark:bg-zinc-950"
+                               >
+                                  <div className="flex items-center gap-3 p-3 bg-zinc-50/10 dark:bg-zinc-900/5">
+                                     <div className="flex flex-col min-w-0 flex-1">
+                                        <div className="flex items-center gap-2">
+                                          <span className="text-[11px] font-bold truncate">{server.name}</span>
+                                          {server.enabled && (
+                                            <Badge variant="outline" className="text-[9px] py-0 h-4 bg-green-50 text-green-600 border-green-100 font-mono tracking-tighter uppercase scale-90">Active</Badge>
+                                          )}
+                                        </div>
+                                        <span className="text-[10px] text-zinc-400 truncate max-w-[200px] font-mono">{server.command || server.url}</span>
+                                     </div>
+                                     <div className="flex items-center gap-2">
+                                        <Switch 
+                                          checked={server.enabled} 
+                                          onCheckedChange={(v) => handleSaveServer({ ...server, enabled: !!v })} 
+                                          className="scale-75"
+                                        />
+                                        <Button 
+                                          variant="ghost" 
+                                          size="icon" 
+                                          className="size-7 opacity-0 group-hover:opacity-100 transition-opacity"
+                                          onClick={(e) => { e.stopPropagation(); setEditingServer(server); setShowAddForm(true); }}
+                                        >
+                                          <Edit2 className="size-3" />
+                                        </Button>
+                                        <CollapsibleTrigger>
+                                          <div className="flex items-center justify-center size-7 cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-md">
+                                            {expandedMcp === server.id ? <ChevronUp className="size-3" /> : <ChevronDown className="size-3" />}
+                                          </div>
+                                        </CollapsibleTrigger>
+                                     </div>
+                                  </div>
+                                  <CollapsibleContent className="px-3 pb-3 border-t border-zinc-100 dark:border-zinc-800">
+                                     <div className="pt-2 text-[10px] text-zinc-500">
+                                        {loadingMcpDetails[server.id] ? <Loader2 className="size-3 animate-spin mx-auto my-2" /> : (
+                                          selectedMcpDetails[server.id]?.tools?.length > 0 ? (
+                                            <div className="flex flex-wrap gap-1">
+                                               {selectedMcpDetails[server.id].tools.map((t: any, tIdx: number) => (
+                                                 <Badge key={`tool-${server.id}-${t.name || tIdx}`} variant="secondary" className="px-1.5 py-0 text-[9px] opacity-80 h-5 border-none font-mono">{t.name}</Badge>
+                                               ))}
+                                            </div>
+                                          ) : t('No tools available')
+                                        )}
+                                     </div>
+                                  </CollapsibleContent>
+                               </Collapsible>
+                             ))
+                           )}
+                        </div>
+                        )}
+                     </TabsContent>
+                     
+                     <TabsContent value="market" className="mt-0">
+                        <div className="flex gap-2 mb-3">
+                           <div className="relative flex-1">
+                             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3 text-zinc-400" />
+                             <Input 
+                               placeholder="搜索市场 (GitHub / Smithery)..." 
+                               className="pl-8 h-8 text-[11px]" 
+                               value={marketSearch}
+                               onChange={e => setMarketSearch(e.target.value)}
+                             />
+                           </div>
+                           <Select value={marketSource} onValueChange={(v: any) => setMarketSource(v)}>
+                             <SelectTrigger className="w-[100px] h-8 text-[10px] font-mono">
+                               <SelectValue />
+                             </SelectTrigger>
+                             <SelectContent>
+                               <SelectItem value="github">GITHUB</SelectItem>
+                               <SelectItem value="smithery">SMITHERY</SelectItem>
+                             </SelectContent>
+                           </Select>
+                        </div>
+                        <div className="space-y-2">
+                           {loadingMarket ? <div key="market-loading" className="py-20 text-center"><Loader2 className="size-6 animate-spin mx-auto text-zinc-300" /></div> : (
+                             marketServers.map((s: any, idx: number) => (
+                               <div key={`market-${s.id || idx}`} className="p-3 border border-zinc-100 dark:border-zinc-800 rounded-xl flex items-center justify-between gap-3 bg-white dark:bg-zinc-950 hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors">
+                                  <div className="flex flex-col min-w-0">
+                                     <span className="text-[11px] font-bold truncate">{s.name}</span>
+                                     <span className="text-[10px] text-zinc-400 truncate max-w-[200px]">{s.description}</span>
+                                  </div>
+                                  <Button size="sm" variant="outline" className="h-7 text-[10px] px-3 font-mono tracking-tighter" onClick={() => handleSaveServer(s)}>INSTALL</Button>
+                               </div>
+                             ))
+                           )}
+                        </div>
+                     </TabsContent>
+     
+                     <TabsContent value="model_market" className="mt-0">
+                        <div className="flex gap-2 mb-3">
+                           <div className="relative flex-1">
+                             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3 text-zinc-400" />
+                             <Input 
+                               placeholder="搜索 HuggingFace (GGUF)..." 
+                               className="pl-8 h-8 text-[11px]" 
+                               value={modelMarketSearch}
+                               onChange={e => setModelMarketSearch(e.target.value)}
+                               onKeyDown={e => e.key === 'Enter' && searchModelMarket(modelMarketSearch)}
+                             />
+                           </div>
+                           <Button size="sm" variant="secondary" className="h-8 text-[10px] px-3 font-mono" onClick={() => searchModelMarket(modelMarketSearch)}>SEARCH</Button>
+                        </div>
+                        <div className="space-y-3">
+                           {loadingMarket ? <div key="model-market-loading" className="py-20 text-center"><Loader2 className="size-6 animate-spin mx-auto text-zinc-300" /></div> : (
+                             modelMarketModels.map((m: any, idx: number) => (
+                               <div key={`model-${m.id || idx}`} className="p-3 border border-zinc-100 dark:border-zinc-800 rounded-xl bg-white dark:bg-zinc-950 space-y-2">
+                                  <div className="flex items-center justify-between">
+                                     <span className="text-[11px] font-bold">{m.name}</span>
+                                     <Badge variant="outline" className="text-[9px] h-4 font-mono">GGUF</Badge>
+                                  </div>
+                                  <div className="space-y-1">
+                                     {m.ggufFiles?.slice(0, 2).map((file: string, fIdx: number) => (
+                                        <div key={`file-${m.id}-${file}-${fIdx}`} className="flex items-center justify-between text-[10px] p-2 bg-zinc-50/50 dark:bg-zinc-900/50 rounded-lg group">
+                                           <span className="truncate flex-1 font-mono">{file}</span>
+                                           <Button size="sm" variant="ghost" className="h-6 text-[9px] px-2 font-mono" onClick={() => downloadGguf(m.id, file)} disabled={downloadingModelId === `${m.id}/${file}`}>
+                                             {downloadingModelId === `${m.id}/${file}` ? (
+                                               <div className="flex items-center gap-1"><Loader2 className="size-2.5 animate-spin" />{downloadProgress?.progress || 0}%</div>
+                                             ) : 'DOWNLOAD'}
+                                           </Button>
+                                        </div>
+                                     ))}
+                                  </div>
+                               </div>
+                             ))
+                           )}
+                        </div>
+                     </TabsContent>
+     
+                     <TabsContent value="raw" className="mt-0 space-y-3">
+                        <textarea
+                          className="flex-1 w-full bg-zinc-50 dark:bg-zinc-900/50 font-mono text-[10px] border border-zinc-200 dark:border-zinc-800 rounded-xl p-4 outline-none resize-none focus:ring-1 focus:ring-primary/20 transition-all custom-scrollbar"
+                          value={rawMcpConfig}
+                          onChange={e => setRawMcpConfig(e.target.value)}
+                          spellCheck={false}
+                        />
+                        <div className="flex justify-end gap-2 shrink-0">
+                           <Button size="sm" variant="outline" className="h-8 text-[10px] px-4 font-mono" onClick={fetchRawMcpConfig}>REFRESH</Button>
+                           <Button size="sm" className="h-8 text-[10px] px-4 font-mono" onClick={saveRawMcpConfig}>APPLY CHANGES</Button>
+                        </div>
+                     </TabsContent>
+                   </div>
+                </Tabs>
+              </TabsContent>
+            </div>
+          </Tabs>
+
+          <div className="pt-4 mt-auto flex items-center justify-between border-t border-zinc-100 dark:border-zinc-800 shrink-0">
+            <div className="flex gap-2">
+              <span className="text-[10px] text-zinc-400">OpenOrangeAI v0.5.0-beta</span>
+            </div>
+            <Button size="sm" onClick={saveSettings} disabled={saving} className="px-6 h-9">
+              {saving ? <Loader2 className="size-4 mr-2 animate-spin" /> : <Save className="size-4 mr-2" />}
+              {t("Save changes")}
+            </Button>
+          </div>
         </div>
-        </div>
-        
-        {/* Resize handle */}
-        <div
-          onMouseDown={handleResizeStart}
-          className="absolute bottom-0 right-0 z-50 cursor-nwse-resize w-6 h-6 flex items-center justify-center opacity-30 hover:opacity-100 transition-opacity"
-        >
-          <svg className="w-3 h-3 text-zinc-400" viewBox="0 0 10 10" fill="none">
-            <path d="M8 2V8H2" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-          </svg>
+        <div onMouseDown={handleResizeStart} className="absolute bottom-0 right-0 z-50 cursor-nwse-resize w-6 h-6 flex items-center justify-center opacity-30 hover:opacity-100 transition-opacity">
+          <svg className="w-3 h-3 text-zinc-400" viewBox="0 0 10 10" fill="none"><path d="M8 2V8H2" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
         </div>
       </DialogContent>
     </Dialog>

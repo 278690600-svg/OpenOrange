@@ -205,6 +205,16 @@
   .app-scrollbar::-webkit-scrollbar-thumb:hover {
     @apply bg-zinc-300 dark:bg-zinc-700;
   }
+
+  .animate-progress-indeterminate {
+    animation: progress-indeterminate 1.5s infinite linear;
+    width: 50%;
+  }
+}
+
+@keyframes progress-indeterminate {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(200%); }
 }
 
 /* ========================================
@@ -284,6 +294,7 @@
 
 .inline-code {
   @apply bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded-md text-sm font-mono text-zinc-800 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-700;
+  word-break: break-all;
 }
 
 /* ========================================
@@ -526,16 +537,21 @@
 
 .prose-container {
   @apply text-zinc-800 dark:text-zinc-200;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .content-h1 {
   @apply text-xl font-bold mt-6 mb-3 text-zinc-900 dark:text-zinc-100 pb-2 border-b border-zinc-200 dark:border-zinc-800;
+  overflow-wrap: anywhere;
 }
 .content-h2 {
   @apply text-lg font-bold mt-5 mb-2.5 text-zinc-900 dark:text-zinc-100;
+  overflow-wrap: anywhere;
 }
 .content-h3 {
   @apply text-base font-semibold mt-4 mb-2 text-zinc-900 dark:text-zinc-100;
+  overflow-wrap: anywhere;
 }
 
 .content-p {
