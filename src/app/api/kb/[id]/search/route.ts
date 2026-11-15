@@ -34,7 +34,7 @@ export async function POST(
     }
 
     // Return structured results for the search UI panel
-    const results = result.chunks.slice(0, limit).map((chunk: any, idx: number) => ({
+    const results = result.chunks.slice(0, limit).map((chunk: { title?: string; content: string; sourceUri?: string; score?: number }, idx: number) => ({
       rank: idx + 1,
       title: chunk.title,
       content: chunk.content,
@@ -49,8 +49,8 @@ export async function POST(
       query,
       kbName: kb.name,
     })
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 })
+  } catch (err: unknown) {
+    return NextResponse.json({ error: (err as Error).message }, { status: 500 })
   }
 }
 

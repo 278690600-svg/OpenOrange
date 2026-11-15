@@ -3,26 +3,25 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
-import rehypeHighlight from 'rehype-highlight'
 import remarkMath from 'remark-math'
 import rehypeKatex from 'rehype-katex'
 import 'katex/dist/katex.min.css'
 import {
   ChevronDown, ChevronRight, Brain, Copy, Check, FileCode2,
-  Play, Code, Download, Maximize2, Minimize2, WrapText,
+  Code, Download, Maximize2, Minimize2, WrapText,
   Terminal, Globe, Braces, FileJson, Hash, FileDown, Presentation, PanelRight,
-  Trash2, MessageSquareQuote, Folder, File, CodeXml
+  Folder, File, CodeXml
 } from 'lucide-react'
 import type { Citation } from '@/hooks/use-sse-chat'
 import { asBlob } from 'html-docx-js-typescript'
 import { saveAs } from 'file-saver'
-import * as XLSX from 'xlsx'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
-import { vscDarkPlus, oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism'
-import { MermaidRenderer } from './mermaid-renderer'
+import { oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism'
+const MermaidRenderer = React.lazy(() => import('./mermaid-renderer').then(m => ({ default: m.MermaidRenderer })))
 import { PptRenderer } from './ppt-renderer'
+import { ExcelPreview } from './excel-preview'
 import { useArtifact } from '@/lib/artifact-context'
-import pptxgen from "pptxgenjs"
+import { useI18n } from '@/lib/i18n'
 
 interface MessageRendererProps {
   id?: string
@@ -34,6 +33,37 @@ interface MessageRendererProps {
   onOptionClick?: (value: string) => void
   onDelete?: () => void
   onQuote?: () => void
+}
+
+class MessageErrorBoundaryInner extends React.Component<
+  { children: React.ReactNode; errorMessage: string },
+  { hasError: boolean }
+> {
+  constructor(props: { children: React.ReactNode; errorMessage: string }) {
+    super(props)
+    this.state = { hasError: false }
+  }
+  static getDerivedStateFromError() {
+    return { hasError: true }
+  }
+  componentDidCatch(error: Error) {
+    console.warn('[MessageRenderer] Render error caught:', error.message)
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="p-3 rounded-lg bg-red-50 dark:bg-red-900/10 text-red-600 dark:text-red-400 text-sm">
+          {this.props.errorMessage}
+        </div>
+      )
+    }
+    return this.props.children
+  }
+}
+
+function MessageErrorBoundary({ children }: { children: React.ReactNode }) {
+  const { t } = useI18n()
+  return <MessageErrorBoundaryInner errorMessage={t("Message render error, please refresh.")}>{children}</MessageErrorBoundaryInner>
 }
 
 // 语言 -> 图标 / 颜色映射
@@ -69,7 +99,7 @@ const LANG_META: Record<string, { icon: React.ReactNode; color: string; ext: str
   react:      { icon: <Braces className="size-3.5" />, color: '#61DAFB', ext: 'jsx' },
   plaintext:  { icon: <WrapText className="size-3.5" />, color: '#71717a', ext: 'txt' },
 }
-const PREVIEWABLE = ['html', 'svg', 'mermaid', 'ppt', 'task']
+const PREVIEWABLE = ['html', 'svg', 'mermaid', 'ppt', 'task', 'docx', 'xlsx']
 
 // 标准化语言名到 Prism
 function normLang(lang: string) {
@@ -94,6 +124,288 @@ function triggerDownload(blob: Blob, filename: string) {
   URL.revokeObjectURL(url)
 }
 
+// 1. Markdown 转换为精美富文本 HTML (Word 导出专用)
+function compileMarkdownToWordHtml(markdown: string): string {
+  // 1. 处理代码块 (``` [lang] ... ```)
+  const codeBlocks: string[] = []
+  let html = markdown.replace(/```(\w*)\n([\s\S]*?)```/g, (_, lang, code) => {
+    const placeholder = `<!-- CODE_BLOCK_${codeBlocks.length} -->`
+    const escapedCode = code
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+    
+    const preStyle = `
+      background-color: #F8FAFC;
+      border: 1px solid #E2E8F0;
+      border-radius: 6px;
+      padding: 12px 16px;
+      margin: 14px 0;
+      font-family: Consolas, Monaco, 'Courier New', Courier, monospace;
+      font-size: 9.5pt;
+      line-height: 1.5;
+      color: #334155;
+      word-break: break-all;
+      white-space: pre-wrap;
+    `.replace(/\s+/g, ' ').trim()
+    
+    const blockHtml = `<pre style="${preStyle}">${escapedCode}</pre>`
+    codeBlocks.push(blockHtml)
+    return placeholder
+  })
+
+  // 2. 处理标题 (h1 - h6)
+  html = html
+    .replace(/^# (.*$)/gim, '<h1 style="font-size: 22pt; font-family: \'PingFang SC\', \'Microsoft YaHei\', sans-serif; color: #1E3A8A; font-weight: bold; margin-top: 24pt; margin-bottom: 12pt; text-align: center; border-bottom: 2px solid #1E3A8A; padding-bottom: 6px;">$1</h1>')
+    .replace(/^## (.*$)/gim, '<h2 style="font-size: 16pt; font-family: \'PingFang SC\', \'Microsoft YaHei\', sans-serif; color: #2B6CB0; font-weight: bold; margin-top: 18pt; margin-bottom: 8pt; border-bottom: 1px solid #CBD5E1; padding-bottom: 4px;">$1</h2>')
+    .replace(/^### (.*$)/gim, '<h3 style="font-size: 13pt; font-family: \'PingFang SC\', \'Microsoft YaHei\', sans-serif; color: #4A5568; font-weight: bold; margin-top: 14pt; margin-bottom: 6pt;">$1</h3>')
+    .replace(/^#### (.*$)/gim, '<h4 style="font-size: 11.5pt; font-family: \'PingFang SC\', \'Microsoft YaHei\', sans-serif; color: #2D3748; font-weight: bold; margin-top: 10pt; margin-bottom: 4pt;">$1</h4>')
+
+  // 3. 处理分割线 (---)
+  html = html.replace(/^\s*[-*_]{3,}\s*$/gim, '<hr style="border: none; border-top: 1px dashed #CBD5E1; margin: 20px 0;" />')
+
+  // 4. 处理块引用 (blockquote)
+  const lines = html.split('\n')
+  let inBlockquote = false
+  let quoteLines: string[] = []
+  const outputAfterQuote: string[] = []
+
+  const quoteStyle = `
+    background-color: #F8FAFC;
+    border-left: 4px solid #3B82F6;
+    padding: 10px 16px;
+    margin: 12px 0;
+    color: #475569;
+    font-style: italic;
+    font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    font-size: 10.5pt;
+  `.replace(/\s+/g, ' ').trim()
+
+  for (let line of lines) {
+    const trimmed = line.trim()
+    if (trimmed.startsWith('>')) {
+      inBlockquote = true
+      const content = trimmed.substring(1).replace(/^\s+/, '')
+      quoteLines.push(content)
+    } else {
+      if (inBlockquote && quoteLines.length > 0) {
+        outputAfterQuote.push(`<div style="${quoteStyle}">${quoteLines.join('<br />')}</div>`)
+        quoteLines = []
+        inBlockquote = false
+      }
+      outputAfterQuote.push(line)
+    }
+  }
+  if (inBlockquote && quoteLines.length > 0) {
+    outputAfterQuote.push(`<div style="${quoteStyle}">${quoteLines.join('<br />')}</div>`)
+  }
+  html = outputAfterQuote.join('\n')
+
+  // 5. 处理无序列表
+  const linesUl = html.split('\n')
+  let inUl = false
+  const outputAfterUl: string[] = []
+  
+  const liStyle = `
+    font-family: 'PingFang SC', sans-serif;
+    font-size: 11pt;
+    line-height: 1.6;
+    margin-bottom: 4px;
+    color: #374151;
+  `.replace(/\s+/g, ' ').trim()
+
+  for (let line of linesUl) {
+    const trimmed = line.trim()
+    const match = line.match(/^\s*[-*+]\s+(.*)$/)
+    if (match) {
+      if (!inUl) {
+        outputAfterUl.push('<ul style="margin-bottom: 12pt; padding-left: 20px;">')
+        inUl = true
+      }
+      outputAfterUl.push(`<li style="${liStyle}">${match[1]}</li>`)
+    } else {
+      if (inUl) {
+        outputAfterUl.push('</ul>')
+        inUl = false
+      }
+      outputAfterUl.push(line)
+    }
+  }
+  if (inUl) {
+    outputAfterUl.push('</ul>')
+  }
+  html = outputAfterUl.join('\n')
+
+  // 6. 处理有序列表
+  const linesOl = html.split('\n')
+  let inOl = false
+  const outputAfterOl: string[] = []
+
+  for (let line of linesOl) {
+    const trimmed = line.trim()
+    const match = line.match(/^\s*\d+\.\s+(.*)$/)
+    if (match) {
+      if (!inOl) {
+        outputAfterOl.push('<ol style="margin-bottom: 12pt; padding-left: 20px;">')
+        inOl = true
+      }
+      outputAfterOl.push(`<li style="${liStyle}">${match[1]}</li>`)
+    } else {
+      if (inOl) {
+        outputAfterOl.push('</ol>')
+        inOl = false
+      }
+      outputAfterOl.push(line)
+    }
+  }
+  if (inOl) {
+    outputAfterOl.push('</ol>')
+  }
+  html = outputAfterOl.join('\n')
+
+  // 7. 处理表格
+  const linesTable = html.split('\n')
+  let inTable = false
+  let tableRows: string[] = []
+  const outputAfterTable: string[] = []
+
+  for (let line of linesTable) {
+    const trimmed = line.trim()
+    if (trimmed.startsWith('|') && trimmed.endsWith('|')) {
+      inTable = true
+      if (trimmed.includes('---')) continue
+      
+      const cells = trimmed.split('|').slice(1, -1).map(c => c.trim())
+      const isHeader = tableRows.length === 0
+      
+      const rowStyle = isHeader ? 'background-color: #F1F5F9; font-weight: bold; color: #1E293B;' : 'background-color: #FFFFFF;'
+      const cellTag = isHeader ? 'th' : 'td'
+      const cellStyle = 'border: 1px solid #CBD5E1; padding: 10px 14px; font-family: sans-serif; font-size: 10.5pt; text-align: left;'
+      
+      const processedCells = cells.map(c => c.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>'))
+      
+      const rowHtml = `<tr style="${rowStyle}">` + processedCells.map(c => `<${cellTag} style="${cellStyle}">${c}</${cellTag}>`).join('') + '</tr>'
+      tableRows.push(rowHtml)
+    } else {
+      if (inTable && tableRows.length > 0) {
+        outputAfterTable.push(`<table style="border-collapse: collapse; width: 100%; border: 1px solid #CBD5E1; margin: 16px 0; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">${tableRows.join('')}</table>`)
+        tableRows = []
+        inTable = false
+      }
+      outputAfterTable.push(line)
+    }
+  }
+  if (inTable && tableRows.length > 0) {
+    outputAfterTable.push(`<table style="border-collapse: collapse; width: 100%; border: 1px solid #CBD5E1; margin: 16px 0; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">${tableRows.join('')}</table>`)
+  }
+  html = outputAfterTable.join('\n')
+
+  // 8. 处理加粗、倾斜、删除线、行内代码
+  html = html
+    .replace(/\*\*(.*?)\*\*/g, '<strong style="font-weight: bold; color: #111827;">$1</strong>')
+    .replace(/\*(.*?)\*/g, '<em style="font-style: italic;">$1</em>')
+    .replace(/~~(.*?)~~/g, '<del style="text-decoration: line-through; color: #9CA3AF;">$1</del>')
+    .replace(/`([^`]+)`/g, '<code style="background-color: #F1F5F9; color: #EB5757; padding: 2px 4px; border-radius: 4px; font-family: Consolas, monospace; font-size: 9pt;">$1</code>')
+
+  // 9. 对没有被 html 标记包裹的普通行包裹成 <p>
+  html = html.split('\n').map(l => {
+    const t = l.trim()
+    if (!t) return ''
+    if (
+      t.startsWith('<!-- CODE_BLOCK_') ||
+      t.startsWith('<h') || 
+      t.startsWith('<ul') || 
+      t.startsWith('<ol') || 
+      t.startsWith('<li') || 
+      t.startsWith('<table') || 
+      t.startsWith('<tr') || 
+      t.startsWith('<td') || 
+      t.startsWith('<blockquote') || 
+      t.startsWith('<div') || 
+      t.startsWith('<pre') ||
+      t.startsWith('<hr')
+    ) {
+      return l
+    }
+    return `<p style="font-family: 'PingFang SC', sans-serif; font-size: 11pt; line-height: 1.6; color: #374151; margin-bottom: 10pt;">${l}</p>`
+  }).join('\n')
+
+  // 10. 恢复代码块
+  codeBlocks.forEach((blockHtml, i) => {
+    html = html.replace(`<!-- CODE_BLOCK_${i} -->`, blockHtml)
+  })
+
+  return `
+    <html>
+      <head>
+        <meta charset="utf-8">
+      </head>
+      <body style="font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif; padding: 20px; max-width: 800px; margin: 0 auto; color: #333333;">
+        ${html}
+      </body>
+    </html>
+  `
+}
+
+// 2. 将 Excel 代码块转换为二进制 ArrayBuffer
+async function convertToExcelBuffer(code: string): Promise<ArrayBuffer> {
+  const XLSX = await import('xlsx')
+  const cleanCode = code.trim()
+  
+  // A. 尝试 JSON 解析
+  try {
+    const json = JSON.parse(cleanCode)
+    const wb = XLSX.utils.book_new()
+    
+    // 情况 1: { sheets: [ { name: 'Sheet1', headers: [...], rows: [[...]] } ] }
+    if (json && json.sheets && Array.isArray(json.sheets)) {
+      json.sheets.forEach((sheet: any) => {
+        const name = sheet.name || 'Sheet'
+        const headers = sheet.headers || []
+        const rows = sheet.rows || []
+        const data = [headers, ...rows]
+        const ws = XLSX.utils.aoa_to_sheet(data)
+        XLSX.utils.book_append_sheet(wb, ws, name)
+      })
+    } 
+    // 情况 2: 扁平的 JSON 数组 [ { 姓名: '张三', 年龄: 18 } ]
+    else if (Array.isArray(json)) {
+      const ws = XLSX.utils.json_to_sheet(json)
+      XLSX.utils.book_append_sheet(wb, ws, "Sheet1")
+    }
+    // 情况 3: 单个普通 JSON 对象
+    else if (typeof json === 'object') {
+      const ws = XLSX.utils.json_to_sheet([json])
+      XLSX.utils.book_append_sheet(wb, ws, "Sheet1")
+    }
+    
+    const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' })
+    return wbout
+  } catch (_e) {
+    // B. JSON 无法解析，则降级为 CSV / Tab 模式解析
+    const lines = cleanCode.split('\n')
+      .map(line => line.trim())
+      .filter(line => line.length > 0)
+    
+    // 检测分隔符
+    const firstLine = lines[0] || ''
+    const delimiter = firstLine.includes('\t') ? '\t' : ','
+    
+    const data = lines.map(line => {
+      // 简单处理带双引号的情况
+      return line.split(delimiter).map(cell => {
+        return cell.replace(/^"(.*)"$/, '$1').trim()
+      })
+    })
+    
+    const wb = XLSX.utils.book_new()
+    const ws = XLSX.utils.aoa_to_sheet(data)
+    XLSX.utils.book_append_sheet(wb, ws, "Sheet1")
+    const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' })
+    return wbout
+  }
+}
+
 // 下载文件 (增强版，支持 Excel/Word/PPT)
 async function downloadCode(code: string, lang: string, customFilename?: string) {
   const meta = LANG_META[lang]
@@ -102,19 +414,7 @@ async function downloadCode(code: string, lang: string, customFilename?: string)
 
   // 1. 处理 Excel
   if (ext === 'xlsx' || ext === 'xls') {
-    let ws
-    try {
-      // 尝试解析为 JSON
-      const json = JSON.parse(code)
-      ws = XLSX.utils.json_to_sheet(Array.isArray(json) ? json : [json])
-    } catch (e) {
-      // 降级为 CSV 模式解析
-      const lines = code.split('\n').map(line => line.split(/,|\t/))
-      ws = XLSX.utils.aoa_to_sheet(lines)
-    }
-    const wb = XLSX.utils.book_new()
-    XLSX.utils.book_append_sheet(wb, ws, "Sheet1")
-    const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' })
+    const wbout = await convertToExcelBuffer(code)
     const blob = new Blob([wbout], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
     saveAs(blob, filename)
     return
@@ -122,14 +422,8 @@ async function downloadCode(code: string, lang: string, customFilename?: string)
 
   // 2. 处理 Word
   if (ext === 'docx' || ext === 'doc') {
-    // 将文本转为简单的 HTML 以供转换
-    const htmlContent = `
-      <html>
-        <body style="font-family: 'Times New Roman', serif; line-height: 1.6;">
-          ${code.split('\n').map(l => `<p>${l}</p>`).join('')}
-        </body>
-      </html>
-    `
+    // 采用增强的 HTML 样式导出
+    const htmlContent = compileMarkdownToWordHtml(code)
     const blob = await asBlob(htmlContent)
     saveAs(blob as Blob, filename)
     return
@@ -138,11 +432,12 @@ async function downloadCode(code: string, lang: string, customFilename?: string)
   // 3. 处理 PPT (如果代码是 PPT JSON 格式)
   if (lang === 'ppt') {
     try {
-      const pres = new pptxgen()
+      const PptxGenJS = (await import('pptxgenjs')).default
+      const pres = new PptxGenJS()
       const data = JSON.parse(code)
       const slides = Array.isArray(data) ? data : (data.slides || [])
       
-      slides.forEach((s: any) => {
+      slides.forEach((s: { title?: string; content?: string; items?: string[] }) => {
         const slide = pres.addSlide()
         if (s.title) slide.addText(s.title, { x: 0.5, y: 0.5, w: '90%', fontSize: 24, bold: true })
         if (s.content) slide.addText(s.content, { x: 0.5, y: 1.5, w: '90%', fontSize: 18 })
@@ -174,6 +469,7 @@ async function downloadCode(code: string, lang: string, customFilename?: string)
 }
 
 function TaskChecklist({ data }: { data: string }) {
+  const { t } = useI18n()
   const lines = data.split('\n').filter(l => l.trim())
   
   return (
@@ -183,7 +479,7 @@ function TaskChecklist({ data }: { data: string }) {
           <div className="p-1.5 bg-emerald-500/10 rounded-md">
             <Check className="size-4 text-emerald-600 dark:text-emerald-400" />
           </div>
-          <span className="text-sm font-bold text-zinc-800 dark:text-zinc-200 uppercase tracking-tight">任务阶段拆分</span>
+          <span className="text-sm font-bold text-zinc-800 dark:text-zinc-200 uppercase tracking-tight">{t("Task Breakdown")}</span>
         </div>
         <span className="text-[10px] bg-emerald-500 text-white px-1.5 py-0.5 rounded font-mono font-bold">TASK LIST</span>
       </div>
@@ -213,6 +509,7 @@ function TaskChecklist({ data }: { data: string }) {
 }
 
 function ProjectCard({ title, filesCount, onClick }: { title: string, filesCount: number, onClick: () => void }) {
+  const { t } = useI18n()
   const currentTime = new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
   
   return (
@@ -221,7 +518,7 @@ function ProjectCard({ title, filesCount, onClick }: { title: string, filesCount
       className="group my-4 p-4 rounded-3xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/50 shadow-sm hover:shadow-xl hover:border-indigo-500/50 transition-all duration-500 cursor-pointer flex items-center justify-between overflow-hidden relative"
     >
       {/* Background Glow */}
-      <div className="absolute -right-4 -top-4 size-32 bg-indigo-500/5 blur-3xl group-hover:bg-indigo-500/10 transition-all" />
+      <div className="absolute -right-4 -top-4 size-32 bg-primary/5 blur-3xl group-hover:bg-primary/10 transition-all" />
       
       <div className="flex items-center gap-4 relative z-10">
         <div className="size-14 rounded-2xl bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-500">
@@ -230,12 +527,12 @@ function ProjectCard({ title, filesCount, onClick }: { title: string, filesCount
         <div className="flex flex-col gap-0.5">
           <div className="flex items-center gap-2">
             <span className="font-bold text-zinc-800 dark:text-zinc-100 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
-              {title || '新项目原型'}
+              {title || t("New Project Prototype")}
             </span>
             <span className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-400 font-bold uppercase">V2</span>
           </div>
           <div className="text-[11px] text-zinc-400 font-medium">
-            创建时间: {currentTime} · {filesCount} 个文件
+            {t("Created")}: {currentTime} · {filesCount} {t("files")}
           </div>
         </div>
       </div>
@@ -252,10 +549,11 @@ function ProjectCard({ title, filesCount, onClick }: { title: string, filesCount
 }
 
 function SelectionOptions({ options, onSelect }: { options: Array<{ label: string; value: string }>; onSelect: (val: string) => void }) {
+  const { t } = useI18n()
   if (options.length === 0) return null;
   return (
     <div className="flex flex-wrap gap-2 mt-6 p-4 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl animate-in fade-in slide-in-from-bottom-2 duration-300">
-      <div className="w-full text-[10px] text-zinc-400 font-bold uppercase tracking-widest mb-2 px-1">请选择接下来的操作：</div>
+      <div className="w-full text-[10px] text-zinc-400 font-bold uppercase tracking-widest mb-2 px-1">{t("Select next action:")}</div>
       {options.map((opt, i) => (
         <button
           key={i}
@@ -272,6 +570,7 @@ function SelectionOptions({ options, onSelect }: { options: Array<{ label: strin
 
 // 全屏浮层
 function FullscreenPreview({ code, onClose }: { code: string; onClose: () => void }) {
+  const { t } = useI18n()
   useEffect(() => {
     const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
     window.addEventListener('keydown', handler)
@@ -286,19 +585,19 @@ function FullscreenPreview({ code, onClose }: { code: string; onClose: () => voi
       <div className="flex items-center justify-between px-4 py-2 bg-[#2d2d2d] border-b border-zinc-800 text-zinc-200 text-xs">
         <div className="flex items-center gap-2">
           <Globe className="size-3.5 text-indigo-400" />
-          <span className="font-mono">实时预览</span>
-          <span className="text-zinc-500 ml-2">按 ESC 退出全屏</span>
+          <span className="font-mono">{t("Live Preview")}</span>
+          <span className="text-zinc-500 ml-2">{t("Press ESC to exit fullscreen")}</span>
         </div>
         <button
           onClick={onClose}
           className="flex items-center gap-1.5 hover:text-white transition-colors px-2 py-1 rounded hover:bg-zinc-700"
         >
-          <Minimize2 className="size-3.5" /> 退出全屏
+          <Minimize2 className="size-3.5" /> {t("Exit Fullscreen")}
         </button>
       </div>
       <iframe
         srcDoc={code}
-        className="flex-1 w-full border-0 bg-white"
+        className="flex-1 w-full border-0 bg-card"
         sandbox="allow-scripts allow-modals allow-forms allow-popups"
         title="Fullscreen Preview"
       />
@@ -345,12 +644,12 @@ function checkIsAsciiArt(content: string): boolean {
 }
 
 // 辅助函数：从 React Children 中递归提取纯文本
-function extractTextFromChildren(children: any): string {
+function extractTextFromChildren(children: React.ReactNode): string {
   return React.Children.toArray(children)
     .map(child => {
       if (typeof child === 'string' || typeof child === 'number') return child
-      if (React.isValidElement(child) && (child.props as any).children) {
-        return extractTextFromChildren((child.props as any).children)
+      if (React.isValidElement(child) && child.props && typeof child.props === 'object' && child.props !== null && 'children' in child.props) {
+        return extractTextFromChildren((child.props as { children?: React.ReactNode }).children)
       }
       return ''
     })
@@ -362,7 +661,7 @@ function MonoBox({ children }: { children: React.ReactNode }) {
   return (
     <div className="mono-box-container my-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/30 dark:bg-zinc-950/20 overflow-x-auto no-scrollbar select-all">
       <div 
-        className="p-4 whitespace-pre text-zinc-700 dark:text-zinc-300 min-w-max tracking-normal"
+        className="p-4 whitespace-pre text-foreground min-w-max tracking-normal"
         style={{
           fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
           fontSize: '11px',
@@ -378,6 +677,7 @@ function MonoBox({ children }: { children: React.ReactNode }) {
 
 // 极简文件树渲染组件
 function FileTree({ data }: { data: string }) {
+  const { t } = useI18n()
   // 预处理：如果数据包含大量的 | 或 ├─ 分隔符且没有换行，尝试将其转为多行
   let processData = data
   if (!data.includes('\n')) {
@@ -392,7 +692,7 @@ function FileTree({ data }: { data: string }) {
       <div className="px-4 py-2 bg-zinc-100/80 dark:bg-zinc-800/80 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between">
         <div className="flex items-center gap-2 text-xs font-semibold text-zinc-600 dark:text-zinc-400">
           <Folder className="size-3.5 text-amber-500" />
-          <span>项目文件结构</span>
+          <span>{t("Project Files")}</span>
         </div>
       </div>
       <div className="p-4 font-mono text-[13px] leading-6 overflow-x-auto whitespace-pre no-scrollbar">
@@ -403,9 +703,12 @@ function FileTree({ data }: { data: string }) {
           return (
             <div key={idx} className="flex items-center gap-2 group/line transition-colors hover:text-indigo-600 dark:hover:text-indigo-400">
               <span 
-                dangerouslySetInnerHTML={{ __html: cleanLine.replace(/[^├└─\s|].*$/, '').replace(/[├└]──\s*/, (m) => `<span class="text-zinc-300 dark:text-zinc-700">${m}</span>`) }}
                 className="select-none inline-block min-w-fit whitespace-pre text-zinc-300 dark:text-zinc-700"
-              />
+              >
+                {cleanLine.replace(/[^├└─\s|].*$/, '').split(/([├└]──\s*)/).map((part, i) => 
+                  /^[├└]──\s*$/.test(part) ? <span key={i} className="text-zinc-300 dark:text-zinc-700">{part}</span> : part
+                )}
+              </span>
               {isDir ? (
                 <Folder className="size-3.5 text-amber-500/80 shrink-0" />
               ) : (
@@ -420,7 +723,8 @@ function FileTree({ data }: { data: string }) {
   )
 }
 
-function CodeBlock({ children, className, isStreaming, getProjectFiles }: { children: string; className?: string; isStreaming?: boolean; getProjectFiles?: () => any[] }) {
+function CodeBlock({ children, className, isStreaming, getProjectFiles }: { children: string; className?: string; isStreaming?: boolean; getProjectFiles?: () => Array<{ language: string; name: string; content: string }> }) {
+  const { t } = useI18n()
   const language = className?.split(' ').find(c => c.startsWith('language-'))?.replace('language-', '') ?? 'text'
   const meta       = LANG_META[language]
   const isWebCode  = PREVIEWABLE.includes(language)
@@ -458,7 +762,7 @@ function CodeBlock({ children, className, isStreaming, getProjectFiles }: { chil
   // Ensure 'Source' first logic: reset to code mode when streaming begins
   useEffect(() => {
     if (isStreaming) {
-      setViewMode('code')
+      requestAnimationFrame(() => setViewMode('code'))
     }
   }, [isStreaming])
 
@@ -468,8 +772,10 @@ function CodeBlock({ children, className, isStreaming, getProjectFiles }: { chil
     // When generation finishes
     if (prevStreaming.current && !isStreaming) {
       if (isWebCode) {
-        setViewMode('preview')
-        setCollapsed(false)
+        requestAnimationFrame(() => {
+          setViewMode('preview')
+          setCollapsed(false)
+        })
         setActiveArtifact({ 
           id: `final-${language}-${Date.now()}`, 
           language, 
@@ -477,7 +783,7 @@ function CodeBlock({ children, className, isStreaming, getProjectFiles }: { chil
           files: getProjectFiles?.() 
         })
       } else if (longCode) {
-        setCollapsed(true)
+        requestAnimationFrame(() => setCollapsed(true))
       }
     }
     
@@ -509,15 +815,15 @@ function CodeBlock({ children, className, isStreaming, getProjectFiles }: { chil
       {fullscreen && <FullscreenPreview code={children} onClose={() => setFullscreen(false)} />}
 
       <div 
-        className="my-6 rounded-2xl overflow-hidden border border-zinc-200 dark:border-zinc-800 shadow-[0_8px_30px_rgb(0,0,0,0.04)] bg-white dark:bg-[#1e1e2e] transition-all"
+        className="my-6 rounded-2xl overflow-hidden border border-zinc-200 dark:border-zinc-800 shadow-[0_8px_30px_rgb(0,0,0,0.04)] bg-card dark:bg-card transition-all"
         style={{ contain: 'layout paint' }}
       >
 
         {/* ── 顶部标题栏 ── */}
-        <div className="flex items-center justify-between px-4 py-3 bg-zinc-50/80 dark:bg-[#252537] border-b border-zinc-100 dark:border-zinc-800/50 backdrop-blur-sm">
+        <div className="flex flex-wrap items-center justify-between gap-y-3 gap-x-2 px-4 py-2.5 sm:py-3 bg-zinc-50/80 dark:bg-card border-b border-zinc-100 dark:border-zinc-800/50 backdrop-blur-sm">
 
           {/* 左侧：语言标识 + 预览切换 */}
-          <div className="flex items-center gap-3 min-w-0">
+          <div className="flex items-center gap-2.5 min-w-0 flex-1 sm:flex-initial">
             <div className="flex items-center gap-2 text-zinc-500 dark:text-zinc-400 text-xs font-bold shrink-0">
               <div className="size-6 rounded-lg bg-white dark:bg-zinc-800 border border-zinc-200/50 dark:border-zinc-700/50 flex items-center justify-center shadow-sm">
                 <span style={{ color: meta?.color ?? '#94a3b8' }}>
@@ -527,33 +833,36 @@ function CodeBlock({ children, className, isStreaming, getProjectFiles }: { chil
               <span className="uppercase tracking-wider">
                 {language}
               </span>
-              <span className="text-zinc-300 dark:text-zinc-600 mx-1">/</span>
-              <span className="font-mono text-[10px] text-zinc-400">
+              <span className="text-zinc-300 dark:text-zinc-600 mx-1 hidden sm:inline">/</span>
+              <span className="font-mono text-[10px] text-zinc-400 hidden sm:inline">
                 {lineCount} LINES
               </span>
             </div>
 
-            <div className="flex items-center gap-1.5 px-2">
+            <div className="flex items-center gap-1.5 px-0.5 sm:px-2 shrink-0">
               {isWebCode && (
-                <div className="flex bg-zinc-100 dark:bg-zinc-900/50 p-1 rounded-xl border border-zinc-200/50 dark:border-zinc-800">
+                <div className="flex bg-zinc-100 dark:bg-zinc-900/50 p-0.5 sm:p-1 rounded-xl border border-zinc-200/50 dark:border-zinc-800 shrink-0">
                   <button
                     onClick={() => setViewMode('code')}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all ${viewMode === 'code' ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-sm ring-1 ring-zinc-200/50 dark:ring-zinc-700/50' : 'text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'}`}
+                    className={`flex items-center gap-1.5 px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg text-[11px] font-bold transition-all whitespace-nowrap shrink-0 ${viewMode === 'code' ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-sm ring-1 ring-zinc-200/50 dark:ring-zinc-700/50' : 'text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'}`}
                   >
-                    <Code className="size-3.5" /> 源码
+                    <Code className="size-3.5 shrink-0" />
+                    <span className="hidden sm:inline">{t("Source Code")}</span>
+                    <span className="inline sm:hidden">{t("Code")}</span>
                   </button>
                   <button
                     onClick={() => setViewMode('preview')}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all ${viewMode === 'preview' ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-sm ring-1 ring-zinc-200/50 dark:ring-zinc-700/50' : 'text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'}`}
+                    className={`flex items-center gap-1.5 px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg text-[11px] font-bold transition-all whitespace-nowrap shrink-0 ${viewMode === 'preview' ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-sm ring-1 ring-zinc-200/50 dark:ring-zinc-700/50' : 'text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'}`}
                   >
-                    <Presentation className="size-3.5" /> 预览
+                    <Presentation className="size-3.5 shrink-0" />
+                    <span>{t("Preview")}</span>
                   </button>
                 </div>
               )}
               
               {isStreaming && (
-                <span className="flex items-center gap-2 text-[10px] text-indigo-500 font-black ml-4 uppercase tracking-widest animate-pulse">
-                  <div className="size-1.5 rounded-full bg-indigo-500" />
+                <span className="flex items-center gap-2 text-[10px] text-indigo-500 font-black ml-2 sm:ml-4 uppercase tracking-widest animate-pulse shrink-0">
+                  <div className="size-1.5 rounded-full bg-primary" />
                   GENERATE...
                 </span>
               )}
@@ -561,12 +870,12 @@ function CodeBlock({ children, className, isStreaming, getProjectFiles }: { chil
           </div>
 
           {/* 右侧：工具按钮组 */}
-          <div className="flex items-center gap-1.5 shrink-0 ml-2">
+          <div className="flex items-center gap-1.5 shrink-0 ml-auto sm:ml-2">
             {/* 折行 */}
             {viewMode === 'code' && (
               <button
                 onClick={() => setWordWrap(v => !v)}
-                title={wordWrap ? '关闭折行' : '开启折行'}
+                title={wordWrap ? t("Disable word wrap") : t("Enable word wrap")}
                 className={`p-2 rounded-xl transition-all ${
                   wordWrap ? 'text-indigo-600 bg-indigo-50 dark:bg-indigo-900/20' : 'text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800'
                 }`}
@@ -579,7 +888,7 @@ function CodeBlock({ children, className, isStreaming, getProjectFiles }: { chil
             {longCode && viewMode === 'code' && (
               <button
                 onClick={() => setCollapsed(v => !v)}
-                title={collapsed ? '展开代码' : '折叠代码'}
+                title={collapsed ? t("Expand code") : t("Collapse code")}
                 className="p-2 rounded-xl text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all"
               >
                 {collapsed
@@ -593,7 +902,7 @@ function CodeBlock({ children, className, isStreaming, getProjectFiles }: { chil
             {isWebCode && viewMode === 'preview' && (
               <button
                 onClick={() => setFullscreen(true)}
-                title="全屏预览"
+                title={t("Fullscreen preview")}
                 className="p-2 rounded-xl text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all"
               >
                 <Maximize2 className="size-4" />
@@ -604,7 +913,7 @@ function CodeBlock({ children, className, isStreaming, getProjectFiles }: { chil
             {isWebCode && (
               <button
                 onClick={openInPanel}
-                title="在右侧工作区打开"
+                title={t("Open in workspace")}
                 className="p-2 rounded-xl text-zinc-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-all"
               >
                 <PanelRight className="size-4" />
@@ -616,7 +925,7 @@ function CodeBlock({ children, className, isStreaming, getProjectFiles }: { chil
             {/* 下载 */}
             <button
               onClick={() => downloadCode(children, language, filename)}
-              title="下载文件"
+              title={t("Download file")}
               className="p-2 rounded-xl text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all"
             >
               <Download className="size-4" />
@@ -625,14 +934,14 @@ function CodeBlock({ children, className, isStreaming, getProjectFiles }: { chil
             {/* 复制 */}
             <button
               onClick={copy}
-              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all shadow-sm ${
+              className={`flex items-center gap-2 px-3 py-1.5 sm:px-3.5 sm:py-1.5 rounded-full text-xs font-bold transition-all shadow-sm shrink-0 whitespace-nowrap ${
                 copied
                   ? 'bg-emerald-500 text-white'
                   : 'bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 hover:opacity-90'
               }`}
             >
-              {copied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
-              <span>{copied ? 'DONE' : 'COPY'}</span>
+              {copied ? <Check className="size-3.5 shrink-0" /> : <Copy className="size-3.5 shrink-0" />}
+              <span className="hidden sm:inline">{copied ? 'DONE' : 'COPY'}</span>
             </button>
           </div>
         </div>
@@ -640,7 +949,7 @@ function CodeBlock({ children, className, isStreaming, getProjectFiles }: { chil
         {/* ── 代码 / 预览区域 ── */}
         {viewMode === 'preview' && isWebCode ? (
           <div
-            className={language === 'mermaid' ? '' : 'bg-white relative overflow-hidden'}
+            className={language === 'mermaid' ? '' : 'bg-card relative overflow-hidden'}
             style={{ 
               height: language === 'mermaid' ? 'auto' : (isStreaming && language === 'ppt') ? '240px' : '420px', 
               resize: language === 'mermaid' ? 'none' : 'vertical', 
@@ -650,9 +959,27 @@ function CodeBlock({ children, className, isStreaming, getProjectFiles }: { chil
             }}
           >
             {language === 'mermaid' ? (
-              <MermaidRenderer code={children} />
+              <React.Suspense fallback={<div className="p-4 text-zinc-400 text-sm">Loading diagram...</div>}>
+                <MermaidRenderer code={children} />
+              </React.Suspense>
             ) : language === 'ppt' ? (
               <PptRenderer data={children} isStreaming={isStreaming} />
+            ) : language === 'docx' ? (
+              children.trim().startsWith('<') ? (
+                <div className="h-full overflow-auto bg-white dark:bg-zinc-950 p-6">
+                  <div className="max-w-3xl mx-auto prose prose-sm sm:prose" dangerouslySetInnerHTML={{ __html: children }} />
+                </div>
+              ) : (
+                <div className="h-full overflow-auto bg-zinc-100 dark:bg-zinc-900/50 p-6 flex justify-center">
+                  <div className="bg-white dark:bg-zinc-950 shadow-lg border border-zinc-200 dark:border-zinc-800 p-10 max-w-3xl w-full min-h-[500px] rounded-sm text-zinc-900 dark:text-zinc-100 prose prose-sm sm:prose dark:prose-invert">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{children}</ReactMarkdown>
+                  </div>
+                </div>
+              )
+            ) : language === 'xlsx' ? (
+              <div className="h-full overflow-auto p-4">
+                <ExcelPreview data={new TextEncoder().encode(children).buffer} />
+              </div>
             ) : language === 'task' ? (
               <TaskChecklist data={children} />
             ) : (
@@ -676,7 +1003,7 @@ function CodeBlock({ children, className, isStreaming, getProjectFiles }: { chil
             {isAsciiArt ? (
               <div className="flex bg-zinc-50/30 dark:bg-zinc-950/20 overflow-x-auto no-scrollbar select-all">
                 <pre 
-                  className="flex-1 m-0 p-5 whitespace-pre text-zinc-700 dark:text-zinc-300 min-w-max tracking-normal"
+                  className="flex-1 m-0 p-5 whitespace-pre text-foreground min-w-max tracking-normal"
                   style={{
                     fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
                     fontSize: '11px',
@@ -737,7 +1064,7 @@ function CodeBlock({ children, className, isStreaming, getProjectFiles }: { chil
                         className="flex items-center gap-2 px-6 py-2.5 rounded-full bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 border border-zinc-800 dark:border-zinc-200 shadow-2xl text-[11px] font-black uppercase tracking-widest hover:scale-105 active:scale-95 transition-all"
                     >
                         <ChevronDown className="size-3.5" /> 
-                        <span>展开全文 ({lineCount} 行)</span>
+                        <span>{t("Expand all ({lineCount} lines)", { lineCount })}</span>
                     </button>
                 </div>
               </div>
@@ -751,7 +1078,7 @@ function CodeBlock({ children, className, isStreaming, getProjectFiles }: { chil
                         className="flex items-center gap-2 px-4 py-2 rounded-xl text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 text-[10px] font-bold uppercase tracking-widest transition-all"
                     >
                         <ChevronRight className="size-3.5 rotate-90" /> 
-                        收起概览
+                        {t("Collapse overview")}
                     </button>
                 </div>
             )}
@@ -771,6 +1098,7 @@ const MemoizedCodeBlock = React.memo(CodeBlock, (prev, next) => {
 })
 
 function TableBlock({ children }: { children: React.ReactNode }) {
+  const { t } = useI18n()
   const [copied, setCopied] = useState(false)
   const tableRef = useRef<HTMLDivElement>(null)
 
@@ -788,12 +1116,13 @@ function TableBlock({ children }: { children: React.ReactNode }) {
     setTimeout(() => setCopied(false), 2000)
   }
 
-  const downloadExcel = () => {
+  const downloadExcel = async () => {
     if (!tableRef.current) return
     const table = tableRef.current.querySelector('table')
     if (!table) return
     
     // Create workbook and worksheet using SheetJS
+    const XLSX = await import('xlsx')
     const wb = XLSX.utils.table_to_book(table, { raw: true })
     const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' })
     
@@ -837,11 +1166,11 @@ function TableBlock({ children }: { children: React.ReactNode }) {
         </table>
       </div>
       <div className="absolute top-2 right-2 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-all z-10 translate-y-1 group-hover:translate-y-0">
-        <button onClick={downloadExcel} className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white/95 dark:bg-zinc-900/95 text-zinc-500 hover:text-indigo-600 hover:border-indigo-200 dark:text-zinc-400 dark:hover:text-indigo-400 dark:hover:border-indigo-900 shadow-lg backdrop-blur-md transition-all text-[10px] font-bold uppercase tracking-wider" title="导出为 Excel">
+        <button onClick={downloadExcel} className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white/95 dark:bg-zinc-900/95 text-zinc-500 hover:text-indigo-600 hover:border-indigo-200 dark:text-zinc-400 dark:hover:text-indigo-400 dark:hover:border-indigo-900 shadow-lg backdrop-blur-md transition-all text-[10px] font-bold uppercase tracking-wider" title={t("Export to Excel")}>
           <Download className="size-3.5" />
           <span>Excel</span>
         </button>
-        <button onClick={copyTable} className="p-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white/95 dark:bg-zinc-900/95 text-zinc-500 hover:text-indigo-600 hover:border-indigo-200 dark:text-zinc-400 dark:hover:text-indigo-400 dark:hover:border-indigo-900 shadow-lg backdrop-blur-md transition-all" title="复制表格">
+        <button onClick={copyTable} className="p-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white/95 dark:bg-zinc-900/95 text-zinc-500 hover:text-indigo-600 hover:border-indigo-200 dark:text-zinc-400 dark:hover:text-indigo-400 dark:hover:border-indigo-900 shadow-lg backdrop-blur-md transition-all" title={t("Copy table")}>
           {copied ? <Check className="size-3.5 text-green-500" /> : <Copy className="size-3.5" />}
         </button>
       </div>
@@ -850,10 +1179,17 @@ function TableBlock({ children }: { children: React.ReactNode }) {
 }
 
 function ThinkingBlock({ content, isActive }: { content: string; isActive?: boolean }) {
+  const { t } = useI18n()
   const [expanded, setExpanded] = useState(isActive || false)
   const contentRef = useRef<HTMLDivElement>(null)
 
-  useEffect(() => { if (isActive) setExpanded(true) }, [isActive])
+  useEffect(() => { 
+    if (isActive) {
+      requestAnimationFrame(() => setExpanded(true))
+    } else {
+      setExpanded(false)
+    }
+  }, [isActive])
   useEffect(() => {
     if (isActive && contentRef.current)
       contentRef.current.scrollTop = contentRef.current.scrollHeight
@@ -865,7 +1201,7 @@ function ThinkingBlock({ content, isActive }: { content: string; isActive?: bool
         <div className="thinking-icon-wrapper">
           <Brain className={`size-4 ${isActive ? 'animate-pulse' : ''}`} />
         </div>
-        <span className="thinking-label">{isActive ? '正在思考...' : '思考过程'}</span>
+        <span className="thinking-label">{isActive ? t("Thinking...") : t("Thinking process")}</span>
         {isActive && (
           <div className="thinking-dots">
             <div className="thinking-dot" style={{ animationDelay: '0s' }} />
@@ -879,7 +1215,7 @@ function ThinkingBlock({ content, isActive }: { content: string; isActive?: bool
       </button>
       {expanded && (
         <div ref={contentRef} className="thinking-content app-scrollbar">
-          {content || (isActive ? '思考中...' : '')}
+          {content || (isActive ? t("Thinking") : '')}
         </div>
       )}
     </div>
@@ -908,15 +1244,59 @@ export const MessageRenderer = React.memo(function MessageRenderer({
   role, 
   isStreaming, 
   isThinking, 
-  citations,
-  onOptionClick, 
-  onDelete,
-  onQuote,
+  citations: _citations,
+  onOptionClick: _onOptionClick, 
+  onDelete: _onDelete,
+  onQuote: _onQuote,
 }: MessageRendererProps) {
   const [msgCopied, setMsgCopied] = useState(false)
+  const [displayText, setDisplayText] = useState(content)
+  const lastSyncRef = useRef(0)
+  const textBufferRef = useRef(content)
+  const syncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Synchronize with content from context (which updates less frequently now)
+  useEffect(() => {
+    if (!isStreaming) {
+      setDisplayText(content)
+      textBufferRef.current = content
+    }
+  }, [content, isStreaming])
+
+  // Listen for real-time token updates and throttle the React state update
+  useEffect(() => {
+    if (isStreaming && id) {
+      const handler = (e: MessageEvent) => {
+        const eventWithDetail = e as unknown as { detail?: { text?: string } }
+        if (eventWithDetail.detail && typeof eventWithDetail.detail.text === 'string') {
+          const newText = eventWithDetail.detail.text
+          textBufferRef.current = newText
+          
+          const now = Date.now()
+          // Throttle state update to ~6-7 fps (150ms) to save CPU during heavy markdown parsing
+          if (now - lastSyncRef.current > 150) {
+            setDisplayText(newText)
+            lastSyncRef.current = now
+          } else if (!syncTimerRef.current) {
+            // Ensure the final token always gets rendered
+            syncTimerRef.current = setTimeout(() => {
+              setDisplayText(textBufferRef.current)
+              lastSyncRef.current = Date.now()
+              syncTimerRef.current = null
+            }, 160)
+          }
+        }
+      }
+      window.addEventListener(`chat-token-${id}`, handler as EventListener)
+      return () => {
+        window.removeEventListener(`chat-token-${id}`, handler as EventListener)
+        if (syncTimerRef.current) clearTimeout(syncTimerRef.current)
+      }
+    }
+  }, [isStreaming, id])
 
   const copyMessage = () => {
-    const clean = content.replace(/<think>[\s\S]*?<\/think>/g, '').trim()
+    const clean = (displayText || content).replace(/<think(?:ing)?>[\s\S]*?<\/think(?:ing)?>/g, '').trim()
     navigator.clipboard.writeText(clean)
     setMsgCopied(true)
     setTimeout(() => setMsgCopied(false), 2000)
@@ -927,7 +1307,6 @@ export const MessageRenderer = React.memo(function MessageRenderer({
     const container = document.getElementById(`msg-container-${safeId}`)
     const html = container?.innerHTML || ''
     
-    // Add basic styles for Word compatibility
     const fullHtml = `
       <!DOCTYPE html>
       <html>
@@ -953,30 +1332,25 @@ export const MessageRenderer = React.memo(function MessageRenderer({
     saveAs(blob as Blob, `OpenOrangeAI_Export_${Date.now()}.docx`)
   }
 
-  if (role === 'user') {
-    return <div className="whitespace-pre-wrap leading-relaxed">{content}</div>
-  }
-
-  const thinkRegex = /<think>([\s\S]*?)<\/think>/g
+  const thinkRegex = /<think(?:ing)?>([\s\S]*?)<\/think(?:ing)?>/g
   const thinkBlocks: string[] = []
-  let cleanContent = content.replace(thinkRegex, (_, t) => {
+  const textToProcess = displayText || content
+  let cleanContent = textToProcess.replace(thinkRegex, (_, t) => {
     thinkBlocks.push(t.trim())
     return ''
   }).trim()
 
-  const unclosedMatch = cleanContent.match(/<think>([\s\S]*)$/)
+  const unclosedMatch = cleanContent.match(/<think(?:ing)?>([ \s\S]*)$/)
   let activeThinkContent = ''
   if (unclosedMatch) {
     activeThinkContent = unclosedMatch[1].trim()
-    cleanContent = cleanContent.replace(/<think>[\s\S]*$/, '').trim()
+    cleanContent = cleanContent.replace(/<think(?:ing)?>[\s\S]*$/, '').trim()
   }
 
-  // Before rendering, normalize LaTeX formatting for AI models
   cleanContent = preprocessLaTeX(cleanContent)
 
   const showCursor = isStreaming && !isThinking && cleanContent.length > 0
 
-  // 提取交互选项 [option: Label | value]
   const options: Array<{ label: string; value: string }> = []
   const textWithNoOptions = cleanContent.replace(/\[option:\s*([^|\]]+?)\s*\|\s*([^\]]+?)\s*\]/g, (match, label, value) => {
     if (!isStreaming) {
@@ -987,19 +1361,24 @@ export const MessageRenderer = React.memo(function MessageRenderer({
 
   const finalContent = textWithNoOptions || cleanContent
 
-  // 提取任务列表 [task: item]
   const taskItems: string[] = []
   const finalContentWithTasks = finalContent.replace(/\[task:\s*([^\]]+?)\s*\]/g, (match, item) => {
     taskItems.push(item.trim())
     return ''
   }).trim()
 
-  // 使用 Ref 存储最新内容，确保回调函数引用稳定，防止所有 CodeBlock 随流式输出剧烈重排
+  // Use a stable ref to hold the latest content for callbacks
   const contentRef = React.useRef(finalContentWithTasks)
-  contentRef.current = finalContentWithTasks
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  React.useEffect(() => { contentRef.current = finalContentWithTasks })
 
   const extractProjectFiles = React.useCallback(() => {
-    const files: any[] = []
+    interface ProjectFile {
+      language: string;
+      name: string;
+      content: string;
+    }
+    const files: ProjectFile[] = []
     const codeRegex = /```(\w+)(?:\s+\[([\w.-]+)\])?\n([\s\S]*?)```/g
     let match
     const content = contentRef.current
@@ -1011,11 +1390,15 @@ export const MessageRenderer = React.memo(function MessageRenderer({
       })
     }
     return files
-  }, []) // 彻底稳定，不再随内容变化
+  }, [])
+
+  const isStreamingRef = useRef(isStreaming)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  React.useEffect(() => { isStreamingRef.current = isStreaming })
 
   const markdownComponents = React.useMemo(() => ({
-    pre: ({ children }: any) => <>{children}</>,
-    code: (props: any) => {
+    pre: ({ children }: { children?: React.ReactNode }) => <>{children}</>,
+    code: (props: { className?: string; children?: React.ReactNode }) => {
       const { className, children } = props
       const isBlock = className?.includes('language-')
       if (isBlock) {
@@ -1024,7 +1407,7 @@ export const MessageRenderer = React.memo(function MessageRenderer({
           <MemoizedCodeBlock 
             key={`${langClass}`}
             className={langClass} 
-            isStreaming={isStreaming}
+            isStreaming={isStreamingRef.current}
             getProjectFiles={extractProjectFiles}
           >
             {String(children).replace(/\n$/, '')}
@@ -1033,21 +1416,18 @@ export const MessageRenderer = React.memo(function MessageRenderer({
       }
       return <code className="inline-code">{children}</code>
     },
-    p: ({ children }: any) => {
-      // 自动检测文件树模式
+    p: ({ children }: { children?: React.ReactNode }) => {
       const text = extractTextFromChildren(children)
       
-      // 检测文件树 (支持更广泛的树字符)
       if (text.includes('├─') || text.includes('└─') || (text.includes('src/') && (text.includes('─') || text.includes('|')))) {
          return <FileTree data={text} />
       }
       
-      // 检测 ASCII 仪表盘/艺术
       if (checkIsAsciiArt(text) && text.includes('\n')) {
         return (
           <MemoizedCodeBlock 
             className="language-plaintext" 
-            isStreaming={isStreaming}
+            isStreaming={isStreamingRef.current}
           >
             {text}
           </MemoizedCodeBlock>
@@ -1056,33 +1436,32 @@ export const MessageRenderer = React.memo(function MessageRenderer({
       
       return <p className="content-p">{children}</p>
     },
-    table: ({ children }: any) => <TableBlock>{children}</TableBlock>,
-    a: ({ href, children }: any) => (
+    table: ({ children }: { children?: React.ReactNode }) => <TableBlock>{children}</TableBlock>,
+    a: ({ href, children }: { href?: string; children?: React.ReactNode }) => (
       <a href={href} target="_blank" rel="noopener noreferrer" className="content-link">
         {children}
       </a>
     ),
-    blockquote: ({ children }: any) => (
+    blockquote: ({ children }: { children?: React.ReactNode }) => (
       <blockquote className="content-blockquote">{children}</blockquote>
     ),
-    h1: ({ children }: any) => <h1 className="content-h1">{children}</h1>,
-    h2: ({ children }: any) => <h2 className="content-h2">{children}</h2>,
-    h3: ({ children }: any) => <h3 className="content-h3">{children}</h3>,
-    ul: ({ children }: any) => <ul className="content-ul">{children}</ul>,
-    ol: ({ children }: any) => <ol className="content-ol">{children}</ol>,
-    li: ({ children }: any) => <li className="content-li">{children}</li>,
+    h1: ({ children }: { children?: React.ReactNode }) => <h1 className="content-h1">{children}</h1>,
+    h2: ({ children }: { children?: React.ReactNode }) => <h2 className="content-h2">{children}</h2>,
+    h3: ({ children }: { children?: React.ReactNode }) => <h3 className="content-h3">{children}</h3>,
+    ul: ({ children }: { children?: React.ReactNode }) => <ul className="content-ul">{children}</ul>,
+    ol: ({ children }: { children?: React.ReactNode }) => <ol className="content-ol">{children}</ol>,
+    li: ({ children }: { children?: React.ReactNode }) => <li className="content-li">{children}</li>,
     hr: () => <hr className="content-hr" />,
-    strong: ({ children }: any) => <strong className="content-strong">{children}</strong>,
-  }), [isStreaming])
+    strong: ({ children }: { children?: React.ReactNode }) => <strong className="content-strong">{children}</strong>,
+  }), [extractProjectFiles])
 
+  const { t } = useI18n()
   const { activeArtifact, setActiveArtifact } = useArtifact()
 
-  // 自动激活多文件预览 logic
   useEffect(() => {
     if (!isStreaming && !isThinking) {
       const files = extractProjectFiles()
       if (files.length > 1) {
-        // 发现是项目，自动开启预览 (仅在当前没有 activeArtifact 或 activeArtifact 不同时)
         if (!activeArtifact || activeArtifact.id !== id) {
           setActiveArtifact({
             id: id || 'project-' + Date.now(),
@@ -1094,7 +1473,7 @@ export const MessageRenderer = React.memo(function MessageRenderer({
         }
       }
     }
-  }, [isStreaming, isThinking, id])
+  }, [isStreaming, isThinking, id, extractProjectFiles, activeArtifact, setActiveArtifact, content])
 
   const openProjectPreview = () => {
     const files = extractProjectFiles()
@@ -1107,7 +1486,12 @@ export const MessageRenderer = React.memo(function MessageRenderer({
     })
   }
 
+  if (role === 'user') {
+    return <div className="whitespace-pre-wrap leading-relaxed">{content}</div>
+  }
+
   return (
+    <MessageErrorBoundary>
     <div className="message-content group/msg relative">
       {thinkBlocks.map((t, i) => (
         <ThinkingBlock key={`done-${i}`} content={t} />
@@ -1118,10 +1502,10 @@ export const MessageRenderer = React.memo(function MessageRenderer({
       )}
 
       {finalContentWithTasks && (
-        <div className="prose-container" id={`msg-container-${(id || content.substring(0, 10)).replace(/[^a-zA-Z0-9]/g, '-')}`}>
+        <div className="prose-container" id={`msg-container-${(id || (displayText || content).substring(0, 10)).replace(/[^a-zA-Z0-9]/g, '-')}`}>
           <ReactMarkdown
-            remarkPlugins={[remarkGfm, remarkMath]}
-            rehypePlugins={[rehypeKatex as any]}
+            remarkPlugins={isStreaming ? [remarkGfm] : [remarkGfm, remarkMath]}
+            rehypePlugins={isStreaming ? [] : [rehypeKatex as unknown as React.ComponentProps<typeof ReactMarkdown>['rehypePlugins']][0]}
             components={markdownComponents}
           >
             {finalContentWithTasks}
@@ -1130,21 +1514,23 @@ export const MessageRenderer = React.memo(function MessageRenderer({
         </div>
       )}
 
-      {/* 项目快捷预览入口 */}
-      {!isStreaming && !isThinking && extractProjectFiles().length > 1 && (
-        <ProjectCard 
-          title="Web 项目原型" 
-          filesCount={extractProjectFiles().length} 
-          onClick={openProjectPreview} 
-        />
-      )}
+      {(() => {
+        const projectFiles = !isStreaming && !isThinking ? extractProjectFiles() : []
+        return projectFiles.length > 1 ? (
+          <ProjectCard 
+            title={t("Web Project Prototype")} 
+            filesCount={projectFiles.length} 
+            onClick={openProjectPreview} 
+          />
+        ) : null
+      })()}
 
       {/* Render extracted tasks if any */}
       {taskItems.length > 0 && <TaskChecklist data={taskItems.join('\n')} />}
 
       {/* Interactive selection options */}
-      {options.length > 0 && !isStreaming && onOptionClick && (
-        <SelectionOptions options={options} onSelect={onOptionClick} />
+      {options.length > 0 && !isStreaming && _onOptionClick && (
+        <SelectionOptions options={options} onSelect={_onOptionClick} />
       )}
 
       {!cleanContent && isStreaming && !isThinking && !activeThinkContent && (
@@ -1152,5 +1538,6 @@ export const MessageRenderer = React.memo(function MessageRenderer({
       )}
 
     </div>
+    </MessageErrorBoundary>
   )
 })

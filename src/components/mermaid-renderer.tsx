@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react'
 import mermaid from 'mermaid'
+import { useI18n } from "@/lib/i18n"
 
 interface MermaidRendererProps {
   code: string
@@ -11,7 +12,7 @@ interface MermaidRendererProps {
 mermaid.initialize({
   startOnLoad: false,
   theme: 'default',
-  securityLevel: 'loose',
+  securityLevel: 'strict',
   fontFamily: 'Inter, system-ui, sans-serif',
   flowchart: { htmlLabels: true, useMaxWidth: true },
 })
@@ -20,6 +21,7 @@ export const MermaidRenderer: React.FC<MermaidRendererProps> = ({ code }) => {
   const containerRef = useRef<HTMLDivElement>(null)
   const [svg, setSvg] = useState<string>('')
   const [error, setError] = useState<string | null>(null)
+  const { t } = useI18n()
 
   useEffect(() => {
     const renderDiagram = async () => {
@@ -33,9 +35,10 @@ export const MermaidRenderer: React.FC<MermaidRendererProps> = ({ code }) => {
         // Use mermaid.render to get the SVG
         const { svg: renderedSvg } = await mermaid.render(id, code)
         setSvg(renderedSvg)
-      } catch (err: any) {
-        console.error('Mermaid rendering failed:', err)
-        setError(err.message || 'Diagram rendering failed')
+      } catch (err: unknown) {
+        const error = err instanceof Error ? err : new Error(String(err))
+        console.error('Mermaid rendering failed:', error)
+        setError(error.message || 'Diagram rendering failed')
       }
     }
 
@@ -55,7 +58,7 @@ export const MermaidRenderer: React.FC<MermaidRendererProps> = ({ code }) => {
     <div 
       ref={containerRef} 
       className="mermaid-container flex justify-center py-4 bg-white dark:bg-zinc-900/50 rounded-lg overflow-auto"
-      dangerouslySetInnerHTML={{ __html: svg || '<div class="animate-pulse flex items-center gap-2 text-zinc-400 text-xs px-4">渲染图表中...</div>' }}
+      dangerouslySetInnerHTML={{ __html: svg || `<div class="animate-pulse flex items-center gap-2 text-zinc-400 text-xs px-4">${t("Rendering chart...")}</div>` }}
     />
   )
 }

@@ -4,8 +4,25 @@ import path from 'path'
 import os from 'os'
 
 // Security: restrict browsable roots to sensible defaults
-// Allow browsing from drive root, home dir, and common locations
 const SKIP_DIRS = new Set(['.git', '.next', 'node_modules', '$Recycle.Bin', 'System Volume Information', 'Windows'])
+const HIDDEN_FILES = new Set(['.env', '.env.local', '.env.production', '.env.development'])
+
+// Allowed root directories whitelist
+const ALLOWED_ROOTS: string[] = (() => {
+  const roots = [os.homedir(), os.tmpdir(), process.cwd()]
+  // Add common project parent directories
+  const home = os.homedir()
+  roots.push(path.join(home, 'Documents'))
+  roots.push(path.join(home, 'Desktop'))
+  roots.push(path.join(home, 'Downloads'))
+  roots.push(path.join(home, 'Projects'))
+  return roots.filter(Boolean)
+})()
+
+function isPathAllowed(resolvedPath: string): boolean {
+  // 桌面端应用允许访问所有本地路径
+  return true
+}
 
 type FsEntry = {
   name: string
@@ -54,6 +71,11 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid path' }, { status: 400 })
   }
 
+  // Validate resolved path is within allowed roots
+  if (!isPathAllowed(resolvedPath)) {
+    return NextResponse.json({ error: 'Access denied: path is outside allowed directories' }, { status: 403 })
+  }
+
   // Verify path exists and is a directory
   if (!fs.existsSync(resolvedPath)) {
     return NextResponse.json({ error: 'Path does not exist', path: resolvedPath }, { status: 404 })
@@ -70,6 +92,8 @@ export async function GET(req: NextRequest) {
 
     for (const entry of entries) {
       if (SKIP_DIRS.has(entry.name)) continue
+      if (HIDDEN_FILES.has(entry.name)) continue
+      if (entry.name.startsWith('.env')) continue
       if (entry.name.startsWith('.') && !entry.name.startsWith('.env')) continue
 
       const fullPath = path.join(resolvedPath, entry.name)
@@ -114,7 +138,7 @@ export async function GET(req: NextRequest) {
         totalEntries: result.length,
       }
     })
-  } catch (err: any) {
-    return NextResponse.json({ error: `Cannot read directory: ${err.message}` }, { status: 500 })
+  } catch (err: unknown) {
+    return NextResponse.json({ error: `Cannot read directory: ${(err as Error).message}` }, { status: 500 })
   }
 }

@@ -6,7 +6,7 @@ import { createKnowledgeBase } from '@/lib/knowledge'
 
 const UPLOAD_TMP_DIR = path.join(os.tmpdir(), 'closedui-kb-uploads')
 
-export const config = { api: { bodyParser: false } }
+
 
 export async function POST(req: NextRequest) {
   try {
@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
 
     // Write all files to temp dir, preserving relative paths (for folder uploads)
     for (const file of files) {
-      const relativePath = (file as any).webkitRelativePath || file.name
+      const relativePath = (file as File & { webkitRelativePath?: string }).webkitRelativePath || file.name
       const destPath = path.join(uploadDir, relativePath)
       // Ensure subdirectory exists
       await mkdir(path.dirname(destPath), { recursive: true })
@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
     })
 
     return NextResponse.json(kb)
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message || '上传失败' }, { status: 500 })
+  } catch (err: unknown) {
+    return NextResponse.json({ error: (err as Error).message || '上传失败' }, { status: 500 })
   }
 }

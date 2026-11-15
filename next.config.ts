@@ -3,7 +3,20 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   output: 'standalone',
   typescript: {
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: false,
+  },
+  async headers() {
+    return [
+      {
+        source: '/:path*',
+        headers: [
+          {
+            key: 'Content-Security-Policy',
+            value: "script-src 'self' 'unsafe-eval' 'unsafe-inline' https: http:; worker-src 'self' blob:; object-src 'none';",
+          },
+        ],
+      },
+    ];
   },
   // Prevent bundling of native Node.js modules that use C++ bindings
   // Only list packages that ARE installed (not optional platform-specific ones)

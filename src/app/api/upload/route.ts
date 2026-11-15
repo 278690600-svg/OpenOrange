@@ -6,6 +6,8 @@ import os from 'os'
 
 const IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml', 'image/bmp'])
 const MAX_TEXT_LENGTH = 60000 // ~15k tokens safety limit
+const MAX_FILE_SIZE = 50 * 1024 * 1024 // 50MB
+const MAX_FILES = 10
 
 export async function POST(req: NextRequest) {
   try {
@@ -16,9 +18,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'No files uploaded' }, { status: 400 })
     }
 
+    if (files.length > MAX_FILES) {
+      return NextResponse.json({ error: `Maximum ${MAX_FILES} files allowed` }, { status: 400 })
+    }
+
     const results = []
 
     for (const file of files) {
+      if (file.size > MAX_FILE_SIZE) {
+        return NextResponse.json({ error: `File too large: ${file.name}` }, { status: 400 })
+      }
       const bytes = await file.arrayBuffer()
       const buffer = Buffer.from(bytes)
       const fileName = file.name
@@ -68,8 +77,8 @@ export async function POST(req: NextRequest) {
         }
 
         results.push({ name: fileName, type: mimeType, size: file.size, content: content || '' })
-      } catch (err: any) {
-        console.error(`[Upload] Error during extraction for ${fileName}:`, err.message)
+      } catch (err: unknown) {
+        console.error(`[Upload] Error during extraction for ${fileName}:`, (err as Error).message)
       } finally {
         // Keep file for a moment for debugging if extraction failed
         // try { if (fs.existsSync(tempPath)) fs.unlinkSync(tempPath) } catch {}
@@ -95,3 +104,5 @@ function getMimeFromExt(filename: string): string {
   }
   return map[ext] || 'text/plain'
 }
+
+export const maxBodyLength = 52428800

@@ -3,6 +3,7 @@
 import { ExternalLink, Globe, Search, ChevronDown, ChevronUp, Check, Loader2, BookOpen, Sparkles, AlertCircle, Wrench, Cpu } from "lucide-react"
 import { useState, useEffect } from "react"
 import type { StatusEvent, Citation } from "@/hooks/use-sse-chat"
+import { useI18n } from "@/lib/i18n"
 
 interface SearchProgressProps {
   steps: StatusEvent[]
@@ -10,28 +11,29 @@ interface SearchProgressProps {
   isActive: boolean
 }
 
-const STAGE_CONFIG: Record<string, { icon: any; label: string; color: string }> = {
-  'intent': { icon: Sparkles, label: '分析搜索意图', color: 'text-amber-500' },
-  'skip': { icon: Check, label: '无需搜索', color: 'text-zinc-400' },
-  'rewrite': { icon: Sparkles, label: '提取搜索关键词', color: 'text-blue-500' },
-  'rewrite_done': { icon: Check, label: '关键词已提取', color: 'text-blue-500' },
-  'searching': { icon: Search, label: '正在搜索', color: 'text-primary' },
-  'found': { icon: Check, label: '找到结果', color: 'text-emerald-500' },
-  'reading': { icon: BookOpen, label: '阅读网页内容', color: 'text-amber-500' },
-  'read_page': { icon: BookOpen, label: '已阅读', color: 'text-amber-500' },
-  'done': { icon: Check, label: '操作完成', color: 'text-emerald-500' },
-  'error': { icon: AlertCircle, label: '发生错误', color: 'text-red-500' },
-  'loading': { icon: Loader2, label: '正在加载...', color: 'text-zinc-500' },
-  'call': { icon: Wrench, label: '调用工具', color: 'text-primary' },
-  'result': { icon: Check, label: '工具返回结果', color: 'text-emerald-500' },
+const STAGE_CONFIG: Record<string, { icon: React.ComponentType<{ className?: string }>; labelKey: string; color: string }> = {
+  'intent': { icon: Sparkles, labelKey: 'Analyze search intent', color: 'text-amber-500' },
+  'skip': { icon: Check, labelKey: 'No search needed', color: 'text-zinc-400' },
+  'rewrite': { icon: Sparkles, labelKey: 'Extract keywords', color: 'text-blue-500' },
+  'rewrite_done': { icon: Check, labelKey: 'Keywords extracted', color: 'text-blue-500' },
+  'searching': { icon: Search, labelKey: 'Searching', color: 'text-primary' },
+  'found': { icon: Check, labelKey: 'Found results', color: 'text-emerald-500' },
+  'reading': { icon: BookOpen, labelKey: 'Reading web content', color: 'text-amber-500' },
+  'read_page': { icon: BookOpen, labelKey: 'Read', color: 'text-amber-500' },
+  'done': { icon: Check, labelKey: 'Operation complete', color: 'text-emerald-500' },
+  'error': { icon: AlertCircle, labelKey: 'Error occurred', color: 'text-red-500' },
+  'loading': { icon: Loader2, labelKey: 'Loading...', color: 'text-zinc-500' },
+  'call': { icon: Wrench, labelKey: 'Call tool', color: 'text-primary' },
+  'result': { icon: Check, labelKey: 'Tool returned result', color: 'text-emerald-500' },
   // model_load stages
-  'compiling': { icon: Cpu, label: '初始化引擎', color: 'text-violet-500' },
-  'context': { icon: Cpu, label: '创建对话上下文', color: 'text-violet-500' },
-  'ready': { icon: Check, label: '模型就绪', color: 'text-emerald-500' },
+  'compiling': { icon: Cpu, labelKey: 'Init engine', color: 'text-violet-500' },
+  'context': { icon: Cpu, labelKey: 'Create context', color: 'text-violet-500' },
+  'ready': { icon: Check, labelKey: 'Model ready', color: 'text-emerald-500' },
 }
 
 /** Renders a model loading progress bar */
 function ModelLoadProgress({ steps, isActive }: { steps: StatusEvent[]; isActive: boolean }) {
+  const { t } = useI18n()
   const latestModelStep = [...steps].reverse().find(s => s.type === 'model_load')
   if (!latestModelStep) return null
 
@@ -43,10 +45,10 @@ function ModelLoadProgress({ steps, isActive }: { steps: StatusEvent[]; isActive
 
   // Stage labels for the timeline
   const stages = [
-    { key: 'compiling', label: '引擎初始化' },
-    { key: 'loading', label: '模型载入' },
-    { key: 'context', label: '上下文' },
-    { key: 'ready', label: '就绪' },
+    { key: 'compiling', label: t('Engine init') },
+    { key: 'loading', label: t('Model load') },
+    { key: 'context', label: t('Context') },
+    { key: 'ready', label: t('Ready') },
   ]
   const stageOrder = stages.map(s => s.key)
   const currentStageIdx = isError ? -1 : stageOrder.indexOf(stage)
@@ -67,7 +69,7 @@ function ModelLoadProgress({ steps, isActive }: { steps: StatusEvent[]; isActive
         </div>
         <div className="flex-1 min-w-0">
           <div className="text-xs font-semibold text-violet-700 dark:text-violet-300">
-            {latestModelStep.modelName ? `本地模型: ${latestModelStep.modelName}` : '本地模型'}
+            {latestModelStep.modelName ? `${t('Local model')}: ${latestModelStep.modelName}` : t('Local model')}
           </div>
           <div className="text-[10px] text-zinc-500 truncate">{latestModelStep.message}</div>
         </div>
@@ -109,6 +111,7 @@ function ModelLoadProgress({ steps, isActive }: { steps: StatusEvent[]; isActive
 }
 
 export function SearchProgress({ steps, citations, isActive }: SearchProgressProps) {
+  const { t } = useI18n()
   const [expanded, setExpanded] = useState(true)
   const [showResults, setShowResults] = useState(false)
 
@@ -159,8 +162,8 @@ export function SearchProgress({ steps, citations, isActive }: SearchProgressPro
           <div className="search-progress-info">
             <span className="search-progress-label">
               {isDone
-                ? `已搜索 ${citations.length || foundResults.length} 个来源`
-                : latestStep?.message || '准备搜索...'}
+                ? t('Searched {{count}} sources', { count: citations.length || foundResults.length })
+                : latestStep?.message || t('Loading...')}
             </span>
 
             {/* Favicon strip */}
@@ -196,7 +199,7 @@ export function SearchProgress({ steps, citations, isActive }: SearchProgressPro
       {expanded && otherSteps.length > 0 && (
         <div className="search-steps-timeline">
           {otherSteps.map((step, i) => {
-            const config = STAGE_CONFIG[step.stage] || { icon: Search, label: step.stage, color: 'text-zinc-400' }
+            const config = STAGE_CONFIG[step.stage] || { icon: Search, labelKey: step.stage, color: 'text-zinc-400' }
             const StepIcon = config.icon
             const isLast = i === otherSteps.length - 1
             const isStepActive = isLast && isActive && !isDone
@@ -227,12 +230,12 @@ export function SearchProgress({ steps, citations, isActive }: SearchProgressPro
                   )}
                   {step.type === 'mcp' && step.stage === 'result' && step.completedUrl && (
                     <div className="mt-1 text-[11px] text-blue-500">
-                      已打开: <a href={step.completedUrl} target="_blank" rel="noopener noreferrer" className="hover:underline break-all">{step.completedUrl}</a>
+                      {t('Opened:')} <a href={step.completedUrl} target="_blank" rel="noopener noreferrer" className="hover:underline break-all">{step.completedUrl}</a>
                     </div>
                   )}
                   {step.type === 'mcp' && step.stage === 'result' && step.pageTitle && (
                     <div className="mt-1 text-[11px] text-emerald-600 dark:text-emerald-400">
-                      页面标题: {step.pageTitle}
+                      {t('Page title:')} {step.pageTitle}
                     </div>
                   )}
                 </div>
@@ -250,7 +253,7 @@ export function SearchProgress({ steps, citations, isActive }: SearchProgressPro
             className="search-citations-toggle"
           >
             <Globe className="size-3.5" />
-            <span>查看 {citations.length} 个来源</span>
+            <span>{t('View {{count}} sources', { count: citations.length })}</span>
             {showResults ? <ChevronUp className="size-3.5" /> : <ChevronDown className="size-3.5" />}
           </button>
 

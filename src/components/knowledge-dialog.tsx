@@ -8,14 +8,14 @@ import {
   Database, FolderSearch, Loader2, Plus, RefreshCw, Trash2,
   CheckCircle2, AlertCircle, FileText, FileCode2, File, ChevronRight,
   X, Search, FolderOpen, Upload, Server, ChevronLeft, ChevronDown, Folder,
-  HardDrive, TableProperties, Plug, Eye, EyeOff,
+  HardDrive, TableProperties, Plug, Eye, EyeOff, Download, Pencil, Tag,
 } from "lucide-react"
 import { useI18n } from "@/lib/i18n"
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 type KBStats = { documentCount?: number; chunkCount?: number; semanticIndexed?: boolean }
-type KB = { id: string; name: string; path: string; sourceType?: string; status: string; lastError: string; stats: KBStats; chunkCount: number; lastIndexedAt?: string }
+type KB = { id: string; name: string; path: string; sourceType?: string; status: string; lastError: string; stats: KBStats; chunkCount: number; lastIndexedAt?: string; tags?: string | null }
 type IndexProgress = { stage: string; file?: string; table?: string; done?: number; total?: number; error?: string; stats?: KBStats }
 type FsEntry = { name: string; path: string; type: 'directory' | 'file'; size?: number; ext?: string }
 type DBTable = { name: string; rowCount?: number; columns?: string[] }
@@ -32,7 +32,6 @@ function getFileIcon(name: string) {
 
 function deriveNameFromPath(p: string) { return p.replace(/[/\\]+$/, '').split(/[/\\]/).pop() || p }
 function formatDate(d?: string) { if (!d) return ''; return new Date(d).toLocaleDateString('zh-CN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) }
-function formatSize(bytes: number) { if (bytes < 1024) return `${bytes}B`; if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)}KB`; return `${(bytes / (1024 * 1024)).toFixed(1)}MB` }
 
 // ── ScanProgress ──────────────────────────────────────────────────────────────
 
@@ -99,21 +98,28 @@ function FileBrowser({ onSelect }: { onSelect: (path: string) => void }) {
   const [parentPath, setParentPath] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [selectedPath, setSelectedPath] = useState('')
+  const [selectedType, setSelectedType] = useState<'directory' | 'file'>('directory')
 
   const browse = useCallback(async (p: string) => {
-    setLoading(true); setError('')
+    setLoading(true); setError(''); setSelectedPath(''); setSelectedType('directory')
     try {
-      const res = await fetch(`/api/files/browse?path=${encodeURIComponent(p)}&mode=dirs`)
+      const res = await fetch(`/api/files/browse?path=${encodeURIComponent(p)}&mode=all`)
       const data = await res.json()
       if (!res.ok) { setError(data.error || t('Failed to read directory')); setLoading(false); return }
       setEntries(data.entries || [])
       setCurrentPath(data.currentPath || p)
+      setSelectedPath(data.currentPath || p)
+      setSelectedType('directory')
       setParentPath(data.parent || null)
     } catch { setError(t('Network Error')) }
     setLoading(false)
-  }, [])
+  }, [t])
 
-  useEffect(() => { browse('') }, [browse])
+  useEffect(() => {
+    const timer = setTimeout(() => browse(''), 0)
+    return () => clearTimeout(timer)
+  }, [browse])
 
   return (
     <div className="flex flex-col gap-2">
@@ -145,24 +151,61 @@ function FileBrowser({ onSelect }: { onSelect: (path: string) => void }) {
             <ChevronLeft className="size-3" /> {t('Go to parent')}
           </button>
         )}
-        {entries.map(e => (
-          <button
-            key={e.path}
-            onClick={() => browse(e.path)}
-            className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors text-left border-b border-zinc-50 dark:border-zinc-800/50 last:border-0"
-          >
-            <Folder className="size-4 text-amber-400 shrink-0" />
-            <span className="flex-1 truncate text-zinc-700 dark:text-zinc-300">{e.name}</span>
-          </button>
-        ))}
+        {entries.map(e => {
+          const isSelected = selectedPath === e.path
+          return (
+            <div
+              key={e.path}
+              onClick={() => {
+                setSelectedPath(e.path)
+                setSelectedType(e.type)
+              }}
+              onDoubleClick={() => {
+                if (e.type === 'directory') {
+                  browse(e.path)
+                }
+              }}
+              className={`w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors text-left border-b border-zinc-50 dark:border-zinc-800/50 last:border-0 cursor-pointer select-none ${
+                isSelected ? 'bg-indigo-50/70 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 font-medium' : 'text-zinc-700 dark:text-zinc-300'
+              }`}
+            >
+              {e.type === 'directory' ? (
+                <Folder className="size-4 text-amber-400 shrink-0" />
+              ) : (
+                getFileIcon(e.name)
+              )}
+              <span className="flex-1 truncate">{e.name}</span>
+              {e.type === 'directory' && (
+                <button
+                  onClick={(event) => {
+                    event.stopPropagation()
+                    browse(e.path)
+                  }}
+                  className="p-1 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded text-zinc-400 hover:text-zinc-600 shrink-0"
+                  title={t("Enter directory")}
+                >
+                  <ChevronRight className="size-3.5" />
+                </button>
+              )}
+            </div>
+          )
+        })}
       </div>
 
-      {currentPath && (
+      {selectedPath && (
         <button
-          onClick={() => onSelect(currentPath)}
-          className="flex items-center justify-center gap-2 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold transition-colors"
+          onClick={() => onSelect(selectedPath)}
+          className="flex items-center justify-center gap-2 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold transition-colors shadow-sm"
         >
-          <FolderOpen className="size-4" /> {t('Select this folder')}
+          {selectedType === 'file' ? (
+            <>
+              <File className="size-4" /> {t('Select this file')}
+            </>
+          ) : (
+            <>
+              <FolderOpen className="size-4" /> {t('Select this folder')}
+            </>
+          )}
         </button>
       )}
     </div>
@@ -173,10 +216,10 @@ function FileBrowser({ onSelect }: { onSelect: (path: string) => void }) {
 
 function DatabaseForm({ onConfig }: { onConfig: (cfg: Record<string, unknown>) => void }) {
   const { t } = useI18n()
-  const [dbType, setDbType] = useState<'mysql' | 'postgresql' | 'sqlite'>('mysql')
+  const [dbType, setDbType] = useState<'mysql' | 'postgresql' | 'sqlite' | 'sqlserver' | 'mongodb' | 'redis'>('mysql')
   const [connMode, setConnMode] = useState<'fields' | 'string'>('fields')
   const [host, setHost] = useState('localhost')
-  const [port, setPort] = useState('')
+  const [port, setPort] = useState('3306')
   const [user, setUser] = useState('')
   const [password, setPassword] = useState('')
   const [database, setDatabase] = useState('')
@@ -214,16 +257,16 @@ function DatabaseForm({ onConfig }: { onConfig: (cfg: Record<string, unknown>) =
   }
 
   const inputCls = "w-full rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all"
-  const defaultPorts: Record<string, string> = { mysql: '3306', postgresql: '5432', sqlite: '' }
+  const defaultPorts: Record<string, string> = { mysql: '3306', postgresql: '5432', sqlite: '', sqlserver: '1433', mongodb: '27017', redis: '6379' }
 
   return (
     <div className="flex flex-col gap-3">
       {/* DB type selector */}
-      <div className="flex gap-2">
-        {(['mysql', 'postgresql', 'sqlite'] as const).map(t => (
+      <div className="flex gap-2 flex-wrap">
+        {(['mysql', 'postgresql', 'sqlite', 'sqlserver', 'mongodb', 'redis'] as const).map(t => (
           <button key={t} onClick={() => { setDbType(t); setPort(defaultPorts[t]) }}
-            className={`flex-1 py-1.5 rounded-lg text-xs font-bold border transition-all ${dbType === t ? 'bg-indigo-600 text-white border-indigo-600' : 'border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:border-indigo-300'}`}>
-            {t === 'mysql' ? 'MySQL' : t === 'postgresql' ? 'PostgreSQL' : 'SQLite'}
+            className={`flex-1 min-w-[70px] py-1.5 px-2 rounded-lg text-xs font-bold border transition-all ${dbType === t ? 'bg-indigo-600 text-white border-indigo-600' : 'border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:border-indigo-300'}`}>
+            {t === 'mysql' ? 'MySQL' : t === 'postgresql' ? 'PostgreSQL' : t === 'sqlite' ? 'SQLite' : t === 'sqlserver' ? 'SQL Server' : t === 'mongodb' ? 'MongoDB' : 'Redis'}
           </button>
         ))}
       </div>
@@ -359,7 +402,7 @@ function AddForm({ onAdded, onCancel }: { onAdded: (kb: KB) => void; onCancel: (
       const res = await fetch('/api/kb', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: n, sourceType: 'local', path: p }) })
       if (!res.ok) { const e = await res.json(); setError(e.error || t('Creation failed')); setAdding(false); return }
       startIndexing((await res.json()).id)
-    } catch (e: any) { setError(e.message); setAdding(false) }
+    } catch (e: unknown) { setError(e instanceof Error ? e.message : String(e)); setAdding(false) }
   }
 
   const handleUpload = async () => {
@@ -374,7 +417,7 @@ function AddForm({ onAdded, onCancel }: { onAdded: (kb: KB) => void; onCancel: (
       if (!res.ok) { const e = await res.json(); setError(e.error || t('Upload failed')); setUploading(false); return }
       const kb = await res.json()
       startIndexing(kb.id)
-    } catch (e: any) { setError(e.message); setUploading(false) }
+    } catch (e: unknown) { setError(e instanceof Error ? e.message : String(e)); setUploading(false) }
   }
 
   const handleDatabaseSubmit = async () => {
@@ -385,7 +428,7 @@ function AddForm({ onAdded, onCancel }: { onAdded: (kb: KB) => void; onCancel: (
       const res = await fetch('/api/kb', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: n, sourceType: 'database', config: dbConfig }) })
       if (!res.ok) { const e = await res.json(); setError(e.error || t('Creation failed')); setAdding(false); return }
       startIndexing((await res.json()).id)
-    } catch (e: any) { setError(e.message); setAdding(false) }
+    } catch (e: unknown) { setError(e instanceof Error ? e.message : String(e)); setAdding(false) }
   }
 
   const handleDone = useCallback(() => {
@@ -506,9 +549,15 @@ function SearchPanel({ kbId }: { kbId: string }) {
 
   function highlightText(text: string, query: string) {
     if (!query.trim()) return text
+    // HTML entity escape first to prevent XSS
+    const escaped = text
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
     const words = query.trim().split(/\s+/).filter(Boolean)
     const pattern = new RegExp(`(${words.map(w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})`, 'gi')
-    return text.replace(pattern, '<mark class="bg-yellow-200 dark:bg-yellow-800 text-zinc-900 dark:text-zinc-100 rounded px-0.5">$1</mark>')
+    return escaped.replace(pattern, '<mark class="bg-yellow-200 dark:bg-yellow-800 text-zinc-900 dark:text-zinc-100 rounded px-0.5">$1</mark>')
   }
 
   return (
@@ -557,9 +606,75 @@ function SearchPanel({ kbId }: { kbId: string }) {
   )
 }
 
+// ── Helpers ────────────────────────────────────────────────────────────────────
+
+function parseTags(tags: string | null | undefined): string[] {
+  if (!tags) return []
+  try { const arr = JSON.parse(tags); return Array.isArray(arr) ? arr.filter((t: unknown) => typeof t === 'string') : [] } catch { return [] }
+}
+
+// ── EditKBDlg ─────────────────────────────────────────────────────────────────
+
+function EditKBDlg({ kb, onDone, onCancel }: { kb: KB; onDone: () => void; onCancel: () => void }) {
+  const { t } = useI18n()
+  const [name, setName] = useState(kb.name)
+  const [tagInput, setTagInput] = useState('')
+  const [tags, setTags] = useState<string[]>(parseTags(kb.tags))
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+
+  const addTag = () => {
+    const v = tagInput.trim()
+    if (v && !tags.includes(v)) { setTags([...tags, v]); setTagInput('') }
+  }
+
+  const removeTag = (tag: string) => { setTags(tags.filter(t => t !== tag)) }
+
+  const handleSave = async () => {
+    if (!name.trim()) { setError(t('Name is required')); return }
+    setSaving(true); setError('')
+    try {
+      const res = await fetch(`/api/kb/${kb.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: name.trim(), tags }) })
+      if (!res.ok) { const e = await res.json(); setError(e.error || t('Update failed')); setSaving(false); return }
+      onDone()
+    } catch (e: unknown) { setError(e instanceof Error ? e.message : String(e)); setSaving(false) }
+  }
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex items-center justify-between">
+        <h4 className="font-semibold text-sm flex items-center gap-2"><Pencil className="size-4 text-indigo-500" /> {t('Edit Knowledge Base')}</h4>
+        <button onClick={onCancel} className="p-1 rounded hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-400"><X className="size-4" /></button>
+      </div>
+      <input value={name} onChange={e => setName(e.target.value)} placeholder={t('Knowledge Base Name')}
+        className="w-full rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2.5 text-sm placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all" />
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center gap-1.5 text-xs font-semibold text-zinc-600 dark:text-zinc-400"><Tag className="size-3" /> {t('Tags')}</div>
+        <div className="flex flex-wrap gap-1.5">
+          {tags.map(tag => (
+            <span key={tag} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-xs font-medium">
+              {tag}
+              <button onClick={() => removeTag(tag)} className="hover:text-red-500 transition-colors"><X className="size-3" /></button>
+            </span>
+          ))}
+        </div>
+        <div className="flex gap-2">
+          <input value={tagInput} onChange={e => setTagInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addTag())} placeholder={t('Add tag...')}
+            className="flex-1 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-sm placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all" />
+          <button onClick={addTag} disabled={!tagInput.trim()} className="px-3 py-2 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 text-sm font-medium hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors disabled:opacity-40">{t('Add')}</button>
+        </div>
+      </div>
+      {error && <p className="text-xs text-red-500 flex items-center gap-1.5"><AlertCircle className="size-3 shrink-0" /> {error}</p>}
+      <button onClick={handleSave} disabled={saving} className="py-2.5 rounded-xl text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 transition-colors flex items-center justify-center gap-2">
+        {saving ? <Loader2 className="size-4 animate-spin" /> : <CheckCircle2 className="size-4" />} {saving ? t('Saving...') : t('Save')}
+      </button>
+    </div>
+  )
+}
+
 // ── KBCard ────────────────────────────────────────────────────────────────────
 
-function KBCard({ kb, onDelete, onSync, onSyncing }: { kb: KB; onDelete: () => void; onSync: () => void; onSyncing: boolean }) {
+function KBCard({ kb, onDelete, onSync, onSyncing, onEdit, onExport }: { kb: KB; onDelete: () => void; onSync: () => void; onSyncing: boolean; onEdit: () => void; onExport: () => void }) {
   const { t } = useI18n()
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [syncProgress, setSyncProgress] = useState<IndexProgress | null>(null)
@@ -580,7 +695,24 @@ function KBCard({ kb, onDelete, onSync, onSyncing }: { kb: KB; onDelete: () => v
   }
 
   const isIndexing = kb.status === 'indexing' || onSyncing
-  const sourceIcon = kb.sourceType === 'database' ? <Server className="size-5 text-indigo-500" /> : <FolderSearch className="size-5 text-indigo-500" />
+  
+  const getKBFileIcon = (pathStr: string) => {
+    if (!pathStr) return <FolderSearch className="size-5 text-indigo-500" />
+    const ext = pathStr.split('.').pop()?.toLowerCase() || ''
+    if (pathStr.includes('.') && !pathStr.endsWith('/') && !pathStr.endsWith('\\')) {
+      if (ext === 'pdf') return <FileText className="size-5 text-rose-500" />
+      if (['docx', 'doc'].includes(ext)) return <FileText className="size-5 text-blue-500" />
+      if (['xlsx', 'xls', 'csv', 'tsv'].includes(ext)) return <FileText className="size-5 text-emerald-500" />
+      if (['md', 'txt', 'rtf'].includes(ext)) return <FileText className="size-5 text-amber-500" />
+      if (['js', 'ts', 'tsx', 'jsx', 'py', 'java', 'go', 'rs', 'cpp', 'c', 'sql', 'json'].includes(ext)) return <FileCode2 className="size-5 text-purple-500" />
+      return <File className="size-5 text-zinc-500" />
+    }
+    return <FolderSearch className="size-5 text-indigo-500" />
+  }
+
+  const sourceIcon = kb.sourceType === 'database' 
+    ? <Server className="size-5 text-indigo-500" /> 
+    : getKBFileIcon(kb.path || '')
 
   const statusLabel =
     kb.status === 'ready' ? t("Ready") :
@@ -605,6 +737,13 @@ function KBCard({ kb, onDelete, onSync, onSyncing }: { kb: KB; onDelete: () => v
             </span>
           </div>
           {kb.path && <p className="text-[11px] font-mono text-zinc-400 truncate mt-0.5" title={kb.path}>{kb.path}</p>}
+          {parseTags(kb.tags).length > 0 && (
+            <div className="flex flex-wrap gap-1 mt-1">
+              {parseTags(kb.tags).map(tag => (
+                <span key={tag} className="text-[10px] px-1.5 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400">{tag}</span>
+              ))}
+            </div>
+          )}
         </div>
         <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
           {kb.status === 'ready' && (
@@ -613,6 +752,12 @@ function KBCard({ kb, onDelete, onSync, onSyncing }: { kb: KB; onDelete: () => v
               <Search className="size-3.5" />
             </button>
           )}
+          <button onClick={onExport} title={t("Export")} className="p-1.5 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-500/10 text-zinc-400 hover:text-indigo-500 transition-colors">
+            <Download className="size-3.5" />
+          </button>
+          <button onClick={onEdit} title={t("Edit")} className="p-1.5 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-500/10 text-zinc-400 hover:text-indigo-500 transition-colors">
+            <Pencil className="size-3.5" />
+          </button>
           <button onClick={handleSyncClick} disabled={isIndexing || !!syncProgress} title={t("Re-index")}
             className="p-1.5 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-500/10 text-zinc-400 hover:text-indigo-500 transition-colors disabled:opacity-40">
             <RefreshCw className={`size-3.5 ${isIndexing ? 'animate-spin text-indigo-500' : ''}`} />
@@ -664,16 +809,35 @@ export function KnowledgeDialog({ open, onOpenChange }: { open: boolean; onOpenC
   const [kbs, setKbs] = useState<KB[]>([])
   const [adding, setAdding] = useState(false)
   const [syncingId, setSyncingId] = useState<string | null>(null)
+  const [editingKb, setEditingKb] = useState<KB | null>(null)
+  const [activeTag, setActiveTag] = useState<string | null>(null)
 
   const fetchKbs = useCallback(() => {
     fetch('/api/kb').then(r => r.json()).then(d => { if (Array.isArray(d)) setKbs(d) }).catch(console.error)
   }, [])
 
-  useEffect(() => { if (open) { fetchKbs(); setAdding(false) } }, [open, fetchKbs])
+  useEffect(() => { 
+    if (open) { 
+      fetchKbs()
+      setTimeout(() => { setAdding(false); setEditingKb(null) }, 0)
+    } 
+  }, [open, fetchKbs])
 
   const handleAdded = () => { setAdding(false); fetchKbs() }
   const handleDelete = async (id: string) => { await fetch(`/api/kb/${id}`, { method: 'DELETE' }); fetchKbs() }
   const handleSync = (id: string) => { setSyncingId(id); setTimeout(() => { setSyncingId(null); fetchKbs() }, 500) }
+  const handleExport = (kb: KB) => {
+    const a = document.createElement('a')
+    a.href = `/api/kb/${kb.id}/export`
+    a.download = `${kb.name}-export.json`
+    a.click()
+  }
+
+  // Collect all unique tags from all knowledge bases
+  const allTags = Array.from(new Set(kbs.flatMap(kb => parseTags(kb.tags)))).sort()
+
+  // Filter knowledge bases by active tag
+  const filteredKbs = activeTag ? kbs.filter(kb => parseTags(kb.tags).includes(activeTag)) : kbs
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -704,8 +868,29 @@ export function KnowledgeDialog({ open, onOpenChange }: { open: boolean; onOpenC
             </div>
           )}
 
-          {kbs.map(kb => (
-            <KBCard key={kb.id} kb={kb} onDelete={() => handleDelete(kb.id)} onSync={() => handleSync(kb.id)} onSyncing={syncingId === kb.id} />
+          {editingKb && (
+            <div className="p-4 rounded-xl border border-indigo-200 dark:border-indigo-800/60 bg-indigo-50/40 dark:bg-indigo-950/20">
+              <EditKBDlg kb={editingKb} onDone={() => { setEditingKb(null); fetchKbs() }} onCancel={() => setEditingKb(null)} />
+            </div>
+          )}
+
+          {allTags.length > 0 && !adding && !editingKb && (
+            <div className="flex flex-wrap gap-1.5">
+              <button onClick={() => setActiveTag(null)}
+                className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${!activeTag ? 'bg-indigo-600 text-white' : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700'}`}>
+                {t('All')}
+              </button>
+              {allTags.map(tag => (
+                <button key={tag} onClick={() => setActiveTag(activeTag === tag ? null : tag)}
+                  className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${activeTag === tag ? 'bg-indigo-600 text-white' : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700'}`}>
+                  {tag}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {filteredKbs.map(kb => (
+            <KBCard key={kb.id} kb={kb} onDelete={() => handleDelete(kb.id)} onSync={() => handleSync(kb.id)} onSyncing={syncingId === kb.id} onEdit={() => setEditingKb(kb)} onExport={() => handleExport(kb)} />
           ))}
 
           {kbs.length === 0 && !adding && (

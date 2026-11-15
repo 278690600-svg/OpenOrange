@@ -1,210 +1,95 @@
-import { streamText, generateText } from 'ai'
+import { streamText, generateText, type ToolSet } from 'ai'
 import { v4 as uuidv4 } from 'uuid'
-import { createOpenAI } from '@ai-sdk/openai'
 import prisma from '@/lib/db'
+import { adjustModelParams } from '@/lib/model-specs'
 import { buildKnowledgeContext } from '@/lib/knowledge'
+import { searchWithFallback, type SearchResult } from '@/lib/search-service'
 import { mcpManager } from '@/lib/mcp'
 import { resolveModelPath } from '@/lib/models'
+import { getSmartProvider, extractContent, sseEvent, Settings } from '@/lib/ai-provider'
+import { CRAWL_TIMEOUT, MAX_CRAWL_TEXT_LENGTH, CHAT_REQUEST_TIMEOUT, PERSIST_INTERVAL_MS, PERSIST_MIN_LENGTH, MAX_TOOL_STEPS } from '@/lib/constants'
+import { buildMemoryContext, formatMemoryForPrompt, extractMemoriesFromResponse } from '@/lib/agent-memory'
+import { triggerWebhook } from '@/lib/webhook'
 import path from 'path'
 
 import fs from 'fs'
 
-let llamaInstance: any = null
-let llamaIsCompiling = false
+// Local GGUF chat handlers have been refactored and moved to src/lib/local-gguf.ts
 
-async function getLlamaInstance(isGemma4 = false) {
-  if (!llamaInstance) {
-    const { getLlama } = await import(/* webpackIgnore: true */ /* turbopackIgnore: true */ 'node-llama-cpp')
-    
-    console.log('[Llama] Loading engine (strictly using prebuilt binaries only)...')
-    // We set gpu: 'auto' to automatically leverage CUDA/Vulkan if available.
-    // 'build: never' prevents node-llama-cpp from attempting to compile local variants
-    // if the ideal GPU environment is missing, allowing a graceful fallback to the prebuilt CPU driver.
-    llamaInstance = await getLlama({ gpu: 'auto', build: 'never' })
-  }
-  return llamaInstance
-}
-
-async function handleLocalGgufChat({
-  modelId,
-  messages,
-  systemPrompt,
-  onToken,
-  onStatus,
-  settings,
-}: {
-  modelId: string
-  messages: any[]
-  systemPrompt?: string
-  onToken: (token: string) => Promise<void>
-  onStatus: (event: Record<string, any>) => Promise<void>
-  settings?: any
-}) {
-  const fileName = modelId.replace('local-gguf::', '')
-  const modelPath = resolveModelPath(fileName)
-  console.log(`[Local GGUF] Loading model from: ${modelPath}`)
-
-  // ===== Global cache to avoid re-loading on each request =====
-  const g = globalThis as any
-  g.localGgufCache = g.localGgufCache || {
-    modelPath: null,
-    model: null,
-    context: null,
-    session: null,
-    isLoaded: false
-  }
-
-  let llama: any, model: any, context: any, session: any
-
-  try {
-    const isSmallModel = fileName.toLowerCase().includes('1b') || fileName.toLowerCase().includes('0.5b') || fileName.toLowerCase().includes('3b')
-    const finalSystemPrompt = isSmallModel 
-      ? 'You are a helpful AI assistant. Answer concisely.' 
-      : systemPrompt
-
-    const isGemma4 = fileName.toLowerCase().includes('gemma-4')
-    llama = await getLlamaInstance(isGemma4)
-
-    if (g.localGgufCache.modelPath !== modelPath || g.localGgufCache.systemPrompt !== finalSystemPrompt) {
-      // ... loading logic ...
-      await onStatus({ type: 'model_load', stage: 'compiling', message: '正在启动本地推理引擎...', progress: 0, modelName: fileName })
-      // Dispose old model if switching
-      if (g.localGgufCache.context) { try { await g.localGgufCache.context.dispose() } catch {} }
-      if (g.localGgufCache.model) { try { await g.localGgufCache.model.dispose() } catch {} }
-
-      await onStatus({ type: 'model_load', stage: 'loading', message: `正在加载模型: ${fileName}`, progress: 0, modelName: fileName })
-
-      let lastProgress = 0
-      model = await llama.loadModel({
-        modelPath,
-        onLoadProgress: (progress: number) => {
-          const pct = Math.round(progress * 100)
-          if (pct >= lastProgress + 5 || pct === 100) {
-            lastProgress = pct
-            onStatus({ type: 'model_load', stage: 'loading', message: `加载模型中 ${pct}%`, progress: pct, modelName: fileName }).catch(() => {})
-          }
-        }
-      })
-
-      await onStatus({ type: 'model_load', stage: 'context', message: '正在初始化对话上下文...', progress: 100, modelName: fileName })
-      
-      const fileNameLower = fileName.toLowerCase()
-      const isGemma = fileNameLower.includes('gemma')
-      const contextSize = settings?.localGgufContextSize || (isGemma ? 8192 : 4096)
-      context = await model.createContext({ contextSize })
-
-      const { LlamaChatSession } = await import(/* webpackIgnore: true */ /* turbopackIgnore: true */ 'node-llama-cpp')
-      session = new LlamaChatSession({
-        contextSequence: context.getSequence(),
-        systemPrompt: finalSystemPrompt,
-        ...(isGemma ? { autoDisposeSequence: false } : {})
-      })
-
-      g.localGgufCache = { modelPath, model, context, session, isLoaded: true, systemPrompt: finalSystemPrompt }
-      await onStatus({ type: 'model_load', stage: 'ready', message: `模型 ${fileName} 加载完成`, progress: 100, modelName: fileName })
-    } else {
-      // ... reuse logic ...
-      model = g.localGgufCache.model
-      context = g.localGgufCache.context
-      session = g.localGgufCache.session
-      await onStatus({ type: 'model_info', message: `状态: 模型已就绪 (${fileName})` })
-    }
-  } catch (error: any) {
-    console.error('[Local GGUF] Initialization Error:', error)
-    let errorMsg = error?.message || '文件损坏或引擎不支持'
-    if (errorMsg.includes('VRAM') || errorMsg.includes('memory')) {
-      errorMsg = '显存不足，请尝试使用更小或量化级别更高 (Q4/Q2) 的模型'
-    }
-    try {
-      const modelsDir = path.join(process.cwd(), '.models')
-      const altModelsDir = path.join(process.cwd(), 'models')
-      const targetDir = fs.existsSync(modelsDir) ? modelsDir : (fs.existsSync(altModelsDir) ? altModelsDir : modelsDir)
-      
-      if (!fs.existsSync(targetDir)) {
-        fs.mkdirSync(targetDir, { recursive: true })
-      }
-      fs.writeFileSync(path.join(targetDir, 'error.log'), String(error?.stack || error))
-      console.log(`[Local GGUF] Error saved to ${path.join(targetDir, 'error.log')}`)
-    } catch (e) {
-      console.error('[Local GGUF] Failed to write error log:', e)
-    }
-    await onStatus({ type: 'model_load', stage: 'error', message: `加载失败: ${errorMsg}`, progress: 0 })
-    await onToken(`\n\n[本地模型加载失败: ${errorMsg}]\n\n`)
-    return
-  }
-
-  // Simplify system prompt for small models to avoid context overload and hallucinations
-  const isSmallModel = fileName.toLowerCase().includes('1b') || fileName.toLowerCase().includes('0.5b') || fileName.toLowerCase().includes('3b')
-  const finalSystemPrompt = isSmallModel 
-    ? 'You are a helpful AI assistant. Answer concisely.' 
-    : systemPrompt
-
-  // Convert history for matching
-  const isGemma = fileName.toLowerCase().includes('gemma')
-  const newHistory = messages.slice(0, -1).map(m => ({
-    role: m.role === 'assistant' ? (isGemma ? 'model' : 'assistant') : m.role,
-    content: [typeof m.content === 'string' ? m.content : JSON.stringify(m.content)]
-  }))
-
-  // More robust matching: only compare content and role
-  const existingHistory: any[] = session.getChatHistory()
-  let isMatch = false
-  
-  if (existingHistory.length > 0 && newHistory.length === existingHistory.length) {
-    isMatch = existingHistory.every((msg, i) => {
-      const newMsg = newHistory[i]
-      const oldContent = Array.isArray(msg.content) ? msg.content.join('') : String(msg.content)
-      const newContent = Array.isArray(newMsg.content) ? newMsg.content.join('') : String(newMsg.content)
-      return msg.role === newMsg.role && oldContent === newContent
-    })
-  } else if (existingHistory.length === 0 && newHistory.length === 0) {
-    isMatch = true
-  }
-
-  if (!isMatch) {
-    console.log('[Local GGUF] History changed or mismatch. Refreshing session...')
-    session.setChatHistory(newHistory as any)
-  }
-
-  // Run the prompt
-  try {
-    const lastMsg = messages[messages.length - 1]
-    const promptText = typeof lastMsg.content === 'string' ? lastMsg.content : JSON.stringify(lastMsg.content)
-
-    // For Gemma models, we ensure we use a temperature that doesn't cause nonsense
-    await session.prompt(promptText, {
-      onToken: (token: any) => {
-        // Safe streaming segment
-        if (typeof token === 'string') {
-          if (token) onToken(token).catch(() => {})
-        } else {
-          try {
-            const text = model.detokenize(Array.isArray(token) ? token : [token])
-            if (text) onToken(text).catch(() => {})
-          } catch {}
-        }
-      },
-      temperature: settings?.localGgufTemperature ?? (isSmallModel ? 0.2 : 0.7),
-      topP: settings?.localGgufTopP ?? 0.8,
-      topK: 40,
-      repeatPenalty: { penalty: 1.1 },
-      maxTokens: settings?.localGgufMaxTokens ?? 2048
-    })
-  } catch (error: any) {
-    console.error('[Local GGUF] Inference Error:', error)
-    await onToken(`\n\n[推理发生异常: ${error?.message || '未知错误'}]\n\n`).catch(() => {})
-  }
+interface ChatMessage {
+  role: string
+  content: unknown
 }
 
 
 
-type SearchResult = { title: string; snippet: string; url: string }
+// SearchResult is imported from @/lib/search-service
 
-const DEEP_THINK_SYSTEM_PROMPT = `You are a highly capable reasoning assistant. When answering, first think step-by-step inside <think>...</think> tags, then provide your final answer. Show your complete reasoning process in the thinking block before concluding.`
+const DEEP_THINK_SYSTEM_PROMPT = `You are a highly capable reasoning assistant. When answering, first think step-by-step inside <think>/think> tags, then provide your final answer. Show your complete reasoning process in the thinking block before concluding.
+
+Respond in 中文.`
+
+const DOCX_SYSTEM_PROMPT = `
+# WORD DOCUMENT GENERATION MODE - MANDATORY
+When user asks for a Word document, report, article, or any text document, you MUST respond with structured HTML content inside a \`\`\`docx code block. Do NOT just describe the document - you MUST output the actual HTML code block.
+
+CRITICAL RULE: Your response MUST contain a \`\`\`docx code block with valid HTML. No exceptions.
+
+## Rules:
+1. Output well-structured HTML inside a \`\`\`docx code block.
+2. Use semantic HTML tags: <h1>, <h2>, <h3>, <p>, <ul>, <ol>, <li>, <strong>, <em>, <table>, <tr>, <td>, <th>, <blockquote>, <code>.
+3. For tables, use proper <table> markup with headers.
+4. Keep content professional and well-organized.
+5. Do NOT include <html>, <head>, <body> tags - just the content HTML.
+
+## Example:
+\`\`\`docx
+<h1>Project Report</h1>
+<h2>Executive Summary</h2>
+<p>This report covers <strong>key findings</strong> from Q4 analysis.</p>
+<table>
+  <tr><th>Metric</th><th>Value</th></tr>
+  <tr><td>Revenue</td><td>$1.2M</td></tr>
+</table>
+\`\`\`
+`
+
+const EXCEL_SYSTEM_PROMPT = `
+# EXCEL SPREADSHEET GENERATION MODE - MANDATORY
+When user asks for a spreadsheet, table data, or Excel file, you MUST respond with structured JSON inside a \`\`\`xlsx code block. Do NOT just describe the data - you MUST output the actual JSON code block.
+
+CRITICAL RULE: Your response MUST contain a \`\`\`xlsx code block with valid JSON. No exceptions.
+
+## Rules:
+1. Output a JSON object inside a \`\`\`xlsx code block.
+2. The JSON must have a "sheets" array with sheet objects.
+3. Each sheet has "name", "headers" (array of column names), and "rows" (array of arrays).
+4. Keep data types consistent (numbers as numbers, strings as strings).
+5. Support multiple sheets if the user requests.
+
+## Example:
+\`\`\`xlsx
+{
+  "sheets": [
+    {
+      "name": "Sales Report",
+      "headers": ["Product", "Q1", "Q2", "Q3", "Q4"],
+      "rows": [
+        ["Widget A", 1200, 1500, 1800, 2100],
+        ["Widget B", 800, 950, 1100, 1350]
+      ]
+    }
+  ]
+}
+\`\`\`
+`
 
 const PPT_SYSTEM_PROMPT = `
-# PPT GENERATION MODE
-When user asks for a PPT, you MUST output a structured JSON block inside a 'ppt' code block.
+# PPT GENERATION MODE - MANDATORY
+When user asks for a PPT, presentation, or slides, you MUST respond with a structured JSON block inside a \`\`\`ppt code block. Do NOT describe the PPT in plain text - you MUST output the actual JSON code block.
+
+CRITICAL RULE: Your response MUST contain a \`\`\`ppt code block with valid JSON. No exceptions.
+
 Act as a **World-Class Visual Designer** (Swiss, Apple, Vogue editorial standards).
 
 ## Design Intelligence Rules:
@@ -230,6 +115,7 @@ Act as a **World-Class Visual Designer** (Swiss, Apple, Vogue editorial standard
   "theme": "zinc", // zinc, orange, blue, green, rose
   "style": "swiss", // swiss, apple, editorial, modern, pencil
   "background": "#ffffff", // Global background
+  "templateId": "optional_id_from_available_templates",
   "slides": [
     {
        "title": "Slide Title",
@@ -249,246 +135,42 @@ Act as a **World-Class Visual Designer** (Swiss, Apple, Vogue editorial standard
 CRITICAL: Use high-quality visual keywords for images. Avoid generic terms.
 
 ## Interactive Interaction Rules:
-1. **Task Splitting**: Before or during a complex task (like generating a long PPT), output a \`task\` block to list milestones.
+1. **CRITICAL JSON LENGTH LIMIT**: To prevent truncation, DO NOT generate more than 6-8 slides in a single response. If the presentation requires more slides, generate the first batch, close the JSON block, and provide an option to continue.
+2. **Task Splitting**: Before or during a complex task (like generating a long PPT), output a \`task\` block to list milestones.
    Example:
    \`\`\`task
    [x] 规划大纲内容
-   [ ] 生成核心幻灯片 (5/10)
-   [ ] 优化视觉样式
+   [ ] 生成核心幻灯片 1-5
+   [ ] 生成后续幻灯片 6-10
    \`\`\`
-2. **Selectable Options**: When you need user input or offer next steps, use \`[option: Label | Value]\`.
-   Example: \`[option: 继续生成后续幻灯片 | 好的，请继续生成]\`
+3. **Selectable Options**: When you need user input or offer next steps, use \`[option: Label | Value]\`.
+   Example: \`[option: 继续生成第6-10页幻灯片 | 好的，请继续生成第6到10页]\`
    Example: \`[option: 修改主题颜色 | 帮我换一个深色主题]\`
 `
 
 /**
- * Clean a MiniMax SSE line to match the OpenAI schema that the AI SDK expects.
- */
-function cleanSSELine(line: string): string | null {
-  if (!line.startsWith('data: ')) {
-    return line
-  }
-  const jsonStr = line.slice(6).trim()
-  if (!jsonStr || jsonStr === '[DONE]') return line
-  try {
-    const chunk = JSON.parse(jsonStr)
-    const cleaned: any = {
-      id: chunk.id,
-      object: chunk.object,
-      created: chunk.created,
-      model: chunk.model,
-      choices: (chunk.choices || []).map((c: any) => {
-        const choice: any = { index: c.index }
-        if (c.delta) {
-          choice.delta = {}
-          if (c.delta.role) choice.delta.role = c.delta.role
-          if (c.delta.content !== undefined) choice.delta.content = c.delta.content
-          if (c.delta.reasoning_content !== undefined) choice.delta.reasoning_content = c.delta.reasoning_content
-          if (c.delta.tool_calls) choice.delta.tool_calls = c.delta.tool_calls
-        }
-        if (c.finish_reason) choice.finish_reason = c.finish_reason
-        return choice
-      }),
-    }
-    if (chunk.usage) cleaned.usage = chunk.usage
-    return 'data: ' + JSON.stringify(cleaned)
-  } catch {
-    return line
-  }
-}
-
-async function getSmartProvider(modelId: string, settings: any) {
-  const ollamaUrl = settings?.ollamaUrl || 'http://127.0.0.1:11434'
-  const lmstudioUrl = (settings as any)?.lmstudioUrl || 'http://127.0.0.1:1234'
-  const openAiKey = settings?.openaiKey || ''
-  const deepseekKey = settings?.deepseekKey || ''
-  const minimaxKey = settings?.minimaxKey || ''
-  const openrouterKey = (settings as any)?.openrouterKey || ''
-  const nvidiaKey = (settings as any)?.nvidiaKey || ''
-
-  if (modelId.startsWith('openai::')) {
-    return {
-      provider: createOpenAI({ apiKey: openAiKey }),
-      resolvedId: modelId.replace('openai::', ''),
-    }
-  }
-
-  if (modelId.startsWith('deepseek::')) {
-    return {
-      provider: createOpenAI({
-        apiKey: deepseekKey,
-        baseURL: 'https://api.deepseek.com'
-      }),
-      resolvedId: modelId.replace('deepseek::', ''),
-    }
-  }
-
-  if (modelId.startsWith('minimax::')) {
-    const resolvedId = modelId.replace('minimax::', '')
-    const minimaxProvider = createOpenAI({
-      apiKey: minimaxKey,
-      baseURL: 'https://api.minimaxi.com/v1',
-      compatibility: 'compatible',
-      fetch: async (url: string, options: any) => {
-        let isStreaming = false
-        if (options && options.body && typeof options.body === 'string') {
-          try {
-            const parsed = JSON.parse(options.body)
-            isStreaming = !!parsed.stream
-            if (parsed.input && !parsed.messages) {
-              parsed.messages = []
-              for (const item of (Array.isArray(parsed.input) ? parsed.input : [parsed.input])) {
-                const role = item.role || 'user'
-                let content = ''
-                if (typeof item.content === 'string') content = item.content
-                else if (Array.isArray(item.content)) content = item.content.map((c: any) => c.text || c.input_text || '').join('')
-                if (content) parsed.messages.push({ role, content })
-              }
-              delete parsed.input
-            }
-            if (Array.isArray(parsed.messages)) {
-              parsed.messages = parsed.messages.map((m: any) => ({
-                role: m.role || 'user',
-                content: Array.isArray(m.content) ? m.content.map((c: any) => c.text || c.input_text || '').join('') : m.content
-              }))
-            }
-            if (resolvedId.startsWith('MiniMax-M2.')) parsed.reasoning_split = true
-            // parsed.stream = true
-            parsed.model = resolvedId
-            console.log('[MiniMax] Final request keys:', Object.keys(parsed).join(', '))
-            console.log('[MiniMax] Final has tools:', !!parsed.tools, 'Tool count:', parsed.tools?.length || 0)
-            if (parsed.tools && parsed.tools.length > 0) {
-              console.log('[MiniMax] Tools:', parsed.tools.map((t: any) => t.function?.name || t.name).slice(0, 5).join(', '))
-            }
-            options.body = JSON.stringify(parsed)
-          } catch (e) {
-            console.warn('[MiniMax] Request transform failed:', e)
-          }
-        }
-
-        const res = await fetch('https://api.minimaxi.com/v1/chat/completions', options)
-
-        if (!res.body || !isStreaming) return res
-        const reader = res.body.getReader()
-        const decoder = new TextDecoder()
-        const encoder = new TextEncoder()
-        let buffer = ''
-
-        const transformedStream = new ReadableStream({
-          async pull(controller) {
-            while (true) {
-              const { done, value } = await reader.read()
-              if (done) {
-                if (buffer.trim()) {
-                  const cleaned = cleanSSELine(buffer)
-                  if (cleaned) controller.enqueue(encoder.encode(cleaned))
-                }
-                controller.enqueue(encoder.encode('data: [DONE]\n\n'))
-                controller.close()
-                return
-              }
-              buffer += decoder.decode(value, { stream: true })
-              const lines = buffer.split('\n')
-              buffer = lines.pop() || ''
-              for (const line of lines) {
-                const cleaned = cleanSSELine(line)
-                if (cleaned !== null) {
-                  controller.enqueue(encoder.encode(cleaned + '\n'))
-                }
-              }
-            }
-          }
-        })
-
-        return new Response(transformedStream, {
-          status: res.status,
-          statusText: res.statusText,
-          headers: res.headers,
-        })
-      }
-    } as any)
-    return {
-      provider: minimaxProvider.chat,
-      resolvedId,
-    }
-  }
-
-
-  if (modelId.startsWith('openrouter::')) {
-    const openrouterProvider = (createOpenAI as any)({
-      apiKey: openrouterKey,
-      baseURL: 'https://openrouter.ai/api/v1',
-      compatibility: 'compatible', // Force compatibility for SSE streaming
-      headers: {
-        'HTTP-Referer': 'https://github.com/OpenOrangeAI', 
-        'X-Title': 'OpenOrangeAI'
-      }
-    })
-    return {
-      provider: openrouterProvider.chat,
-      resolvedId: modelId.replace('openrouter::', ''),
-    }
-  }
-
-  if (modelId.startsWith('nvidia::')) {
-    const nvidiaBaseUrl = 'https://integrate.api.nvidia.com/v1'
-    return {
-      provider: (createOpenAI as any)({
-        apiKey: nvidiaKey,
-        baseURL: nvidiaBaseUrl,
-        compatibility: 'strict',
-        fetch: async (url: RequestInfo | URL, options?: RequestInit) => {
-          if (options && options.body && typeof options.body === 'string') {
-            try {
-              const parsed = JSON.parse(options.body)
-              // NVIDIA specific reasoning toggle
-              parsed.chat_template_kwargs = { "enable_thinking": true, "clear_thinking": false }
-              options.body = JSON.stringify(parsed)
-              console.log(`[NVIDIA] Requesting: ${url.toString()} | Model: ${parsed.model}`)
-            } catch (e) {}
-          } else {
-            console.log(`[NVIDIA] Requesting (no body): ${url.toString()}`)
-          }
-          const res = await fetch(url, options)
-          if (!res.ok) {
-            console.error(`[NVIDIA] Error ${res.status}: ${res.statusText} at ${url.toString()}`)
-          }
-          return res
-        }
-      }).chat,
-      resolvedId: modelId.replace('nvidia::', ''),
-    }
-  }
-
-  const isLms = modelId.startsWith('lmstudio::')
-  const defaultBase = isLms ? `${lmstudioUrl}/v1` : `${ollamaUrl}/v1`
-  const fallbackBase = isLms
-    ? `${lmstudioUrl.replace('127.0.0.1', 'localhost')}/v1`
-    : `${ollamaUrl.replace('127.0.0.1', 'localhost')}/v1`
-  const resolvedId = isLms ? modelId.replace('lmstudio::', '') : modelId.replace('ollama::', '')
-
-  for (const base of [defaultBase, fallbackBase]) {
-    try {
-      const res = await fetch(`${base}/models`, { signal: AbortSignal.timeout(1500) })
-      if (res.ok) {
-        return {
-          provider: createOpenAI({ baseURL: base, apiKey: isLms ? 'lmstudio' : 'ollama' }),
-          resolvedId,
-        }
-      }
-    } catch {}
-  }
-
-  return {
-    provider: createOpenAI({ baseURL: defaultBase, apiKey: isLms ? 'lmstudio' : 'ollama' }),
-    resolvedId,
-  }
-}
-
-/**
  * Basic HTML crawler to extract main text content
  */
-async function crawlPage(url: string, timeout = 8000): Promise<string> {
+function isPrivateUrl(urlStr: string): boolean {
+  try {
+    const u = new URL(urlStr)
+    const hostname = u.hostname.toLowerCase()
+    if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '0.0.0.0') return true
+    if (hostname.startsWith('10.') || hostname.startsWith('192.168.')) return true
+    if (/^172\.(1[6-9]|2\d|3[0-1])\./.test(hostname)) return true
+    if (hostname.startsWith('169.254.') || hostname.endsWith('.internal') || hostname.endsWith('.local')) return true
+    if (u.protocol !== 'http:' && u.protocol !== 'https:') return true
+    return false
+  } catch {
+    return true
+  }
+}
+
+async function crawlPage(url: string, timeout = CRAWL_TIMEOUT): Promise<string> {
+  if (isPrivateUrl(url)) {
+    console.warn(`[Crawl] Blocked private/internal URL: ${url}`)
+    return ''
+  }
   try {
     const res = await fetch(url, {
       headers: {
@@ -500,14 +182,14 @@ async function crawlPage(url: string, timeout = 8000): Promise<string> {
     if (!res.ok) return ''
     const html = await res.text()
 
-    let text = html
+    const text = html
       .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
       .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
       .replace(/<[^>]+>/g, ' ')
       .replace(/\s+/g, ' ')
       .trim()
 
-    return text.substring(0, 2000)
+    return text.substring(0, MAX_CRAWL_TEXT_LENGTH)
   } catch (e) {
     console.warn(`[Crawl] Failed to crawl ${url}:`, (e as Error).message)
     return ''
@@ -516,12 +198,10 @@ async function crawlPage(url: string, timeout = 8000): Promise<string> {
 
 /**
  * Fast rule-based check: does this query obviously NOT need a search?
- * This avoids an LLM round-trip for simple tasks.
  */
 function obviouslyNoSearch(query: string): boolean {
   const q = query.toLowerCase().trim()
   
-  // Pure creative / computation / explanation tasks don't need search
   const noSearchPatterns = [
     /^(写|帮我写|write|create|generate|生成).{0,20}(代码|code|函数|function|脚本|script|程序|program)/i,
     /^(翻译|translate|转换成|convert\s+to)/i,
@@ -531,23 +211,67 @@ function obviouslyNoSearch(query: string): boolean {
     /^(总结|summarize|归纳|概括).{0,10}(上面|以上|这段|以下|下面)/i,
     /^(你好|hi|hello|嗨|哈喽)\s*[!！。.]*$/i,
     /^(谢谢|感谢|thank|thx)\s*[!！。.]*$/i,
+    /^(做|制作|生成|create|make|generate|build).{0,10}(ppt|幻灯片|演示文稿|presentation|课件)/i,
+    /^(画|绘制|生成|create|draw|make|design).{0,10}(图|图表|diagram|chart|flow)/i,
   ]
   
   return noSearchPatterns.some(p => p.test(q))
+}
+
+function needsMcpTools(query: string, mcpTools: Record<string, unknown>): boolean {
+  if (Object.keys(mcpTools).length === 0) return false
+  const q = query.toLowerCase().trim()
+
+  const noMcpPatterns = [
+    /^(你好|hi|hello|嗨|哈喽)\s*[!！。.]*$/i,
+    /^(谢谢|感谢|thank|thx)\s*[!！。.]*$/i,
+    /^(写|帮我写|write|create|generate|生成).{0,20}(代码|code|函数|function|脚本|script)/i,
+    /^(翻译|translate|转换成|convert\s+to)/i,
+    /^(解释|explain\s+)/i,
+    /^(计算|算|compute|calculate|solve)\s/i,
+    /^(总结|summarize|归纳|概括)/i,
+    /^(格式化|format|整理|lint|refactor|重构)/i,
+  ]
+  if (noMcpPatterns.some(p => p.test(q))) return false
+
+  const mcpSignals = [
+    /(打开|open|访问|visit|浏览|browse|navigate).{0,20}(网页|网站|页面|url|link|网站)/i,
+    /(截图|screenshot|截屏|capture|快照)/i,
+    /(点击|click|按下|press|选择|select)/i,
+    /(输入|type|填写|fill|填入)/i,
+    /(滚动|scroll|下滑|上滑)/i,
+    /(搜索|search|查找|find).{0,10}(网页|网站|页面|web|online)/i,
+    /(帮我|请|can you).{0,10}(打开|操作|执行|运行|run|execute|perform)/i,
+    /(桌面|desktop|屏幕|screen)/i,
+    /(自动化|automate|脚本操作|script.*action)/i,
+  ]
+  if (mcpSignals.some(p => p.test(q))) return true
+
+  return false
 }
 
 /**
  * Helper: retry generateText call with exponential backoff or simple delay
  */
 async function retryGenerateText(params: Parameters<typeof generateText>[0], maxRetries = 2, delayMs = 1500) {
-  let lastError: any
+  let lastError: unknown
   for (let i = 0; i <= maxRetries; i++) {
     try {
       return await generateText(params)
-    } catch (e: any) {
+    } catch (e: unknown) {
       lastError = e
+      const err = e as Error
+      const msg = err.message || ''
+      if (msg.includes('Unauthorized') || msg.includes('401') || msg.includes('login fail') || msg.includes('API key') || msg.includes('auth')) {
+        console.warn(`[AI SDK] Auth error, not retrying: ${msg}`)
+        throw e
+      }
+      if (msg.includes('rate limit') || msg.includes('429')) {
+        console.warn(`[AI SDK] Rate limit, not retrying: ${msg}`)
+        throw e
+      }
       if (i < maxRetries) {
-        console.warn(`[AI SDK] Retry ${i + 1}/${maxRetries} after error: ${e.message}`)
+        console.warn(`[AI SDK] Retry ${i + 1}/${maxRetries} after error: ${err.message}`)
         await new Promise(resolve => setTimeout(resolve, delayMs))
       }
     }
@@ -562,56 +286,72 @@ async function retryGenerateText(params: Parameters<typeof generateText>[0], max
  *  2. If strong search signals detected → immediately search (no LLM call)
  *  3. Otherwise → quick LLM judgment as fallback
  */
-async function shouldSearch(query: string, history: any[], provider: any, resolvedId: string): Promise<boolean> {
+
+async function shouldSearch(query: string, history: ChatMessage[], provider: (id: string) => unknown, resolvedId: string): Promise<boolean> {
   const q = query.trim()
   
-  // Step 1: Fast no-search rules
   if (obviouslyNoSearch(q)) {
-    console.log('[Intent] Skipping search: obviously no-search task')
+    return false
+  }
+
+  const strongSearchSignals = [
+    /(搜索|搜一下|帮我搜|搜索一下)/i,
+    /(search|google|look up|find out)/i,
+    /(最新新闻|最近新闻|今日新闻|今天新闻|今日热点|最新消息)/i,
+    /(价格|价钱|多少钱|price|cost|股价|汇率|rate|stock)/i,
+    /(天气|weather|气温|温度|forecast)/i,
+    /(发布|release|launch|公告|announcement|上市|官方|official)/i,
+    /(是什么|什么是|who is|what is|when did|how to|why).{0,20}(最新|最近|今天|current|recent|new)/i,
+  ]
+
+  const noSearchWhenMcp = [
+    /(打开|open|启动|launch).{0,20}(浏览器|browser|网页|网站|page)/i,
+    /(截图|screenshot|截屏|capture)/i,
+    /(浏览|browse|访问|visit|navigate).{0,20}(网页|网站|page|url)/i,
+    /(帮我|请).{0,10}(打开|操作|执行)/i,
+  ]
+
+  if (noSearchWhenMcp.some(p => p.test(q))) {
     return false
   }
   
-  // Step 2: Strong search signals → search immediately without LLM
-  const strongSearchSignals = [
-    // Explicit search request
-    /(搜索|搜一下|查一下|帮我查|查查|查找|上网|搜索一下|帮我搜)/i,
-    /(search|google|look up|find out|check|browse)/i,
-    // Time-sensitive queries
-    /(最新|最近|今天|今日|现在|当前|实时|live|latest|recent|current|today|now|2024|2025|2026)/i,
-    // News-style queries
-    /(新闻|news|发生了|happening|event|事件|热点|trending)/i,
-    // Prices and data
-    /(价格|价钱|多少钱|price|cost|股价|汇率|rate|stock)/i,
-    // Weather
-    /(天气|weather|气温|温度|forecast)/i,
-    // People / companies that might have new info
-    /(发布|release|launch|公告|announcement|上市|官方|official)/i,
-  ]
-  
   if (strongSearchSignals.some(p => p.test(q))) {
-    console.log('[Intent] Strong search signal detected, searching immediately')
     return true
   }
+
+  const weakNoSearchSignals = [
+    /^(写|帮我写|write|create|generate|生成|做|制作)/i,
+    /^(翻译|translate|转换)/i,
+    /^(解释|explain|说明)/i,
+    /^(计算|算|compute|calculate)/i,
+    /^(总结|summarize|归纳)/i,
+    /^(你好|hi|hello|嗨|哈喽|谢谢|感谢|thank)/i,
+    /^(画|绘制|设计|design)/i,
+    /^(修改|优化|完善|改进|improve|fix|fixing)/i,
+  ]
   
-  // Step 3: For ambiguous cases, short LLM call as fallback
-  // But default to true on error (err on the side of searching)
+  if (weakNoSearchSignals.some(p => p.test(q))) {
+    return false
+  }
+  
   try {
     const recentHistory = history.slice(-3).map(m => {
       const content = typeof m.content === 'string' ? m.content : JSON.stringify(m.content)
       return `${m.role}: ${content.substring(0, 100)}`
     }).join('\n')
     
-    const prompt = `Task: decide if the user query requires searching the internet for up-to-date information.
+    const prompt = `Decide if this user query requires searching the internet for up-to-date information.
 
 Answer YES if:
-- The query asks about real-world facts, people, events, products, or topics that change over time
-- The query cannot be answered confidently without knowing recent information
+- Query asks about real-world facts, people, events, products, or current topics
+- Query cannot be answered confidently without recent information
 
 Answer NO if:
-- The query is about coding, math, writing, explaining concepts from scratch
-- The answer is stable/timeless knowledge
+- Query is about coding, math, writing, explaining concepts
+- Query is conversational (greetings, thanks, general questions)
+- Query asks to create something (PPT, code, diagrams, creative writing)
 
-Recent context:
+Context:
 ${recentHistory}
 
 Query: ${q}
@@ -619,25 +359,50 @@ Query: ${q}
 Answer (YES or NO only):`
 
     const { text } = await retryGenerateText({
-      model: provider(resolvedId),
+      model: provider(resolvedId) as Parameters<typeof generateText>[0]['model'],
       prompt,
-      maxTokens: 3,
-    } as any)
+      maxOutputTokens: 3,
+    } as Parameters<typeof generateText>[0])
     
-    const decision = text.trim().toUpperCase()
-    console.log('[Intent] LLM decision:', decision)
-    return decision.startsWith('YES')
-  } catch (e) {
-    console.warn('[Intent] LLM check failed, defaulting search to YES:', e)
-    return true
+    return text.trim().toUpperCase().startsWith('YES')
+  } catch {
+    console.warn('[Intent] LLM decision failed, defaulting to NO search')
+    return false
   }
 }
 
-/**
- * Helper: send a custom SSE event
- */
-function sseEvent(event: string, data: any): string {
-  return `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`
+type SettingsData = {
+  defaultModel?: string
+  mcpEnabled?: boolean
+  apiContextSize?: number
+  apiTemperature?: number
+  apiTopP?: number
+  apiMaxTokens?: number
+  localGgufEnabled?: boolean
+  localGgufContextSize?: number
+  localGgufTemperature?: number
+  localGgufTopP?: number
+  localGgufMaxTokens?: number
+}
+
+let settingsCache: { data: SettingsData | null; timestamp: number } | null = null
+const SETTINGS_CACHE_TTL = 30_000
+
+import { decryptSettingsPayload } from '@/lib/crypto'
+
+async function getSettings() {
+  const now = Date.now()
+  if (settingsCache && now - settingsCache.timestamp < SETTINGS_CACHE_TTL) {
+    return settingsCache.data
+  }
+  const data = await prisma.settings.findUnique({ where: { id: 'default' } })
+  const decrypted = data ? decryptSettingsPayload(data as any) : data
+  settingsCache = { data: decrypted, timestamp: now }
+  return decrypted
+}
+
+export async function invalidateSettingsCache() {
+  settingsCache = null
 }
 
 export async function POST(req: Request) {
@@ -645,23 +410,23 @@ export async function POST(req: Request) {
     const body = await req.json()
     const reqUrl = new URL(req.url)
     const baseUrl = `${reqUrl.protocol}//${reqUrl.host}`
-    let { messages, model, chatId, deepThink, webSearch, kbId, files, promptId } = body
+    const { messages, model, chatId, deepThink, webSearch, kbId, files, promptId } = body
 
-    const settings = await prisma.settings.findUnique({ where: { id: 'default' } })
+    const settings = await getSettings()
     const defaultModel = settings?.defaultModel || 'ollama::llama3'
     const selectedModel = model || defaultModel
 
     console.log('[Chat] POST model:', selectedModel, 'chatId:', chatId)
 
-    const { provider, resolvedId } = await getSmartProvider(selectedModel, settings)
+    const { provider, resolvedId } = await getSmartProvider(selectedModel, settings as Settings)
     console.log('[Chat] Provider resolved:', resolvedId)
 
     // Load MCP tools if enabled
-    let mcpTools: Record<string, any> = {}
-    if ((settings as any)?.mcpEnabled) {
+    let mcpTools: ToolSet = {}
+    if (settings?.mcpEnabled) {
       try {
         console.log('[Chat] Loading MCP tools...')
-        mcpTools = await mcpManager.getTools()
+        mcpTools = await mcpManager.getTools() as ToolSet
         console.log(`[Chat] Loaded ${Object.keys(mcpTools).length} MCP tools`)
       } catch (error) {
         console.error('[Chat] Failed to load MCP tools:', error)
@@ -680,9 +445,16 @@ export async function POST(req: Request) {
     const lastUserMsg = messages?.length > 0 ? messages[messages.length - 1] : null
     const originalQuery = extractContent(lastUserMsg)
 
+    const mcpNeeded = needsMcpTools(originalQuery, mcpTools)
+    console.log(`[Chat] MCP needed for this query: ${mcpNeeded}`)
+
     // Start processing in the background
     ;(async () => {
+      const timeoutSignal = AbortSignal.timeout(CHAT_REQUEST_TIMEOUT)
+      let collectedCitations: Array<{ title: string; url: string }> = []
+      let collectedSearchSteps: Array<Record<string, unknown>> = []
       try {
+        if (timeoutSignal.aborted) throw new Error('Request timeout')
         // --- Web Search & Knowledge Base ---
         let searchResults: SearchResult[] = []
         let systemInjection = ''
@@ -698,15 +470,16 @@ export async function POST(req: Request) {
                kbInjection = kbContext.context
                
                if (kbContext.citations?.length) {
-                 await write(sseEvent('citations', {
-                   results: kbContext.citations
-                 }))
-               }
+                collectedCitations = [...collectedCitations, ...kbContext.citations]
+                await write(sseEvent('citations', {
+                  results: kbContext.citations
+                }))
+              }
                await write(sseEvent('status', { type: 'search', stage: 'done', message: '知识库检索完成' }))
              } else {
                await write(sseEvent('status', { type: 'search', stage: 'skip', message: '知识库无相关内容' }))
              }
-           } catch (e: any) {
+           } catch (e: unknown) {
              console.error('[KB] Retrieval error:', e)
              await write(sseEvent('status', { type: 'search', stage: 'error', message: '知识库检索失败' }))
            }
@@ -729,54 +502,71 @@ export async function POST(req: Request) {
         }
 
         if (isSearchNeeded && searchQuery) {
-          // 1. Smart Query Rewrite
-          try {
-            await write(sseEvent('status', { type: 'search', stage: 'rewrite', message: '正在提取搜索关键词...' }))
-            
-            const recentCtx = messages.slice(-4).map((m: any) => {
-              const content = extractContent(m)
-              return `[${m.role}]: ${content.substring(0, 200)}`
-            }).join('\n')
-            
-            const rewritePrompt = `Your job is to extract a concise, effective web search query from a conversation.
+          let rewrittenQuery: string | null = null
+          const isVagueFollowUp = /^(好的|ok|继续|然后呢|搜吧|搜一下|查一下|帮我查|详细说说|展开说说|more|tell me more|go on|continue|elaborate|搜|查|嗯|对|是的|right|yes|yeah)$/i.test(originalQuery.trim())
+
+          if (isVagueFollowUp) {
+            try {
+              await write(sseEvent('status', { type: 'search', stage: 'rewrite', message: '正在从上下文提取搜索关键词...' }))
+              
+              const recentCtx = messages.slice(-6).map((m: ChatMessage) => {
+                const content = extractContent(m)
+                return `[${m.role}]: ${content.substring(0, 300)}`
+              }).join('\n')
+              
+              const rewritePrompt = `Based on the conversation, infer what the user wants to search for and output a search query.
 
 Rules:
-- Output ONLY the search query string, nothing else. No quotes, no explanation.
-- The query should be 3-8 words, like what you'd type into Google.
-- If the user's message is vague or a follow-up (e.g., "好的", "ok", "搜吧"), look at the conversation context to find the actual topic.
-- Remove filler words. Keep named entities, dates, version numbers, and key terms.
-- Use the same language as the user (if Chinese question → Chinese query; if English → English query).
+- Output ONLY the search query, nothing else. No quotes, no explanation, no prefix.
+- The query should capture the actual topic from context that the user is referring to.
+- Keep it natural — like what you would type into a search engine.
+- Preserve named entities, technical terms, version numbers, and specific details.
+- Use the same language as the conversation (Chinese → Chinese query, English → English query).
+- Do NOT over-summarize. A good search query can be a full sentence or a precise phrase.
 
 Conversation:
 ${recentCtx}
 
 Search query:`
 
-            const { text: rewrittenQuery } = await retryGenerateText({
-              model: provider(resolvedId),
-              prompt: rewritePrompt,
-              maxTokens: 40,
-            } as any)
+              const { text } = await retryGenerateText({
+                model: provider(resolvedId) as Parameters<typeof generateText>[0]['model'],
+                prompt: rewritePrompt,
+                maxOutputTokens: 80,
+              } as Parameters<typeof generateText>[0])
 
-            if (rewrittenQuery && rewrittenQuery.trim().length > 1) {
-              searchQuery = rewrittenQuery.trim().replace(/^"|"$/g, '').replace(/^搜索[:：]?\s*/i, '')
-              await write(sseEvent('status', { type: 'search', stage: 'rewrite_done', message: `搜索: "${searchQuery}"` }))
+              if (text && text.trim().length > 1) {
+                rewrittenQuery = text.trim().replace(/^["""']|["""']$/g, '').replace(/^搜索[:：]?\s*/i, '')
+                searchQuery = rewrittenQuery
+                await write(sseEvent('status', { type: 'search', stage: 'rewrite_done', message: `搜索: "${searchQuery}"` }))
+              }
+            } catch (e) {
+              console.warn('[Chat] Query rewrite failed, using original:', e)
             }
-          } catch (e) {
-            console.warn('[Chat] Query rewrite failed, using original:', e)
+          } else {
+            await write(sseEvent('status', { type: 'search', stage: 'rewrite_done', message: `搜索: "${searchQuery}"` }))
           }
 
-          // 2. Search
+          // 2. Search (direct service call — no self-fetch HTTP loop)
           try {
             await write(sseEvent('status', { type: 'search', stage: 'searching', message: `正在搜索 "${searchQuery}"...` }))
 
-            const searchRes = await fetch(new URL('/api/search', baseUrl), {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ query: searchQuery, deep: deepSearch }),
-            })
-            const searchData = await searchRes.json()
-            const rawResults = searchData.results || []
+            const searchEngine = (settings as Record<string, unknown>)?.searchEngine as string || 'bing'
+            const searchKey = (settings as Record<string, unknown>)?.searchKey as string || ''
+            const { results: rawResults } = await searchWithFallback(searchQuery, searchEngine, searchKey, deepSearch)
+
+            if (rewrittenQuery && rewrittenQuery !== originalQuery) {
+              try {
+                const { results: originalResults } = await searchWithFallback(originalQuery, searchEngine, searchKey, false)
+                const existingUrls = new Set(rawResults.map((r: SearchResult) => r.url))
+                for (const r of originalResults) {
+                  if (!existingUrls.has(r.url)) {
+                    rawResults.push(r)
+                    existingUrls.add(r.url)
+                  }
+                }
+              } catch {}
+            }
 
             await write(sseEvent('status', {
               type: 'search',
@@ -791,18 +581,27 @@ Search query:`
             if (topResults.length > 0) {
               await write(sseEvent('status', { type: 'search', stage: 'reading', message: `正在深度阅读 ${topResults.length} 个核心网页...` }))
 
-              const crawledContents = await Promise.all(
-                topResults.map(async (r: SearchResult, i: number) => {
-                  const content = await crawlPage(r.url)
-                  await write(sseEvent('status', {
-                    type: 'search',
-                    stage: 'read_page',
-                    message: `已阅读: ${r.title}`,
-                    pageIndex: i,
-                  }))
-                  return content
-                })
-              )
+              const crawledContents: string[] = new Array(topResults.length).fill('')
+              const CONCURRENCY_LIMIT = 5
+              for (let batchStart = 0; batchStart < topResults.length; batchStart += CONCURRENCY_LIMIT) {
+                const batch = topResults.slice(batchStart, batchStart + CONCURRENCY_LIMIT)
+                const batchResults = await Promise.all(
+                  batch.map(async (r: SearchResult, bi: number) => {
+                    const i = batchStart + bi
+                    const content = await crawlPage(r.url)
+                    await write(sseEvent('status', {
+                      type: 'search',
+                      stage: 'read_page',
+                      message: `已阅读: ${r.title}`,
+                      pageIndex: i,
+                    }))
+                    return { index: i, content }
+                  })
+                )
+                for (const { index, content } of batchResults) {
+                  crawledContents[index] = content
+                }
+              }
 
               searchResults = rawResults.map((r: SearchResult, i: number) => {
                 const crawled = i < topResults.length ? crawledContents[i] : ''
@@ -845,7 +644,7 @@ ${baseInstruction}
 Current date is ${new Date().toISOString().split('T')[0]}.
 `.trim()
 
-              // Send citations/search results to the client
+              collectedCitations = [...collectedCitations, ...searchResults.map(r => ({ title: r.title, url: r.url }))]
               await write(sseEvent('citations', {
                 results: searchResults.map(r => ({ title: r.title, url: r.url }))
               }))
@@ -882,50 +681,101 @@ Current date is ${new Date().toISOString().split('T')[0]}.
           ].join('\n')
         }
 
-        if (imageFiles.length > 0) {
-          const imgList = imageFiles.map(f => `- ${f.name}`).join('\n')
-          const imgNote = `\n\n# 🖼️ UPLOADED IMAGES\n${imageFiles.length} image(s) are attached as visual content to the latest message:\n${imgList}\nAnalyze these images carefully when responding.`
-          fileInjection = fileInjection + imgNote
-        }
+
 
         // --- Build System Prompt ---
         const systemParts: string[] = []
         
         // 只在用户明确要求 PPT 或对话历史中已存在 PPT 内容时注入详细指令
         const isPptTopic = /ppt|slide|presentation|幻灯片|演示文稿|方案汇报|课件/i.test(originalQuery || '') || 
-                          messages.some((m: any) => extractContent(m).includes('```ppt'))
+                          messages.some((m: ChatMessage) => extractContent(m).includes('```ppt'))
         
         if (isPptTopic) {
           systemParts.push(PPT_SYSTEM_PROMPT)
         } else {
-          // 提供一个极简提醒，告知 AI 具备该能力，但不展开详细规则以减少干扰
           systemParts.push('If the user specifically asks for a presentation or PPT, you have the capability to generate a structured JSON block inside a "ppt" code block.')
         }
+
+        const isDocxTopic = /word|文档|报告|文章|docx|document|report|article|合同|方案书|总结|汇报文档/i.test(originalQuery || '') ||
+                          messages.some((m: ChatMessage) => extractContent(m).includes('```docx'))
+
+        if (isDocxTopic) {
+          systemParts.push(DOCX_SYSTEM_PROMPT)
+        } else {
+          systemParts.push('If the user asks for a Word document or report, you can generate structured HTML content inside a "docx" code block.')
+        }
+
+        const isExcelTopic = /excel|表格|电子表格|spreadsheet|xlsx|数据表|报表|统计表|明细表/i.test(originalQuery || '') ||
+                          messages.some((m: ChatMessage) => extractContent(m).includes('```xlsx'))
+
+        if (isExcelTopic) {
+          systemParts.push(EXCEL_SYSTEM_PROMPT)
+        } else {
+          systemParts.push('If the user asks for a spreadsheet or Excel file, you can generate structured JSON data inside an "xlsx" code block.')
+        }
+
         if (deepThink) systemParts.push(DEEP_THINK_SYSTEM_PROMPT)
 
         // 注入用户选择的角色预设
         if (promptId) {
           try {
-            const promptRes: any = await (prisma as any).$queryRawUnsafe(`SELECT content FROM "PromptTemplate" WHERE id = ?`, promptId)
-            if (promptRes && promptRes[0]) {
-              systemParts.push(promptRes[0].content)
+            const promptRes = await (prisma as unknown as { promptTemplate: { findUnique: (args: { where: { id: string } }) => Promise<{ content?: string } | null> } }).promptTemplate.findUnique({
+              where: { id: promptId }
+            })
+            if (promptRes?.content) {
+              systemParts.push(promptRes.content)
             }
           } catch (e) {
             console.error('[Chat API] Failed to fetch prompt template:', e)
           }
         }
+
+        // --- 智能化模板自动匹配注入 ---
+        try {
+          // Fetch presentation templates
+          const presTemplates = await (prisma as any).presentationTemplate?.findMany({ select: { id: true, name: true, description: true } }) || [];
+          if (presTemplates.length > 0) {
+            const presTmplStr = presTemplates.map((t: any) => `- ID: ${t.id} | Name: ${t.name} | Desc: ${t.description}`).join('\n');
+            systemParts.push(`## AVAILABLE PPT TEMPLATES\nIf the user asks for a PPT but does NOT specify a template, you can intelligently auto-select the best matching template from the list below based on their context. Include the field \`"templateId": "<id>"\` in your JSON output.\n\n${presTmplStr}`);
+          }
+          
+          // Fetch document/excel templates (conversationTemplate / template)
+          const docTemplates = await (prisma as any).conversationTemplate?.findMany({ select: { id: true, name: true, description: true, category: true } }) || [];
+          if (docTemplates.length > 0) {
+            const docTmplStr = docTemplates.map((t: any) => `- ID: ${t.id} | Name: ${t.name} | Category: ${t.category} | Desc: ${t.description}`).join('\n');
+            systemParts.push(`## AVAILABLE DOC/EXCEL TEMPLATES\nIf the user asks for a Word or Excel document, you can intelligently select a template from below. When generating the docx or xlsx code block, append a comment at the top of the block like \`// TEMPLATE_ID: <id>\` so the system applies it.\n\n${docTmplStr}`);
+          }
+        } catch (e) {
+          console.error('[Chat API] Failed to fetch intelligent templates:', e)
+        }
+
+
+        try {
+          const memoryCtx = await buildMemoryContext(chatId || undefined)
+          const memoryStr = formatMemoryForPrompt(memoryCtx)
+          if (memoryStr) {
+            systemParts.push(`# AGENT MEMORY\nYou have the following memories about this user and conversation context. Use this information to provide more personalized and contextually aware responses:\n\n${memoryStr}`)
+          }
+        } catch (e) {
+          console.error('[Chat API] Failed to build memory context:', e)
+        }
         
         // Add MCP tool usage instructions if tools are available
-        if (Object.keys(mcpTools).length > 0) {
+        if (mcpNeeded && Object.keys(mcpTools).length > 0) {
           const toolNames = Object.keys(mcpTools).join(', ')
           systemParts.push(`# MCP TOOLS AVAILABLE
 You have access to the following MCP tools: ${toolNames}
 
 **IMPORTANT INSTRUCTIONS:**
-1. When the user asks you to perform actions like opening websites, browsing, taking screenshots, or any browser-related tasks, you MUST use the appropriate MCP tools.
-2. Do NOT just describe what you would do - actually CALL the tools to perform the actions.
-3. For browser tasks, use browser_navigate to open URLs, browser_take_screenshot to capture pages, browser_click to interact with elements, etc.
-4. After using tools, report the results to the user based on what the tools returned.
+1. Only use MCP tools when the user's request actually requires performing actions (browsing, screenshots, file operations, etc.).
+2. Do NOT call tools for simple questions that can be answered from your knowledge or the search results provided.
+3. When using tools, call them precisely.
+4. **CRITICAL: After receiving tool results, you MUST provide a detailed response to the user**:
+   - Summarize what the tool did and what it returned
+   - If it's a browser action, describe what you see on the page
+   - If it's a file operation, confirm the result
+   - If the tool returned data, analyze and present it clearly
+   - NEVER just execute a tool and stop - always follow up with a meaningful explanation
 5. If a tool call fails, try alternative approaches or inform the user of the issue.`)
         }
         
@@ -936,7 +786,7 @@ You have access to the following MCP tools: ${toolNames}
         const lastMsg = messages?.length > 0 ? messages[messages.length - 1] : null
         
         // actualContent is exactly what the user typed
-        let actualContent = extractContent(lastMsg) || ''
+        const actualContent = extractContent(lastMsg) || ''
         
         // dbContent includes file attachments for the UI to represent,
         // but actively excludes ephemeral search results to prevent DB bloat.
@@ -949,21 +799,40 @@ You have access to the following MCP tools: ${toolNames}
           activeChatId = uuidv4()
           const firstTitle = extractContent(lastMsg).substring(0, 60) || 'OpenOrangeAI'
           
-          // Use Raw SQL to insert new chat with selectedPromptId
-          await (prisma as any).$executeRawUnsafe(`
-            INSERT INTO "Chat" (id, title, "selectedPromptId", "createdAt", "updatedAt")
-            VALUES (?, ?, ?, datetime('now'), datetime('now'))
-          `, activeChatId, firstTitle, promptId || null)
+          await prisma.chat.create({
+            data: {
+              id: activeChatId,
+              title: firstTitle,
+              selectedPromptId: promptId || null,
+            }
+          })
+
+          triggerWebhook('chat.created', { chatId: activeChatId, title: firstTitle }).catch(() => {})
           
           await prisma.message.create({
             data: { chatId: activeChatId, role: 'user', content: dbContent },
           })
         } else {
-          try {
-            await (prisma as any).$executeRawUnsafe(`
-              UPDATE "Chat" SET "selectedPromptId" = ?, "updatedAt" = datetime('now') WHERE id = ?
-            `, promptId || null, activeChatId)
-          } catch (e) {}
+          const existingChat = await prisma.chat.findUnique({ where: { id: activeChatId } })
+          if (existingChat) {
+            try {
+              await prisma.chat.update({
+                where: { id: activeChatId },
+                data: { selectedPromptId: promptId || null }
+              })
+            } catch {}
+          } else {
+            const firstTitle = extractContent(lastMsg).substring(0, 60) || 'OpenOrangeAI'
+            await prisma.chat.create({
+              data: {
+                id: activeChatId,
+                title: firstTitle,
+                selectedPromptId: promptId || null,
+              }
+            })
+
+            triggerWebhook('chat.created', { chatId: activeChatId, title: firstTitle }).catch(() => {})
+          }
           
           await prisma.message.create({
             data: { chatId: activeChatId, role: 'user', content: dbContent },
@@ -990,16 +859,57 @@ You have access to the following MCP tools: ${toolNames}
           fullyEnrichedContent = `${turnInjectionStr}\n\nUSER QUESTION:\n${actualContent}`
         }
 
+        let lastUserMsgIdx = -1
+        for (let i = (messages || []).length - 1; i >= 0; i--) {
+          if ((messages || [])[i].role === 'user') {
+            lastUserMsgIdx = i
+            break
+          }
+        }
+
         // --- Build core messages for the model (AI SDK multimodal format) ---
-        const coreMessages = (messages || []).map((m: any, idx: number) => {
+        const isVisionSupported = (modelId: string): boolean => {
+          const m = modelId.toLowerCase()
+          if (m.startsWith('openai::') && (m.includes('gpt-4o') || m.includes('gpt-4-turbo') || m.includes('vision') || m.includes('o1') || m.includes('o3'))) return true
+          if (m.startsWith('anthropic::') && (m.includes('claude-3-5') || m.includes('claude-3-') || m.includes('claude-') || m.includes('vision'))) return true
+          if (m.startsWith('google::') && (m.includes('gemini-') || m.includes('vision'))) return true
+          if (m.startsWith('openrouter::') && (m.includes('gpt-4o') || m.includes('gemini-') || m.includes('claude-') || m.includes('vision') || m.includes('vl'))) return true
+          if (m.startsWith('groq::') && (m.includes('vision') || m.includes('vl') || m.includes('llama-3.2'))) return true
+          if ((m.startsWith('ollama::') || m.startsWith('lmstudio::')) && (m.includes('vision') || m.includes('vl') || m.includes('llava'))) return true
+          
+          // Added Volcengine multimodal model patterns
+          if (m.startsWith('volcengine::') && (m.includes('pro') || m.includes('m3') || m.includes('glm') || m.includes('vision'))) return true
+
+          // 如果没有匹配到前缀，但模型名字本身包含了 vision、vl、llava、gpt-4o、gemini、claude 字段，也予以信任
+          const modelName = m.split('::')[1] || m
+          if (modelName.includes('vision') || modelName.includes('-vl') || modelName.includes('llava') || modelName.includes('gpt-4o') || modelName.includes('gemini') || modelName.includes('claude') || modelName.includes('pro')) return true
+          
+          return false
+        }
+
+        const useVision = isVisionSupported(selectedModel)
+        console.log(`[Chat] Model ${selectedModel} supports vision: ${useVision}`)
+
+        if (imageFiles.length > 0) {
+          if (useVision) {
+            const imgList = imageFiles.map(f => `- ${f.name}`).join('\n')
+            const imgNote = `\n\n# 🖼️ UPLOADED IMAGES\n${imageFiles.length} image(s) are attached as visual content to the latest message:\n${imgList}\nAnalyze these images carefully when responding.`
+            fileInjection = fileInjection + imgNote
+          } else {
+            const imgNote = `\n\n# 🖼️ UPLOADED IMAGES\n[SYSTEM WARNING] The user uploaded ${imageFiles.length} image(s), but your current model version does NOT support vision capabilities. Please politely inform the user that you cannot see the images and suggest they switch to a vision-capable model (like GPT-4o, Claude 3.5 Sonnet, or Gemini 1.5 Pro).`
+            fileInjection = fileInjection + imgNote
+          }
+        }
+
+        const coreMessages = (messages || []).map((m: ChatMessage, idx: number) => {
           const role = m.role || 'user'
           
           // Use fully enriched context for the LAST user message
-          const text = (idx === messages.length - 1 && role === 'user') ? fullyEnrichedContent : extractContent(m)
+          const text = (idx === lastUserMsgIdx) ? fullyEnrichedContent : extractContent(m)
 
-          // Attach images back to the LAST user message
-          if (idx === messages.length - 1 && role === 'user' && imageFiles.length > 0) {
-            const contentParts: any[] = []
+          // Attach images back to the LAST user message only if the model supports vision
+          if (idx === lastUserMsgIdx && imageFiles.length > 0 && useVision) {
+            const contentParts: Array<{ type: string; text?: string; image?: string }> = []
             if (text) contentParts.push({ type: 'text', text })
             for (const img of imageFiles) {
               contentParts.push({ type: 'image', image: img.dataUrl })
@@ -1008,13 +918,12 @@ You have access to the following MCP tools: ${toolNames}
           }
 
           return { role, content: text }
-        }).filter((m: any) => {
+        }).filter((m: { role: string; content: unknown }) => {
           if (Array.isArray(m.content)) return m.content.length > 0
           return m.content !== ''
         })
 
         // --- Prune core messages based on apiContextSize ---
-        const settings = (await prisma.settings.findUnique({ where: { id: "default" } })) as any
         const maxContextTokens = settings?.apiContextSize || 8192
         let currentContextTokens = 0
         const prunedMessages = []
@@ -1034,53 +943,58 @@ You have access to the following MCP tools: ${toolNames}
         let fullText = ''
 
         if (selectedModel.startsWith('local-gguf::') && settings?.localGgufEnabled) {
-          await handleLocalGgufChat({
+          const { streamLocalGgufChat } = await import('@/lib/local-gguf')
+          const ggufStream = streamLocalGgufChat({
             modelId: selectedModel,
-            messages: prunedMessages,
+            messages: prunedMessages as any,
             systemPrompt,
-            settings: settings,
-            onToken: async (token) => {
-              fullText += token
-              await write(sseEvent('text', { content: token }))
-            },
-            onStatus: async (event) => {
-              await write(sseEvent('status', event))
+            settings: settings as any,
+            onStatus: (event) => {
+              write(sseEvent('status', event)).catch(() => {})
             }
           })
+          for await (const chunk of ggufStream) {
+            fullText += chunk
+            await write(sseEvent('text', { content: chunk }))
+          }
         } else {
           // --- Stream from the model ---
-          console.log(`[Chat] Streaming with ${Object.keys(mcpTools).length} MCP tools available`)
-          if (Object.keys(mcpTools).length > 0) {
-            console.log('[Chat] Available tools:', Object.keys(mcpTools).slice(0, 10).join(', '), '...')
-          }
+          console.log(`[Chat] Streaming with ${mcpNeeded ? Object.keys(mcpTools).length : 0} MCP tools available`)
+          const activeTools = mcpNeeded ? mcpTools : undefined
+          const activeToolChoice = mcpNeeded ? 'auto' : undefined
           
+          const adjustedParams = adjustModelParams(resolvedId, {
+            temperature: settings?.apiTemperature,
+            topP: settings?.apiTopP,
+            maxTokens: settings?.apiMaxTokens,
+          })
+
           const result = streamText({
-            model: provider(resolvedId),
+            model: provider(resolvedId) as any,
             system: systemPrompt,
-            messages: prunedMessages as any,
-            tools: Object.keys(mcpTools).length > 0 ? mcpTools : undefined,
-            toolChoice: Object.keys(mcpTools).length > 0 ? 'auto' : undefined,
-            temperature: settings?.apiTemperature ?? 0.7,
-            topP: settings?.apiTopP ?? 0.9,
-            // @ts-ignore
-            maxTokens: settings?.apiMaxTokens ?? 2048,
-            // @ts-ignore
-            maxSteps: 5,
+            messages: prunedMessages as Parameters<typeof streamText>[0]['messages'],
+            tools: activeTools,
+            toolChoice: activeToolChoice,
+            temperature: adjustedParams.temperature,
+            topP: adjustedParams.topP,
+            // @ts-expect-error - maxTokens is not in the public type but supported by the runtime
+            maxTokens: adjustedParams.maxTokens,
+            maxSteps: MAX_TOOL_STEPS,
             maxRetries: 0,
-            onStepFinish: async (step) => {
-              console.log('[Chat] onStepFinish - toolCalls:', step.toolCalls?.length || 0, 'toolResults:', step.toolResults?.length || 0)
-              if (step.toolCalls?.length) {
-                for (const tc of step.toolCalls) {
-                  const callInfo: any = { 
-                    type: 'mcp', 
-                    stage: 'call' as const, 
+            onStepFinish: async (step: unknown) => {
+              const stepData = step as { toolCalls?: Array<{ toolName: string }>; toolResults?: Array<{ toolName: string }> }
+              console.log('[Chat] onStepFinish - toolCalls:', stepData.toolCalls?.length || 0, 'toolResults:', stepData.toolResults?.length || 0)
+              if (stepData.toolCalls?.length) {
+                for (const tc of stepData.toolCalls) {
+                  const tcArgs = (tc as { args?: Record<string, unknown>; arguments?: Record<string, unknown> }).args || (tc as { args?: Record<string, unknown>; arguments?: Record<string, unknown> }).arguments || {}
+                  const urlArg = tcArgs?.url || tcArgs?.page || tcArgs?.target
+                  const callInfo: Record<string, unknown> = {
+                    type: 'mcp',
+                    stage: 'call' as const,
                     message: `调用工具: ${tc.toolName}`,
                     tool: tc.toolName,
-                    args: (tc as any).args || (tc as any).arguments
+                    args: tcArgs
                   }
-                  // Extract URL from arguments for browser navigation tools
-                  const tcArgs = (tc as any).args || (tc as any).arguments || {}
-                  const urlArg = tcArgs?.url || tcArgs?.page || tcArgs?.target
                   if (urlArg) {
                     callInfo.url = urlArg
                     callInfo.message = `正在打开: ${urlArg}`
@@ -1088,32 +1002,32 @@ You have access to the following MCP tools: ${toolNames}
                   await write(sseEvent('status', callInfo))
                 }
               }
-              if (step.toolResults?.length) {
-                for (const tr of step.toolResults) {
-                  const resultData = (tr as any).result || (tr as any).data || tr
-                  const resultText = Array.isArray(resultData) 
-                    ? resultData.map((r: any) => r.text || JSON.stringify(r)).join('\n')
+              if (stepData.toolResults?.length) {
+                for (const tr of stepData.toolResults) {
+                  const trObj = tr as { result?: unknown; data?: unknown; toolName: string }
+                  const resultData = trObj.result ?? trObj.data ?? tr
+                  const resultText = Array.isArray(resultData)
+                    ? resultData.map((r: { text?: string }) => r.text || JSON.stringify(r)).join('\n')
                     : (typeof resultData === 'string' ? resultData : JSON.stringify(resultData))
-                  
-                  console.log(`[Chat] Tool result: ${tr.toolName}`, resultText.substring(0, 100))
-                  
-                  const resultInfo: any = { 
-                    type: 'mcp', 
-                    stage: 'result' as const, 
-                    message: `工具 ${tr.toolName} 返回结果`,
-                    tool: tr.toolName,
+
+                  console.log(`[Chat] Tool result: ${trObj.toolName}`, resultText.substring(0, 100))
+
+                  const resultInfo: Record<string, unknown> = {
+                    type: 'mcp',
+                    stage: 'result' as const,
+                    message: `工具 ${trObj.toolName} 返回结果`,
+                    tool: trObj.toolName,
                     result: resultText.substring(0, 500),
                     rawResult: resultText.substring(0, 2000)
                   }
-                  
-                  // Parse result to extract meaningful info
+
                   try {
                     const parsed = JSON.parse(resultText)
                     if (parsed.url) resultInfo.completedUrl = parsed.url
                     if (parsed.title) resultInfo.pageTitle = parsed.title
                     if (parsed.status) resultInfo.status = parsed.status
                   } catch {}
-                  
+
                   await write(sseEvent('status', resultInfo))
                 }
               }
@@ -1121,41 +1035,209 @@ You have access to the following MCP tools: ${toolNames}
           })
 
           let lastPersistTime = Date.now()
+          let lastPersistLength = 0
           let assistantMsgId: string | null = null
+          let heartbeatInterval: NodeJS.Timeout | null = null
+          let streamError: Error | null = null
+          let hasOutput = false
 
-          for await (const chunk of result.textStream) {
-            fullText += chunk
-            // Send text chunks as SSE events
-            await write(sseEvent('text', { content: chunk }))
+          heartbeatInterval = setInterval(async () => {
+            try {
+              await write(': heartbeat\n\n')
+            } catch {}
+          }, 8000)
 
-            // Periodically persist to DB (every 3 seconds or 500 chars)
-            if (activeChatId && (Date.now() - lastPersistTime > 3000 || fullText.length % 500 === 0)) {
-              if (!assistantMsgId) {
-                const msg = await prisma.message.create({
-                  data: { chatId: activeChatId, role: 'assistant', content: fullText },
-                })
-                assistantMsgId = msg.id
-              } else {
-                await prisma.message.update({
-                  where: { id: assistantMsgId },
-                  data: { content: fullText },
-                })
+          try {
+            for await (const chunk of result.textStream) {
+              if (!hasOutput) hasOutput = true
+              fullText += chunk
+              await write(sseEvent('text', { content: chunk }))
+
+              if (activeChatId && (Date.now() - lastPersistTime > PERSIST_INTERVAL_MS || fullText.length - lastPersistLength >= PERSIST_MIN_LENGTH)) {
+                if (!assistantMsgId) {
+                  const msg = await prisma.message.create({
+                    data: { chatId: activeChatId, role: 'assistant', content: fullText },
+                  })
+                  assistantMsgId = msg.id
+                } else {
+                  await prisma.message.update({
+                    where: { id: assistantMsgId },
+                    data: { content: fullText },
+                  })
+                }
+                lastPersistTime = Date.now()
+                lastPersistLength = fullText.length
               }
-              lastPersistTime = Date.now()
             }
+
+            try {
+              const reasoning = await (result as any).reasoning
+              if (reasoning && typeof reasoning === 'string' && reasoning.trim() && !fullText.includes('<think>')) {
+                const thinkBlock = `<think>${reasoning.trim()}</think>\n`
+                fullText = thinkBlock + fullText
+                await write(sseEvent('text', { content: fullText, replace: true })) // trigger re-render with updated content
+              }
+            } catch { /* reasoning not available for this model, ignore */ }
+
+
+          } catch (streamErr: unknown) {
+            const err = streamErr as Error
+            streamError = err
+            console.error('[Chat] Stream iteration error:', err.message)
+          } finally {
+            if (heartbeatInterval) clearInterval(heartbeatInterval)
+          }
+
+          let allSteps: unknown[] = []
+          try {
+            allSteps = (await result.steps) as unknown[] || []
+          } catch (stepsErr: unknown) {
+            const err = stepsErr as Error
+            console.error('[Chat] Steps await error:', err.message)
+          }
+
+          const allStepsTyped = allSteps as Array<{ toolCalls?: unknown[]; toolResults?: Array<{ toolName: string; result?: unknown; data?: unknown }> }> | undefined
+          const toolCallSteps = allStepsTyped?.filter((s) => s.toolCalls && s.toolCalls.length > 0) || []
+          const hasToolCalls = toolCallSteps.length > 0
+
+          // Check if we got meaningful text output (not just whitespace)
+          const hasMeaningfulText = fullText.trim().length > 0
+
+          // Handle complete failure: no text and no tools
+          if (!hasMeaningfulText && !hasToolCalls) {
+            const errMsg = streamError?.message || ''
+            let userFriendlyMsg: string
+            
+            if (errMsg.includes('ECONNREFUSED') || errMsg.includes('connect ECONN') || errMsg.includes('fetch failed') || errMsg.includes('network') || errMsg.includes('ENOTFOUND')) {
+              userFriendlyMsg = '无法连接到模型服务，请检查 Ollama 或其他模型服务是否已启动。'
+            } else if (errMsg.includes('No output generated') || errMsg.includes('empty')) {
+              userFriendlyMsg = '模型未返回任何内容，请检查模型配置和API密钥是否正确。'
+            } else if (errMsg.includes('Unauthorized') || errMsg.includes('login fail') || errMsg.includes('401') || errMsg.includes('AK/SK') || errMsg.includes('API key')) {
+              userFriendlyMsg = 'API认证失败，请检查API密钥设置 (火山或其它云服务AK/SK无效)。'
+            } else if (errMsg.includes('rate limit') || errMsg.includes('429')) {
+              userFriendlyMsg = 'API请求频率超限，请稍后重试。'
+            } else if (errMsg.includes('timeout') || errMsg.includes('ETIMEDOUT')) {
+              userFriendlyMsg = '模型请求超时，请检查网络连接或稍后重试。'
+            } else if (errMsg.includes('model not found') || errMsg.includes('404') || errMsg.includes('not found')) {
+              userFriendlyMsg = `模型 "${resolvedId}" 未找到，请检查模型名称是否正确或先拉取模型。`
+            } else if (errMsg) {
+              userFriendlyMsg = `模型调用失败: ${errMsg}`
+            } else {
+              userFriendlyMsg = '模型未返回有效内容，请检查模型服务是否正常运行。'
+            }
+            
+            fullText = userFriendlyMsg
+            hasOutput = true
+            await write(sseEvent('text', { content: userFriendlyMsg }))
+            console.log('[Chat] No output detected, sending fallback message')
+          }
+
+          // Handle tool calls that completed but model didn't produce text
+          const hasToolButNoText = hasToolCalls && !hasMeaningfulText
+          
+          if (hasToolButNoText) {
+            console.log('[Chat] Tool calls completed but no text response, requesting summary...')
+            const toolResults = toolCallSteps.flatMap((s) =>
+              (s.toolResults || []).map((tr: { toolName: string; result?: unknown; data?: unknown }) => {
+                const resultData = tr.result ?? tr.data ?? tr
+                const resultText = Array.isArray(resultData)
+                  ? resultData.map((r: { text?: string }) => r.text || JSON.stringify(r)).join('\n')
+                  : (typeof resultData === 'string' ? resultData : JSON.stringify(resultData))
+                return `Tool: ${tr.toolName}\nResult: ${resultText.substring(0, 2000)}`
+              })
+            )
+
+            const toolNames = toolCallSteps.flatMap((s) => ((s.toolCalls || []) as Array<{ toolName: string }>).map((tc) => tc.toolName)).join(', ')
+            const summaryPrompt = `Please summarize the results of the tool calls above and provide a clear response to the user.
+
+Tool calls made: ${toolNames}
+
+Tool results:
+${toolResults.join('\n\n')}
+
+Please provide a detailed response based on these tool results.`
+
+            try {
+              const summaryResult = streamText({
+                model: provider(resolvedId) as any,
+                system: systemPrompt,
+                messages: [
+                  ...prunedMessages,
+                  { role: 'assistant' as const, content: `I called these tools: ${toolNames}` },
+                  { role: 'user' as const, content: summaryPrompt }
+                ],
+                maxRetries: 1,
+              })
+
+              let summaryHasOutput = false
+              let summaryText = ''
+              for await (const chunk of summaryResult.textStream) {
+                if (!summaryHasOutput) {
+                  summaryHasOutput = true
+                  // Clear the empty state if needed
+                  if (!hasMeaningfulText) fullText = ''
+                }
+                summaryText += chunk
+                fullText += chunk
+                hasOutput = true
+                await write(sseEvent('text', { content: chunk }))
+              }
+              
+              if (!summaryHasOutput || summaryText.trim().length === 0) {
+                const fallbackText = `工具调用已完成（${toolNames}）。结果如下：\n\n${toolResults.join('\n\n')}`
+                fullText += fallbackText
+                hasOutput = true
+                await write(sseEvent('text', { content: fallbackText }))
+                console.log('[Chat] Summary produced no output, using tool results as fallback')
+              }
+            } catch (summaryErr: unknown) {
+              const err = summaryErr as Error
+              console.error('[Chat] Summary generation failed:', err.message)
+              const fallbackText = `工具调用已完成（${toolNames}）。结果如下：\n\n${toolResults.join('\n\n')}`
+              fullText += fallbackText
+              hasOutput = true
+              await write(sseEvent('text', { content: fallbackText }))
+            }
+          }
+
+          // Supplement short responses after tool calls
+          if (hasToolCalls && hasOutput && fullText.trim().length < 50) {
+            const toolNames = toolCallSteps.flatMap((s) => ((s.toolCalls || []) as Array<{ toolName: string }>).map((tc) => tc.toolName)).join(', ')
+            const supplement = `\n\n以上是工具 ${toolNames} 的执行结果。如需进一步操作，请告诉我。`
+            fullText += supplement
+            await write(sseEvent('text', { content: supplement }))
+          }
+
+          try {
+            const reason = await result.finishReason
+            if (reason === 'length') {
+              const truncationTip = '\n\n*(提示：因达到模型单次生成的最大字数限制，内容输出未完全。您可以输入“继续”以续接生成。)*'
+              fullText += truncationTip
+              await write(sseEvent('text', { content: truncationTip }))
+            }
+          } catch (reasonErr) {
+            console.warn('[Chat] Failed to get finishReason:', reasonErr)
           }
 
           // Final persist
           if (fullText && activeChatId) {
+            const citationsData = JSON.stringify(collectedCitations)
+            const searchStepsData = JSON.stringify(collectedSearchSteps)
             if (!assistantMsgId) {
               await prisma.message.create({
-                data: { chatId: activeChatId, role: 'assistant', content: fullText },
+                data: { chatId: activeChatId, role: 'assistant', content: fullText, citations: citationsData, searchSteps: searchStepsData },
               })
             } else {
               await prisma.message.update({
                 where: { id: assistantMsgId },
-                data: { content: fullText },
+                data: { content: fullText, citations: citationsData, searchSteps: searchStepsData },
               })
+            }
+
+            try {
+              await extractMemoriesFromResponse(fullText, activeChatId)
+            } catch (e) {
+              console.error('[Chat API] Failed to extract memories:', e)
             }
           }
         }
@@ -1165,11 +1247,20 @@ You have access to the following MCP tools: ${toolNames}
         }
 
         await write(sseEvent('done', { textLength: fullText.length }))
+
+        if (activeChatId) {
+          try {
+            const messageCount = await prisma.message.count({ where: { chatId: activeChatId } })
+            triggerWebhook('chat.completed', { chatId: activeChatId, messageCount }).catch(() => {})
+          } catch {}
+        }
+
         await writer.close()
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error('[Chat] Stream processing error:', error)
+        const err = error as Error
         try {
-          await write(sseEvent('error', { message: error.message || 'Processing failed' }))
+          await write(sseEvent('task_error', { message: err.message || 'Processing failed' }))
           await writer.close()
         } catch {}
       }
@@ -1178,36 +1269,20 @@ You have access to the following MCP tools: ${toolNames}
     return new Response(stream.readable, {
       headers: {
         'Content-Type': 'text/event-stream',
-        'Cache-Control': 'no-cache',
+        'Cache-Control': 'no-cache, no-transform',
         'Connection': 'keep-alive',
         'X-Accel-Buffering': 'no',
       },
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[Chat] API Error:', error)
-    return new Response(JSON.stringify({ error: error.message || 'Failed to process chat' }), {
+    const err = error as Error
+    return new Response(JSON.stringify({ error: err.message || 'Failed to process chat' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
     })
   }
 }
 
-/**
- * Extract usable text content from an AI SDK v6 UIMessage or a plain {role, content} object.
- */
-function extractContent(msg: any): string {
-  if (!msg) return ''
-  if (typeof msg.content === 'string' && msg.content.trim()) return msg.content
-  if (msg.parts && Array.isArray(msg.parts)) {
-    return msg.parts
-      .map((p: any) => {
-        if (typeof p === 'string') return p
-        if (p?.type === 'text' && typeof p.text === 'string') return p.text
-        return ''
-      })
-      .join('')
-      .trim()
-  }
-  if (msg.content) return JSON.stringify(msg.content)
-  return ''
-}
+export const maxBodyLength = 52428800
+

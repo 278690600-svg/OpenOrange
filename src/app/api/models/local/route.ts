@@ -25,8 +25,8 @@ export async function DELETE(req: Request) {
     } else {
       return NextResponse.json({ error: 'File not found' }, { status: 404 })
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[Models Delete API] Error:', error)
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json({ error: (error as Error).message }, { status: 500 })
   }
 }

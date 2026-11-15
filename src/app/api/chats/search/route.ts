@@ -8,7 +8,7 @@ export async function GET(req: NextRequest) {
   const startDateParam = searchParams.get("startDate")
   const endDateParam = searchParams.get("endDate")
 
-  let where: any = {}
+  const where: Record<string, unknown> = {}
 
   if (q) {
     where.OR = [
@@ -43,9 +43,10 @@ export async function GET(req: NextRequest) {
     }
 
     if (startDate || endDate) {
-      where.createdAt = {}
-      if (startDate) where.createdAt.gte = startDate
-      if (endDate) where.createdAt.lt = endDate
+      const dateFilter: Record<string, Date> = {}
+      if (startDate) dateFilter.gte = startDate
+      if (endDate) dateFilter.lt = endDate
+      where.createdAt = dateFilter
     }
   }
 

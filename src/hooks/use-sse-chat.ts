@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useRef, useCallback, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
 
 export type SearchStage = 'intent' | 'skip' | 'rewrite' | 'rewrite_done' | 'searching' | 'found' | 'read_page' | 'reading' | 'done' | 'error' | 'loading' | 'call' | 'result' | 'compiling' | 'context' | 'ready'
 export type ThinkingStage = 'start' | 'done'
@@ -13,19 +12,16 @@ export interface StatusEvent {
   results?: Array<{ title: string; url: string }>
   pageIndex?: number
   tool?: string
-  args?: any
+  args?: Record<string, unknown>
   url?: string
   result?: string
   rawResult?: string
   completedUrl?: string
   pageTitle?: string
   status?: string
-  // model_load fields
   progress?: number
   modelName?: string
 }
-
-// ... unchanged until handle status event
 
 export interface Citation {
   title: string
@@ -49,61 +45,83 @@ function generateId() {
 }
 
 import { useChatState, useChatActions } from '@/lib/chat-context'
-import { useEffect as useLayoutEffect } from 'react'
 
 export function useSSEChat(initialChatId?: string | null, initialMessages: ChatMessage[] = []) {
   const chats = useChatState()
-  const { registerChat, updateChat, migrateChat, triggerTypewriter, watchChat, unwatchChat } = useChatActions()
-  const router = useRouter()
-  
-  // Local active chat ID being viewed
-  const [activeChatId, setActiveChatId] = useState<string | null>(initialChatId || null)
+  const { registerChat, updateChat, abortChat, subscribeToTask } = useChatActions()
 
-  // Register chat on mount if ID is provided
-  useLayoutEffect(() => {
-    if (initialChatId) {
-      setActiveChatId(initialChatId)
-      registerChat(initialChatId, {
-        messages: initialMessages,
-        status: 'idle',
-        error: null,
-        currentSearch: [],
-        isThinking: false,
-        chatId: initialChatId,
-        typewriterQueue: '',
-        currentText: ''
-      })
-    }
-  }, [initialChatId, registerChat]) // initialMessages purposefully excluded to avoid reset on every change
+  const [activeChatId, setActiveChatId] = useState<string | null>(initialChatId || null)
+  const sendingRef = useRef(false)
+  const chatIdRef = useRef<string | null>(initialChatId || null)
+  const lastInitialChatIdRef = useRef<string | null>(null)
+  const lastActiveChatIdRef = useRef<string | null>(null)
+
+  if (initialChatId && lastInitialChatIdRef.current !== initialChatId) {
+    lastInitialChatIdRef.current = initialChatId
+    chatIdRef.current = initialChatId
+  }
+
+  const chatsRef = useRef(chats)
+  chatsRef.current = chats
 
   useEffect(() => {
-    if (activeChatId) {
-      watchChat(activeChatId)
-      return () => {
-        unwatchChat(activeChatId)
+    if (initialChatId && initialChatId !== lastActiveChatIdRef.current) {
+      lastActiveChatIdRef.current = initialChatId
+      setActiveChatId(initialChatId)
+      chatIdRef.current = initialChatId
+
+      if (!chatsRef.current[initialChatId]) {
+        registerChat(initialChatId, {
+          messages: initialMessages,
+          status: 'idle',
+          error: null,
+          currentSearch: [],
+          isThinking: false,
+          chatId: initialChatId,
+          taskId: null,
+        })
+      } else if (initialMessages.length > 0) {
+        const existing = chatsRef.current[initialChatId]
+        if (existing.status === 'idle' && initialMessages.length > existing.messages.length) {
+          updateChat(initialChatId, { messages: initialMessages })
+        }
+      }
+
+      sendingRef.current = false
+    } else if (initialChatId && initialMessages.length > 0) {
+      const existing = chatsRef.current[initialChatId]
+      if (existing && existing.status === 'idle') {
+        if (initialMessages.length > existing.messages.length) {
+          updateChat(initialChatId, { messages: initialMessages })
+        } else if (initialMessages.length === existing.messages.length && existing.messages.length > 0) {
+          const lastExisting = existing.messages[existing.messages.length - 1]
+          const lastNew = initialMessages[initialMessages.length - 1]
+          if (lastNew && lastExisting && lastNew.content.length > lastExisting.content.length) {
+            updateChat(initialChatId, { messages: initialMessages })
+          }
+        } else if (existing.messages.length === 0 && initialMessages.length > 0) {
+          updateChat(initialChatId, { messages: initialMessages })
+        }
       }
     }
-  }, [activeChatId, watchChat, unwatchChat])
+  }, [initialChatId, registerChat, updateChat, initialMessages])
 
+  const effectiveId = chatIdRef.current || activeChatId || initialChatId
 
-  // Get current state from context or default
-  const currentState = activeChatId ? chats[activeChatId] : null
-  
-  const messages = currentState?.messages || []
+  const currentState = effectiveId ? chats[effectiveId] : null
+
+  const globalMessages = currentState?.messages
+  const messages = (globalMessages && globalMessages.length >= initialMessages.length)
+    ? globalMessages
+    : initialMessages
   const status = currentState?.status || 'idle'
   const error = currentState?.error || null
   const currentSearch = currentState?.currentSearch || []
   const isThinking = currentState?.isThinking || false
 
-  const abortRef = useRef<AbortController | null>(null)
-  const chatIdRef = useRef<string | null>(activeChatId || null)
+  const messagesRef = useRef(messages)
+  messagesRef.current = messages
 
-  // Synchronize chatIdRef with initialChatId
-  useLayoutEffect(() => {
-    if (initialChatId) chatIdRef.current = initialChatId
-  }, [initialChatId])
-
-  // --- Helper Setters (Atomic updates to global context) ---
   const setMessages = useCallback((updater: ChatMessage[] | ((prev: ChatMessage[]) => ChatMessage[])) => {
     const currentId = chatIdRef.current
     if (!currentId) return
@@ -113,75 +131,109 @@ export function useSSEChat(initialChatId?: string | null, initialMessages: ChatM
     }))
   }, [updateChat])
 
-  const setStatus = useCallback((s: 'idle' | 'submitted' | 'streaming' | 'queued') => {
-    const currentId = chatIdRef.current
-    if (currentId) updateChat(currentId, { status: s })
-  }, [updateChat])
-
-  const setError = useCallback((e: Error | null) => {
-    const currentId = chatIdRef.current
-    if (currentId) updateChat(currentId, { error: e })
-  }, [updateChat])
-
-  const setCurrentSearch = useCallback((s: StatusEvent[]) => {
-    const currentId = chatIdRef.current
-    if (currentId) updateChat(currentId, { currentSearch: s })
-  }, [updateChat])
-
-  const setIsThinking = useCallback((t: boolean) => {
-    const currentId = chatIdRef.current
-    if (currentId) updateChat(currentId, { isThinking: t })
-  }, [updateChat])
-
-  // Typewriter state updates
-  const setTypewriterQueue = useCallback((q: string | ((prev: string) => string)) => {
-    const currentId = chatIdRef.current
-    if (currentId) {
-      updateChat(currentId, (prev) => ({
-        ...prev,
-        typewriterQueue: typeof q === 'function' ? q(prev.typewriterQueue) : q
-      }))
-    }
-  }, [updateChat])
-
-  const setCurrentText = useCallback((t: string | ((prev: string) => string)) => {
-    const currentId = chatIdRef.current
-    if (currentId) {
-      updateChat(currentId, (prev) => ({
-        ...prev,
-        currentText: typeof t === 'function' ? t(prev.currentText) : t
-      }))
-    }
-  }, [updateChat])
-
   const deleteMessage = useCallback((messageId: string) => {
     setMessages(prev => prev.filter(m => m.id !== messageId))
   }, [setMessages])
 
-
-  // Global typewriter triggered via actions.triggerTypewriter
-  useEffect(() => {
-    if (activeChatId && chats[activeChatId]?.status === 'streaming') {
-      const assistantMsg = [...(chats[activeChatId]?.messages || [])].reverse().find(m => m.role === 'assistant')
-      if (assistantMsg) {
-        triggerTypewriter(activeChatId, assistantMsg.id)
-      }
-    }
-  }, [activeChatId, chats, triggerTypewriter])
-
   const stop = useCallback(() => {
-    abortRef.current?.abort()
-    setStatus('idle')
-  }, [setStatus])
+    const currentId = chatIdRef.current
+    if (currentId) {
+      abortChat(currentId)
+    }
+    sendingRef.current = false
+  }, [abortChat])
 
-  // Listen for global stop event
+  // BUG-001 FIX: 监听 chat-task-finished 事件来可靠重置 sendingRef
   useEffect(() => {
     const handleStopAll = () => {
-      stop()
+      sendingRef.current = false
     }
+    const handleChatUpdated = () => {
+      const id = chatIdRef.current
+      if (id) {
+        const state = chatsRef.current[id]
+        if (state && state.status === 'idle') {
+          sendingRef.current = false
+        }
+      }
+    }
+    // BUG-001 FIX: 监听任务完成事件，无论哪个组件触发的
+    const handleTaskFinished = (e: Event) => {
+      const detail = (e as CustomEvent).detail
+      const chatId = detail?.chatId
+      if (chatId === chatIdRef.current || chatId === activeChatId) {
+        sendingRef.current = false
+      }
+    }
+    // BUG-006 FIX: 监听任务错误事件
+    const handleTaskError = (e: Event) => {
+      const detail = (e as CustomEvent).detail
+      const chatId = detail?.chatId
+      if (chatId === chatIdRef.current || chatId === activeChatId) {
+        sendingRef.current = false
+      }
+    }
+    // BUG-001 FIX: 监听SSE连接断开事件
+    const handleSSEDisconnected = (e: Event) => {
+      const detail = (e as CustomEvent).detail
+      const chatId = detail?.chatId
+      if (chatId === chatIdRef.current || chatId === activeChatId) {
+        const state = chatsRef.current[chatId]
+        // 只有在非活跃状态时才重置，避免中断正在进行的流
+        if (!state || state.status === 'idle' || state.status === 'error') {
+          sendingRef.current = false
+        }
+      }
+    }
+
     window.addEventListener('stop-all-chats', handleStopAll)
-    return () => window.removeEventListener('stop-all-chats', handleStopAll)
-  }, [stop])
+    window.addEventListener('chat-updated', handleChatUpdated)
+    window.addEventListener('chat-task-finished', handleTaskFinished)
+    window.addEventListener('chat-task-error', handleTaskError)
+    window.addEventListener('chat-sse-disconnected', handleSSEDisconnected)
+    return () => {
+      window.removeEventListener('stop-all-chats', handleStopAll)
+      window.removeEventListener('chat-updated', handleChatUpdated)
+      window.removeEventListener('chat-task-finished', handleTaskFinished)
+      window.removeEventListener('chat-task-error', handleTaskError)
+      window.removeEventListener('chat-sse-disconnected', handleSSEDisconnected)
+    }
+  }, [activeChatId])
+
+  useEffect(() => {
+    const handleMigration = (e: Event) => {
+      const { oldId, newId } = (e as CustomEvent).detail
+      if (chatIdRef.current === oldId || activeChatId === oldId) {
+        setActiveChatId(newId)
+        chatIdRef.current = newId
+        if (typeof window !== 'undefined') {
+          window.history.replaceState(null, '', `/chat/${newId}`)
+        }
+      }
+    }
+    window.addEventListener('chat-id-migrated', handleMigration)
+    return () => {
+      window.removeEventListener('chat-id-migrated', handleMigration)
+    }
+  }, [activeChatId])
+
+  // BUG-006 FIX: 添加超时保护，防止sendingRef永久锁定
+  useEffect(() => {
+    if (!sendingRef.current) return
+    const timeout = setTimeout(() => {
+      if (sendingRef.current) {
+        const id = chatIdRef.current
+        if (id) {
+          const state = chatsRef.current[id]
+          if (!state || state.status === 'idle' || state.status === 'error') {
+            console.warn('[Chat] sendingRef timeout, force resetting')
+            sendingRef.current = false
+          }
+        }
+      }
+    }, 120000) // 2分钟超时
+    return () => clearTimeout(timeout)
+  }, [chats])
 
   const sendMessage = useCallback(async (
     text: string,
@@ -191,272 +243,141 @@ export function useSSEChat(initialChatId?: string | null, initialMessages: ChatM
       webSearch: boolean | 'auto' | 'deep'
       deepThink: boolean
       kbId?: string | null
-      files?: any[]
+      files?: Array<{ name: string; type: string; dataUrl?: string }>
       promptId?: string | null
+      docOptions?: { docType: 'none' | 'ppt' | 'docx' | 'xlsx'; docStyle: string; docTheme: string }
     },
     editMessageId?: string
   ) => {
-    
-    const targetIdx = editMessageId ? messages.findIndex(m => m.id === editMessageId) : -1
-    const baseMessages = targetIdx !== -1 ? messages.slice(0, targetIdx) : messages
-
-    const targetChatId = options.chatId || activeChatId
-    if (!targetChatId) return
-
-    const userMsg: ChatMessage = {
-      id: generateId(),
-      role: 'user',
-      content: text,
-      attachments: options.files?.map(f => ({ name: f.name, type: f.type, dataUrl: f.dataUrl })),
+    if (sendingRef.current) {
+      console.warn('[Chat] Already sending, skipping duplicate send')
+      return
     }
+    sendingRef.current = true
 
-    const activeTasks = Object.values(chats).filter(c => c.status === 'streaming' || c.status === 'submitted')
-    const MAX_CONCURRENT = 2 
-
-    if (activeTasks.length >= MAX_CONCURRENT && chats[targetChatId]?.status !== 'submitted') {
-       updateChat(targetChatId, {
-         status: 'queued',
-         pendingMessage: { content: text, options }
-       })
-       return
-    }
-
-    updateChat(targetChatId, {
-      messages: [...baseMessages, userMsg],
-      status: 'submitted',
-      error: null,
-      currentSearch: [],
-      isThinking: false,
-      typewriterQueue: '',
-      currentText: ''
-    })
-
-    const assistantId = generateId()
-    const assistantMsg: ChatMessage = {
-      id: assistantId,
-      role: 'assistant',
-      content: '',
-      searchSteps: [],
-      citations: [],
-    }
-
-    updateChat(targetChatId, {
-      messages: [...baseMessages, userMsg, assistantMsg]
-    })
-
-    const abortController = new AbortController()
-    abortRef.current = abortController
-
-    // Add timeout to prevent hanging (10 minutes for MCP tool loading)
-    const timeoutId = setTimeout(() => {
-      abortController.abort()
-    }, 600000) // 10 minute timeout
-
-    let currentStreamChatId = targetChatId
+    console.log(`[Chat] sendMessage called: text="${text.substring(0, 50)}...", chatId=${options.chatId}`)
 
     try {
-      const allMessages = [...baseMessages, userMsg].map(m => ({
-        role: m.role,
-        content: m.content,
-      }))
+      const currentMessages = messagesRef.current
+      const targetIdx = editMessageId ? currentMessages.findIndex(m => m.id === editMessageId) : -1
+      const baseMessages = targetIdx !== -1 ? currentMessages.slice(0, targetIdx) : currentMessages
 
-      const res = await fetch('/api/chat', {
+      const targetChatId = chatIdRef.current || options.chatId || activeChatId
+      if (!targetChatId) {
+        console.error('[Chat] No target chat ID available')
+        sendingRef.current = false
+        return
+      }
+
+      console.log(`[Chat] Target chat ID: ${targetChatId}`)
+
+      const userMsg: ChatMessage = {
+        id: generateId(),
+        role: 'user',
+        content: text,
+        attachments: options.files?.map(f => ({ name: f.name, type: f.type, dataUrl: f.dataUrl })),
+      }
+
+      const newMessages = [...baseMessages, userMsg]
+
+      console.log(`[Chat] Updating chat state to submitted`)
+      updateChat(targetChatId, {
+        messages: newMessages,
+        status: 'submitted',
+        error: null,
+        currentSearch: [],
+        isThinking: false,
+      })
+
+      chatIdRef.current = targetChatId
+
+      const messagesForApi = newMessages
+        .filter(m => m.role === 'user' || (m.role === 'assistant' && m.content && m.content.trim().length > 0))
+        .map(m => ({
+          role: m.role,
+          content: m.content,
+        }))
+
+      console.log(`[Chat] Creating task via API`)
+      const taskRes = await fetch('/api/chat/task', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          messages: allMessages,
+          messages: messagesForApi,
           model: options.model,
-          chatId: options.chatId,
+          chatId: targetChatId,
           webSearch: options.webSearch,
           deepThink: options.deepThink,
           kbId: options.kbId,
           files: options.files,
           promptId: options.promptId,
+          docType: options.docOptions?.docType,
+          docStyle: options.docOptions?.docStyle,
+          docTheme: options.docOptions?.docTheme,
         }),
-        signal: abortController.signal,
       })
 
-      clearTimeout(timeoutId)
-
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({ error: 'Unknown error' }))
-        throw new Error(errData.error || `HTTP ${res.status}`)
+      if (!taskRes.ok) {
+        const errData = await taskRes.json().catch(() => ({ error: 'Unknown error' }))
+        throw new Error(errData.error || `HTTP ${taskRes.status}`)
       }
 
+      const taskData = await taskRes.json()
+      const taskId = taskData.taskId
 
-      updateChat(currentStreamChatId, { status: 'streaming' })
-      triggerTypewriter(currentStreamChatId, assistantId)
+      console.log(`[Chat] Task created: ${taskId}`)
 
-      const reader = res.body!.getReader()
-      const decoder = new TextDecoder()
-      let buffer = ''
-      let accSearchSteps: StatusEvent[] = []
-      let accCitations: Citation[] = []
+      // BUG: 不要立即设置为 queued，等待后端 SSE 事件决定是否排队
+      updateChat(targetChatId, { taskId, status: 'submitted' })
 
-      while (true) {
-        const { done, value } = await reader.read()
-        if (done) break
+      console.log(`[Chat] Subscribing to task ${taskId}`)
+      subscribeToTask(targetChatId, taskId)
 
-        buffer += decoder.decode(value, { stream: true })
-        const lines = buffer.split('\n')
-        buffer = lines.pop() || ''
-
-        let eventType = ''
-        for (const line of lines) {
-          if (line.startsWith('event: ')) {
-            eventType = line.slice(7).trim()
-          } else if (line.startsWith('data: ')) {
-            const dataStr = line.slice(6)
-            try {
-              const data = JSON.parse(dataStr)
-
-              switch (eventType) {
-                case 'text': {
-                  updateChat(currentStreamChatId, prev => ({ 
-                    ...prev, 
-                    typewriterQueue: prev.typewriterQueue + data.content 
-                  }))
-                  triggerTypewriter(currentStreamChatId, assistantId)
-                  break
-                }
-
-                case 'status': {
-                  const statusEvt = data as StatusEvent
-                  if (statusEvt.type === 'search' || statusEvt.type === 'mcp' || statusEvt.type === 'model_load') {
-                    accSearchSteps = [...accSearchSteps, statusEvt]
-                    updateChat(currentStreamChatId, prev => ({
-                      ...prev,
-                      currentSearch: [...accSearchSteps],
-                      messages: prev.messages.map(m =>
-                        m.id === assistantId ? { ...m, searchSteps: [...accSearchSteps] } : m
-                      )
-                    }))
-                  }
-                  if (statusEvt.type === 'thinking') {
-                    updateChat(currentStreamChatId, prev => ({
-                      ...prev,
-                      isThinking: statusEvt.stage === 'start',
-                      messages: prev.messages.map(m =>
-                        m.id === assistantId ? { ...m, isThinking: statusEvt.stage === 'start' } : m
-                      )
-                    }))
-                  }
-                  break
-                }
-
-                case 'citations': {
-                  accCitations = data.results || []
-                  updateChat(currentStreamChatId, prev => ({
-                    ...prev,
-                    messages: prev.messages.map(m =>
-                      m.id === assistantId ? { ...m, citations: accCitations } : m
-                    )
-                  }))
-                  break
-                }
-
-                case 'chatId': {
-                  const newId = data.id
-                  if (currentStreamChatId.startsWith('new') && newId && currentStreamChatId !== newId) {
-                    migrateChat(currentStreamChatId, newId)
-                    currentStreamChatId = newId
-                    
-                    // 迁移后也需要触发打字机，确保在新的 ID 下继续输出
-                    triggerTypewriter(newId, assistantId)
-
-                    // 通知当前组件更新它所展示的 activeChatId，从而拉取全局的 chats[newId]
-                    setActiveChatId(newId)
-                    chatIdRef.current = newId
-
-                    // 使用 router.replace 替换地址栏 URL，确保 Next.js 路由状态同步
-                    router.replace(`/chat/${newId}`, { scroll: false })
-                  } else {
-                    chatIdRef.current = newId
-                  }
-                  break
-                }
-
-                case 'error': {
-                  updateChat(currentStreamChatId, { error: new Error(data.message) })
-                  break
-                }
-
-                case 'done': {
-                  break
-                }
-              }
-            } catch (e) {
-              // ignore parse errors
-            }
-            eventType = ''
-          }
-        }
+    } catch (error) {
+      console.error('[Chat] sendMessage error:', error)
+      const currentId = chatIdRef.current
+      if (currentId) {
+        updateChat(currentId, { status: 'error', error: error as Error })
       }
-    } catch (e: any) {
-      clearTimeout(timeoutId)
-      if (e.name !== 'AbortError') {
-        console.error('[useSSEChat] Error:', e)
-        updateChat(currentStreamChatId, { error: e })
-      } else if (status === 'streaming') {
-        console.warn('[useSSEChat] Request aborted during streaming')
-        updateChat(currentStreamChatId, { error: new Error('Connection interrupted. Please try again.') })
+      sendingRef.current = false
+      // BUG-006 FIX: 发送错误事件通知其他组件
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('chat-task-error', {
+          detail: { chatId: chatIdRef.current || options.chatId }
+        }))
       }
-    } finally {
-      clearTimeout(timeoutId)
-      updateChat(currentStreamChatId, {
-        status: 'idle',
-        isThinking: false,
-        currentSearch: []
-      })
-      abortRef.current = null
-      // Assistant ID remains until next message to let typewriter finish the last bits
     }
-  }, [triggerTypewriter])
+  }, [updateChat, activeChatId, subscribeToTask])
 
   const reset = useCallback(() => {
-    setMessages([])
-    setStatus('idle')
-    setError(null)
-    setCurrentSearch([])
-    setIsThinking(false)
+    const currentId = chatIdRef.current
+    if (currentId) {
+      updateChat(currentId, {
+        messages: [],
+        status: 'idle',
+        error: null,
+        currentSearch: [],
+        isThinking: false,
+      })
+    }
     chatIdRef.current = null
-    setTypewriterQueue('')
-    setCurrentText('')
-  }, [])
+  }, [updateChat])
 
   const regenerate = useCallback(async (options: Omit<Parameters<typeof sendMessage>[1], 'files' | 'chatId'>) => {
     if (status === 'submitted' || status === 'streaming') return
-    const lastUserIdx = [...messages].reverse().findIndex(m => m.role === 'user')
+    const lastUserIdx = [...messagesRef.current].reverse().findIndex(m => m.role === 'user')
     if (lastUserIdx === -1) return
-    const trueIdx = messages.length - 1 - lastUserIdx
-    const userMsg = messages[trueIdx]
-    
-    // Copy attachments for resend
+    const trueIdx = messagesRef.current.length - 1 - lastUserIdx
+    const userMsg = messagesRef.current[trueIdx]
+
     const files = userMsg.attachments?.map(a => ({ name: a.name, type: a.type, dataUrl: a.dataUrl }))
-    
+
     await sendMessage(userMsg.content, {
       ...options,
       chatId: chatIdRef.current,
       files
     }, userMsg.id)
-  }, [messages, status, sendMessage])
-
-  // Removed auto-abort on unmount to allow background execution
-
-  // Queue processor
-  useEffect(() => {
-    if (!activeChatId) return
-    const chat = chats[activeChatId]
-    if (chat?.status === 'queued') {
-      const activeCount = Object.values(chats).filter(c => c.status === 'streaming' || c.status === 'submitted').length
-      const MAX_CONCURRENT = 2
-      if (activeCount < MAX_CONCURRENT) {
-        if (chat.pendingMessage) {
-          sendMessage(chat.pendingMessage.content, chat.pendingMessage.options)
-        }
-      }
-    }
-  }, [chats, activeChatId, sendMessage])
+  }, [status, sendMessage])
 
   return {
     messages,

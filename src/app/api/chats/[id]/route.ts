@@ -15,7 +15,15 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     if (!chat) {
       return NextResponse.json({ error: "Chat not found" }, { status: 404 })
     }
-    return NextResponse.json(chat)
+    const enrichedChat = {
+      ...chat,
+      messages: chat.messages.map(m => ({
+        ...m,
+        citations: (() => { try { return JSON.parse(m.citations || '[]') } catch { return [] } })(),
+        searchSteps: (() => { try { return JSON.parse(m.searchSteps || '[]') } catch { return [] } })(),
+      })),
+    }
+    return NextResponse.json(enrichedChat)
   } catch (error) {
     console.error("Chat GET Error:", error)
     return NextResponse.json({ error: "Failed to fetch chat" }, { status: 500 })

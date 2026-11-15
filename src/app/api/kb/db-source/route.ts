@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-type DBType = 'mysql' | 'postgresql' | 'sqlite'
+type DBType = 'mysql' | 'postgresql' | 'sqlite' | 'sqlserver'
 
 interface DBConfig {
   type: DBType
@@ -29,7 +29,7 @@ async function getConnection(config: DBConfig) {
       user: config.user,
       password: config.password,
       database: config.database,
-    }) as any)
+    }) as Record<string, unknown>)
     return { type: 'mysql' as const, conn }
   }
 
@@ -46,6 +46,41 @@ async function getConnection(config: DBConfig) {
     return { type: 'pg' as const, client }
   }
 
+  if (config.type === 'sqlserver') {
+    const mssql = await import('mssql')
+    const pool = await mssql.connect(config.connectionString || {
+      user: config.user,
+      password: config.password,
+      server: config.host || 'localhost',
+      port: config.port || 1433,
+      database: config.database,
+      options: {
+        encrypt: true,
+        trustServerCertificate: true // trust self-signed certs for local dev
+      }
+    })
+    return { type: 'sqlserver' as const, pool }
+  }
+
+  if (config.type === 'mongodb') {
+    const { MongoClient } = await import('mongodb')
+    const uri = config.connectionString || `mongodb://${config.user ? `${config.user}:${config.password}@` : ''}${config.host || 'localhost'}:${config.port || 27017}/${config.database || ''}`
+    const client = new MongoClient(uri)
+    await client.connect()
+    return { type: 'mongodb' as const, client, dbName: config.database }
+  }
+
+  if (config.type === 'redis') {
+    const Redis = (await import('ioredis')).default
+    const client = config.connectionString ? new Redis(config.connectionString) : new Redis({
+      host: config.host || 'localhost',
+      port: config.port || 6379,
+      password: config.password,
+      db: config.database ? parseInt(config.database, 10) : 0
+    })
+    return { type: 'redis' as const, client }
+  }
+
   throw new Error(`Unsupported database type: ${config.type}`)
 }
 
@@ -55,69 +90,127 @@ export async function POST(req: NextRequest) {
   const body = await req.json() as DBConfig
 
   if (action === 'test') {
-    let conn: any = null
+    let conn: Awaited<ReturnType<typeof getConnection>> | null = null
     try {
       conn = await getConnection(body)
       let version = ''
       if (conn.type === 'sqlite') {
-        version = (conn.db.prepare('SELECT sqlite_version() as v').get() as any)?.v || 'unknown'
+        version = ((conn.db.prepare('SELECT sqlite_version() as v').get() as Record<string, unknown>)?.v as string) || 'unknown'
       } else if (conn.type === 'mysql') {
         const [rows] = await conn.conn.execute('SELECT VERSION() as v')
-        version = (rows as any)[0]?.v || 'unknown'
+        version = (rows as Array<{ v?: string }>)[0]?.v || 'unknown'
       } else if (conn.type === 'pg') {
         const res = await conn.client.query('SELECT version() as v')
         version = res.rows[0]?.v?.split(' ').slice(0, 2).join(' ') || 'unknown'
+      } else if (conn.type === 'sqlserver') {
+        const res = await conn.pool.request().query('SELECT @@VERSION as v')
+        version = res.recordset[0]?.v?.split('\n')[0] || 'unknown'
+      } else if (conn.type === 'mongodb') {
+        const adminDb = conn.client.db().admin()
+        const info = await adminDb.serverInfo()
+        version = info.version || 'unknown'
+      } else if (conn.type === 'redis') {
+        const info = await conn.client.info('server')
+        const match = info.match(/redis_version:(.*)/)
+        version = match ? match[1].trim() : 'unknown'
       }
       return NextResponse.json({ ok: true, version })
-    } catch (err: any) {
-      return NextResponse.json({ ok: false, error: err.message }, { status: 400 })
+    } catch (err: unknown) {
+      return NextResponse.json({ ok: false, error: (err as Error).message }, { status: 400 })
     } finally {
       if (conn) {
         if (conn.type === 'sqlite') conn.db.close()
         else if (conn.type === 'mysql') await conn.conn.end()
         else if (conn.type === 'pg') await conn.client.end()
+        else if (conn.type === 'sqlserver') await conn.pool.close()
+        else if (conn.type === 'mongodb') await conn.client.close()
+        else if (conn.type === 'redis') conn.client.disconnect()
       }
     }
   }
 
   if (action === 'tables') {
-    let conn: any = null
+    let conn: Awaited<ReturnType<typeof getConnection>> | null = null
     try {
       conn = await getConnection(body)
       let tables: Array<{ name: string; rowCount?: number; columns?: string[] }> = []
 
       if (conn.type === 'sqlite') {
-        const rows = conn.db.prepare(`
+        const db = conn.db
+        const rows = db.prepare(`
           SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name
-        `).all() as any[]
+        `).all() as Array<Record<string, unknown>>
         tables = rows.map(r => {
           try {
-            const count = (conn.db.prepare(`SELECT COUNT(*) as c FROM "${r.name}"`).get() as any)?.c || 0
-            const cols = (conn.db.pragma(`table_info(${r.name})`) as any[]).map((c: any) => c.name)
-            return { name: r.name, rowCount: count, columns: cols }
-          } catch { return { name: r.name } }
+            const name = r.name as string
+            const count = (db.prepare(`SELECT COUNT(*) as c FROM "${name}"`).get() as Record<string, unknown>)?.c as number || 0
+            const cols = (db.pragma(`table_info(${name})`) as Array<Record<string, unknown>>).map((c) => c.name as string)
+            return { name, rowCount: count, columns: cols }
+          } catch { return { name: r.name as string } }
         })
       } else if (conn.type === 'mysql') {
         const [rows] = await conn.conn.execute(
           'SELECT TABLE_NAME as name, TABLE_ROWS as rowCount FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() ORDER BY TABLE_NAME'
         )
-        tables = (rows as any[]).map(r => ({ name: r.name, rowCount: r.rowCount }))
+        tables = (rows as Array<{ name: string; rowCount: number }>).map(r => ({ name: r.name, rowCount: r.rowCount }))
       } else if (conn.type === 'pg') {
         const res = await conn.client.query(`
           SELECT table_name as name FROM information_schema.tables 
           WHERE table_schema = 'public' ORDER BY table_name
         `)
-        tables = res.rows.map((r: any) => ({ name: r.name }))
+        tables = res.rows.map((r: { name: string }) => ({ name: r.name }))
+      } else if (conn.type === 'sqlserver') {
+        const db = conn.pool
+        const res = await db.request().query(`
+          SELECT TABLE_NAME as name FROM INFORMATION_SCHEMA.TABLES 
+          WHERE TABLE_TYPE = 'BASE TABLE' ORDER BY TABLE_NAME
+        `)
+        tables = await Promise.all(res.recordset.map(async (r: { name: string }) => {
+          try {
+            const countRes = await db.request().query(`SELECT COUNT(*) as c FROM [${r.name}]`)
+            const count = countRes.recordset[0]?.c || 0
+            const colRes = await db.request().query(`
+              SELECT COLUMN_NAME as col FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = '${r.name}'
+            `)
+            const cols = colRes.recordset.map((c: { col: string }) => c.col)
+            return { name: r.name, rowCount: count, columns: cols }
+          } catch {
+            return { name: r.name }
+          }
+        }))
+      } else if (conn.type === 'mongodb') {
+        const db = conn.client.db(conn.dbName)
+        const collections = await db.listCollections().toArray()
+        tables = await Promise.all(collections.map(async (c) => {
+          try {
+            const count = await db.collection(c.name).estimatedDocumentCount()
+            return { name: c.name, rowCount: count }
+          } catch {
+            return { name: c.name }
+          }
+        }))
+      } else if (conn.type === 'redis') {
+        const keys = await conn.client.keys('*')
+        // In Redis, we consider keys as "tables" or just list keys
+        // If there are too many keys, we might want to just return a summary
+        if (keys.length > 100) {
+          tables = [{ name: 'All Keys (Too many to list individually)', rowCount: keys.length }]
+        } else {
+          tables = keys.map(k => ({ name: k, rowCount: 1 }))
+        }
       }
 
       return NextResponse.json({ tables })
-    } catch (err: any) {
-      return NextResponse.json({ error: err.message }, { status: 500 })
+    } catch (err: unknown) {
+      return NextResponse.json({ error: (err as Error).message }, { status: 500 })
     } finally {
       if (conn) {
         if (conn.type === 'sqlite') conn.db.close()
         else if (conn.type === 'mysql') await conn.conn.end()
         else if (conn.type === 'pg') await conn.client.end()
+        else if (conn.type === 'sqlserver') await conn.pool.close()
+        else if (conn.type === 'mongodb') await conn.client.close()
+        else if (conn.type === 'redis') conn.client.disconnect()
       }
     }
   }

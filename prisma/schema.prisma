@@ -4,7 +4,7 @@ generator client {
 
 datasource db {
   provider = "sqlite"
-  url      = "file:./dev.db"
+  url      = env("DATABASE_URL")
 }
 
 model Chat {
@@ -14,6 +14,13 @@ model Chat {
   updatedAt DateTime  @updatedAt
   messages  Message[]
   selectedPromptId String?
+  isArchived Boolean  @default(false)
+  
+  // Branch relationships
+  parentId String?
+  parent   Chat?   @relation("ChatBranches", fields: [parentId], references: [id])
+  branches Chat[]  @relation("ChatBranches")
+  forkFromMessageId String?
 }
 
 model Message {
@@ -23,6 +30,8 @@ model Message {
   createdAt DateTime @default(now())
   chatId    String
   chat      Chat     @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  citations String   @default("[]") // JSON array of { title, url }
+  searchSteps String @default("[]") // JSON array of status events
 }
 
 model Settings {
@@ -30,6 +39,7 @@ model Settings {
   ollamaUrl            String  @default("http://127.0.0.1:11434")
   lmstudioUrl          String  @default("http://127.0.0.1:1234")
   openaiKey            String  @default("")
+  openaiApiBase        String  @default("")
   anthropicKey         String  @default("")
   googleKey            String  @default("")
   deepseekKey          String  @default("")
@@ -40,6 +50,7 @@ model Settings {
   lingyiKey            String  @default("")
   openrouterKey        String  @default("")
   nvidiaKey            String  @default("")
+  volcengineKey        String  @default("")
   defaultModel         String  @default("llama3")
   searchEngine         String  @default("duckduckgo")
   searchKey            String  @default("")
@@ -59,6 +70,7 @@ model Settings {
   mcpEnabled           Boolean @default(true)
   mcpAutoLoad          Boolean @default(false)
   enabledModels        String  @default("[]")
+  customModels         String  @default("[]")
   maxConcurrentChats   Int     @default(3)
 }
 
@@ -73,9 +85,11 @@ model KnowledgeBase {
   status        String   @default("idle") // idle, indexing, ready, error
   lastError     String   @default("")
   lastIndexedAt DateTime?
+  tags          String?  // JSON string array for labels
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   chunks        KnowledgeChunk[]
+  files         KnowledgeFile[]
 }
 
 model KnowledgeChunk {
@@ -129,3 +143,317 @@ model PromptTemplate {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
+
+model ConversationTemplate {
+  id            String   @id @default(cuid())
+  name          String
+  description   String?
+  systemPrompt  String
+  category      String   @default("general")
+  variables     String?  // JSON array
+  icon          String?  @default("MessageSquare")
+  usageCount    Int      @default(0)
+  rating        Float?
+  isSystem      Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model ModelPerformance {
+  id            String   @id @default(cuid())
+  model         String
+  provider      String
+  latency       Int      // in milliseconds
+  tokensUsed    Int      @default(0)
+  cost          Float    @default(0)
+  status        String   @default("success") // success, error, timeout
+  timestamp     DateTime @default(now())
+}
+
+model InferenceTask {
+  id            String   @id @default(cuid())
+  chatId        String   @default("")
+  model         String
+  provider      String   @default("")
+  status        String   @default("queued")
+  input         String   @default("{}")
+  result        String   @default("")
+  error         String   @default("")
+  abortSignalId String?
+  createdAt     DateTime @default(now())
+  startedAt     DateTime?
+  completedAt   DateTime?
+}
+
+model QueryHistory {
+  id            String   @id @default(cuid())
+  dataSourceId  String
+  sql           String
+  naturalLanguage String?
+  analysisType  String?  // trend, anomaly, correlation, distribution, summary
+  result        String   @default("{}") // JSON result
+  executionTime Int?     // in milliseconds
+  createdAt     DateTime @default(now())
+}
+
+model Document {
+  id            String   @id @default(cuid())
+  title         String   @default("未命名文档")
+  content       String   @default("") // JSON content from TipTap
+  htmlContent   String?  // HTML export for rendering
+  wordCount     Int      @default(0)
+  coverImage    String?  // Base64 or URL
+  tags          String   @default("[]") // JSON array
+  version       Int      @default(1)
+  status        String   @default("draft") // draft, published, archived
+  fontSize      String   @default("14px")
+  fontFamily    String   @default("default")
+  lineHeight    String   @default("1.6")
+  margin        String   @default("normal") // narrow, normal, wide
+  pageSize      String   @default("A4")
+  orientation   String   @default("portrait")
+  columns       Int      @default(1)
+  headerContent String?  // JSON header content
+  footerContent String?  // JSON footer content
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model DocumentVersion {
+  id            String   @id @default(cuid())
+  documentId    String
+  version       Int
+  content       String   // JSON content snapshot
+  title         String
+  createdAt     DateTime @default(now())
+}
+
+model AgentMemory {
+  id            String   @id @default(cuid())
+  category      String   // user_profile, preference, context, fact, task
+  key           String
+  value         String   // JSON value
+  confidence    Float    @default(1.0) // 0-1 confidence score
+  source        String   // chat, user_input, inference
+  chatId        String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  expiresAt     DateTime?
+
+  @@unique([category, key])
+  @@index([category])
+  @@index([confidence])
+  @@index([expiresAt])
+}
+
+model Workflow {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  trigger     String   @default("manual") // manual, chat, scheduled
+  status      String   @default("draft") // draft, active, archived
+  steps       WorkflowStep[]
+  edges       WorkflowEdge[]
+  executions  WorkflowExecution[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model WorkflowStep {
+  id          String   @id @default(cuid())
+  workflowId  String
+  workflow    Workflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  order       Int      @default(0)
+  type        String   // trigger, llm, prompt, transform, extract, condition, loop, code, http, merge, output
+  name        String   @default("") // Human-readable step name
+  prompt      String   @default("") // The prompt template
+  model       String?  // Specific model override
+  outputKey   String?  // Key to store result for next steps
+  config      String   @default("{}") // JSON: type-specific configuration
+  description String?
+  createdAt   DateTime @default(now())
+
+  @@index([workflowId])
+}
+
+model WorkflowEdge {
+  id           String   @id @default(cuid())
+  workflowId   String
+  workflow     Workflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  sourceStepId String   // ID of source step
+  targetStepId String   // ID of target step
+  sourceHandle String?  // "true"/"false" for condition nodes
+  label        String?  // Display label
+  createdAt    DateTime @default(now())
+
+  @@index([workflowId])
+  @@index([sourceStepId])
+  @@index([targetStepId])
+}
+
+model WorkflowExecution {
+  id          String   @id @default(cuid())
+  workflowId  String
+  workflow    Workflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  status      String   @default("running") // running, success, partial, failed
+  input       String   @default("{}") // JSON input context
+  result      String   @default("{}") // JSON execution result
+  duration    Int      @default(0) // total duration in ms
+  startedAt   DateTime @default(now())
+  completedAt DateTime?
+
+  @@index([workflowId])
+  @@index([status])
+  @@index([startedAt])
+}
+
+model Dashboard {
+  id        String   @id @default(cuid())
+  title     String
+  dataName  String
+  columns   String   // JSON array of column names
+  data      String   // JSON array of data rows
+  widgets   String   // JSON array of widget configs
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model KnowledgeFile {
+  id              String   @id @default(cuid())
+  knowledgeBaseId String
+  fileName        String
+  fileSize        Int      @default(0)
+  fileHash        String   // SHA-256 hash for dedup/change detection
+  fileExtension   String   @default("")
+  filePath        String   @default("") // relative path within knowledge base
+  content         String   @default("") // extracted text content for indexing/diff
+  mimeType        String   @default("")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  knowledgeBase   KnowledgeBase @relation(fields: [knowledgeBaseId], references: [id], onDelete: Cascade)
+  versions        FileVersion[]
+
+  @@index([knowledgeBaseId])
+  @@index([fileHash])
+}
+
+model FileVersion {
+  id                String        @id @default(cuid())
+  fileId            String
+  file              KnowledgeFile @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  fileName          String
+  fileHash          String
+  fileSize          Int
+  content           String        @default("") // text content snapshot for diff
+  version           Int
+  createdAt         DateTime      @default(now())
+  createdBy         String        @default("system")
+  changeDescription String?
+
+  @@index([fileId])
+  @@index([fileId, version])
+}
+
+model Webhook {
+  id             String       @id @default(cuid())
+  url            String
+  events         String       // JSON array of event names
+  secret         String       // HMAC signing secret
+  active         Boolean      @default(true)
+  lastTriggeredAt DateTime?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  logs           WebhookLog[]
+}
+
+model WebhookLog {
+  id             String   @id @default(cuid())
+  webhookId      String
+  webhook        Webhook  @relation(fields: [webhookId], references: [id], onDelete: Cascade)
+  event          String
+  payload        String   // JSON payload string
+  responseStatus Int?
+  responseBody   String?
+  createdAt      DateTime @default(now())
+
+  @@index([webhookId])
+  @@index([createdAt])
+}
+
+model McpToolLog {
+  id         String   @id @default(cuid())
+  toolName   String
+  serverName String
+  arguments  String   // JSON string
+  result     String   // JSON string
+  status     String   // 'success' | 'error'
+  duration   Int      // in milliseconds
+  chatId     String?
+  createdAt  DateTime @default(now())
+
+  @@index([toolName])
+  @@index([serverName])
+  @@index([createdAt])
+  @@index([chatId])
+}
+
+model Note {
+  id        String    @id @default(cuid())
+  title     String
+  content   String    @default("")
+  folder    String?
+  tags      String    @default("[]") // JSON array
+  pinned    Boolean   @default(false)
+  starred   Boolean   @default(false)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  outgoingLinks NoteLink[] @relation("NoteSourceLinks")
+  incomingLinks NoteLink[] @relation("NoteTargetLinks")
+}
+
+model NoteLink {
+  id           String   @id @default(cuid())
+  sourceNoteId String
+  targetNoteId String
+  linkType     String   @default("mention") // 'reference' | 'mention' | 'related'
+  createdAt    DateTime @default(now())
+
+  sourceNote   Note     @relation("NoteSourceLinks", fields: [sourceNoteId], references: [id], onDelete: Cascade)
+  targetNote   Note     @relation("NoteTargetLinks", fields: [targetNoteId], references: [id], onDelete: Cascade)
+
+  @@unique([sourceNoteId, targetNoteId])
+  @@index([sourceNoteId])
+  @@index([targetNoteId])
+}
+
+model Plugin {
+  id            String    @id @default(cuid())
+  pluginId      String    @unique // Unique identifier, e.g. "feishu-notifier"
+  name          String
+  version       String    @default("1.0.0")
+  description   String?
+  author        String?   @default("Community")
+  icon          String?   @default("Package")
+  category      String    @default("productivity") // productivity, devtools, data, workflow, creative, theme
+  homepage      String?
+  repository    String?
+  manifest      String    // Complete plugin.json content as JSON string
+  config        String    @default("{}") // User-customized plugin settings JSON string
+  enabled       Boolean   @default(true)
+  isSystem      Boolean   @default(false)
+  installSource String    @default("market") // market, local_zip, git_url, raw_url
+  installPath   String?   // Local filesystem path for extracted assets/scripts
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([category])
+  @@index([enabled])
+}
+
+model PluginMarketCache {
+  id        String   @id @default("default")
+  content   String   // JSON string of cached market catalogue
+  updatedAt DateTime @updatedAt
+}
+

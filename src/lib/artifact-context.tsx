@@ -19,12 +19,17 @@ export interface Artifact {
 export const ArtifactStateContext = createContext<Artifact | null>(null)
 const ArtifactActionsContext = createContext<{
   setActiveArtifact: (artifact: Artifact | null) => void
+  updateArtifactCode: (code: string) => void
 } | undefined>(undefined)
 
 export function ArtifactProvider({ children }: { children: ReactNode }) {
   const [activeArtifact, setActiveArtifact] = useState<Artifact | null>(null)
 
-  const actions = React.useMemo(() => ({ setActiveArtifact }), [setActiveArtifact])
+  const updateArtifactCode = React.useCallback((code: string) => {
+    setActiveArtifact(prev => prev ? { ...prev, code } : null)
+  }, [])
+
+  const actions = React.useMemo(() => ({ setActiveArtifact, updateArtifactCode }), [setActiveArtifact, updateArtifactCode])
 
   return (
     <ArtifactStateContext.Provider value={activeArtifact}>

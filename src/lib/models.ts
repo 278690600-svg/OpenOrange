@@ -22,7 +22,7 @@ async function getGgufFiles(dir: string, depth = 0): Promise<string[]> {
       }
     }
     return files
-  } catch (e) {
+  } catch {
     return []
   }
 }
@@ -45,9 +45,13 @@ export function getLocalModelsDir() {
 
 export function resolveModelPath(fileName: string) {
   const baseDir = getLocalModelsDir()
-  // 防止路径穿越和双重 models 目录
   const cleanName = fileName.replace(/^models[\\/]/, '').replace(/^.models[\\/]/, '')
-  return path.join(baseDir, cleanName)
+  const resolved = path.resolve(baseDir, cleanName)
+  const normalizedBase = path.resolve(baseDir) + path.sep
+  if (!resolved.startsWith(normalizedBase) && resolved !== path.resolve(baseDir)) {
+    throw new Error('Invalid model path: path traversal detected')
+  }
+  return resolved
 }
 
 export async function scanLocalGgufModels(forceRefresh = false): Promise<ModelOption[]> {
@@ -62,7 +66,7 @@ export async function scanLocalGgufModels(forceRefresh = false): Promise<ModelOp
     try {
       await fs.promises.mkdir(modelsDir, { recursive: true })
       return []
-    } catch (e) {
+    } catch {
       return []
     }
   }

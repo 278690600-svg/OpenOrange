@@ -2,6 +2,7 @@ import fs from 'fs'
 import path from 'path'
 // xlsx and other heavy parsers are lazy-loaded inside extractFileText
 import prisma from '@/lib/db'
+import { OPENAI_EMBEDDINGS_URL } from './constants'
 
 type JsonObject = Record<string, unknown>
 
@@ -32,10 +33,8 @@ export type IndexProgressEvent = {
   error?: string
 }
 
-type KnowledgeBaseRecord = Awaited<ReturnType<typeof prisma.knowledgeBase.findFirst>>
-
 export const TEXT_EXTENSIONS = new Set([
-  '.txt', '.md', '.mdx', '.json', '.csv',
+  '.txt', '.md', '.mdx', '.json', '.csv', '.tsv',
   '.ts', '.tsx', '.js', '.jsx',
   '.css', '.scss', '.html', '.xml',
   '.yaml', '.yml', '.sql', '.prisma',
@@ -49,7 +48,6 @@ export const TEXT_EXTENSIONS = new Set([
 
 const SKIP_DIRS = new Set(['.git', '.next', 'node_modules', 'dist', 'build', 'coverage', 'tmp', '.cache', 'out', '.svn'])
 const MAX_FILE_SIZE_BYTES = 20 * 1024 * 1024 // Increased to 20MB to support larger PPTX/PDF files
-const MAX_API_RECORDS = 50
 const MAX_CHUNKS_PER_KB = 20000
 const CHUNK_SIZE = 1500
 const CHUNK_OVERLAP = 300
@@ -101,6 +99,7 @@ function countOccurrences(haystack: string, needle: string): number {
   return count
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function valueToText(value: unknown): string {
   if (value === null || value === undefined) return ''
   if (typeof value === 'string') return value
@@ -185,14 +184,14 @@ export async function extractFileText(filePath: string): Promise<string> {
         const pdfParser = new PDFParser(null, 1) // 1 means text-only format
 
         return new Promise<string>((resolve, reject) => {
-          pdfParser.on('pdfParser_dataError', (errData: any) => reject(errData.parserError))
-          pdfParser.on('pdfParser_dataReady', (pdfData: any) => {
+          pdfParser.on('pdfParser_dataError', (errData: { parserError: Error }) => reject(errData.parserError))
+          pdfParser.on('pdfParser_dataReady', () => {
             let fullText = ''
             try {
               // Extract text cleanly from the text-only output format
               fullText = pdfParser.getRawTextContent()
-            } catch (e: any) {
-              console.error(`[Knowledge] Error extracting raw text from pdf2json:`, e.message)
+            } catch (e: unknown) {
+              console.error(`[Knowledge] Error extracting raw text from pdf2json:`, (e as Error).message)
             }
             const normalized = normalizeText(fullText)
             console.log(`[Knowledge] PDF extraction (pdf2json) success: ${normalized.length} characters`)
@@ -202,13 +201,13 @@ export async function extractFileText(filePath: string): Promise<string> {
           const buf = fs.readFileSync(filePath)
           pdfParser.parseBuffer(buf)
         })
-      } catch (err: any) {
-        console.error(`[Knowledge] PDF parse error:`, err.message)
+      } catch (err: unknown) {
+        console.error(`[Knowledge] PDF parse error:`, (err as Error).message)
         return ''
       }
     }
 
-    if (ext === '.docx' || ext === '.pptx' || ext === '.odt' || ext === '.odp' || ext === '.ods') {
+    if (ext === '.docx' || ext === '.doc' || ext === '.pptx' || ext === '.ppt' || ext === '.odt' || ext === '.odp' || ext === '.ods') {
       try {
         // eslint-disable-next-line @typescript-eslint/no-require-imports
         const OfficeParser = require('officeparser')
@@ -229,15 +228,15 @@ export async function extractFileText(filePath: string): Promise<string> {
         const normalized = normalizeText(text)
         console.log(`[Knowledge] Office extraction success (${ext}): ${normalized.length} characters`)
         return normalized
-      } catch (err: any) {
-        console.error(`[Knowledge] Office parse error (${ext}):`, err.message)
+      } catch (err: unknown) {
+        console.error(`[Knowledge] Office parse error (${ext}):`, (err as Error).message)
         return ''
       }
     }
 
     if (ext === '.xlsx' || ext === '.xls') {
       try {
-        const xlsx = require('xlsx')
+        const xlsx = await import('xlsx')
         const buf = fs.readFileSync(filePath)
         const workbook = xlsx.read(buf, { type: 'buffer', cellFormula: false, cellHTML: false, cellText: true })
         const text = normalizeText(
@@ -251,14 +250,34 @@ export async function extractFileText(filePath: string): Promise<string> {
         )
         console.log(`[Knowledge] Excel extraction (Deep mode) success: ${text.length} characters`)
         return text
-      } catch (err: any) {
-        console.error(`[Knowledge] Excel parse error:`, err.message)
+      } catch (err: unknown) {
+        console.error(`[Knowledge] Excel parse error:`, (err as Error).message)
         return ''
       }
     }
 
     if (!TEXT_EXTENSIONS.has(ext)) {
-      console.warn(`[Knowledge] Extension ${ext} not in text whitelist, skip.`)
+      // Null-byte dynamic detection to support ALL text formats
+      try {
+        const buffer = fs.readFileSync(filePath)
+        let isBinary = false
+        const detectLength = Math.min(buffer.length, 1024)
+        for (let i = 0; i < detectLength; i++) {
+          if (buffer[i] === 0) {
+            isBinary = true
+            break
+          }
+        }
+        if (!isBinary) {
+          const content = buffer.toString('utf8')
+          const normalized = normalizeText(content)
+          console.log(`[Knowledge] Text auto-detected success (${ext}): ${normalized.length} characters`)
+          return normalized
+        }
+      } catch (err) {
+        console.error(`[Knowledge] Text auto-detection failed for ${filePath}:`, (err as Error).message)
+      }
+      console.warn(`[Knowledge] Extension ${ext} not in text whitelist and detected as binary, skip.`)
       return ''
     }
     
@@ -266,8 +285,8 @@ export async function extractFileText(filePath: string): Promise<string> {
     const normalized = normalizeText(content)
     console.log(`[Knowledge] Text extraction success: ${normalized.length} characters`)
     return normalized
-  } catch (err: any) {
-    console.error(`[Knowledge] Critical error extracting text from ${filePath}:`, err.message)
+  } catch (err: unknown) {
+    console.error(`[Knowledge] Critical error extracting text from ${filePath}:`, (err as Error).message)
     return ''
   }
 }
@@ -303,23 +322,6 @@ function walkDirectory(rootPath: string): string[] {
   return files
 }
 
-// ── concurrent limiter ────────────────────────────────────────────────────────
-
-async function runConcurrent<T>(
-  items: T[],
-  concurrency: number,
-  fn: (item: T, index: number) => Promise<void>
-): Promise<void> {
-  let idx = 0
-  async function worker() {
-    while (idx < items.length) {
-      const current = idx++
-      await fn(items[current], current)
-    }
-  }
-  await Promise.all(Array.from({ length: Math.min(concurrency, items.length) }, worker))
-}
-
 // ── embedding ─────────────────────────────────────────────────────────────────
 
 async function createEmbeddings(
@@ -334,7 +336,7 @@ async function createEmbeddings(
 
   const vectors: number[][] = []
   for (const batch of batches) {
-    const response = await fetch('https://api.openai.com/v1/embeddings', {
+    const response = await fetch(OPENAI_EMBEDDINGS_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${settings.openaiKey}` },
       body: JSON.stringify({ model: settings.embeddingModel || 'text-embedding-3-small', input: batch }),
@@ -382,46 +384,18 @@ export async function* indexKnowledgeBaseStream(
 
     // Phase 1: scan
     yield { stage: 'scan', total: 0 }
-    const files = walkDirectory(rootPath)
+    let files: string[] = []
+    if (fs.statSync(rootPath).isFile()) {
+      files = [rootPath]
+    } else {
+      files = walkDirectory(rootPath)
+    }
     const total = files.length
     yield { stage: 'scan', total }
 
-    // Phase 2: parse files with concurrency limit
+    // Phase 2: parse files with sequential batches for true streaming progress
     const allDocs: KnowledgeDocument[] = []
     let done = 0
-
-    await runConcurrent(files, CONCURRENT_FILE_PARSE, async (filePath) => {
-      const content = await extractFileText(filePath)
-      if (content) {
-        allDocs.push({
-          title: path.relative(rootPath, filePath) || path.basename(filePath),
-          sourceUri: `file://${filePath}`,
-          content,
-          metadata: { absolutePath: filePath, relativePath: path.relative(rootPath, filePath) },
-        })
-      }
-      done++
-      // Yield progress for every file
-      const yieldEvt: IndexProgressEvent = {
-        stage: 'file',
-        file: path.basename(filePath),
-        done,
-        total,
-      }
-      // We can't easily yield from inside runConcurrent, so we'll batch-update
-      // Instead keep state and the caller SSE route polls separately
-      // Actually since we're an async generator we CAN yield here via a shared queue
-      // But for simplicity, let runConcurrent finish and track via a side-channel array
-      // We'll use a different approach: sequential batches of CONCURRENT_FILE_PARSE size
-      void yieldEvt // suppress lint - the approach below handles it
-    })
-
-    // NOTE: The above approach doesn't actually yield mid-run.
-    // We'll use a simpler sequential-with-batch approach below instead for true streaming.
-
-    // Reset and redo with true generator approach (sequential batches)
-    const allDocsFinal: KnowledgeDocument[] = []
-    let doneFinal = 0
 
     for (let batchStart = 0; batchStart < files.length; batchStart += CONCURRENT_FILE_PARSE) {
       const batch = files.slice(batchStart, batchStart + CONCURRENT_FILE_PARSE)
@@ -430,10 +404,10 @@ export async function* indexKnowledgeBaseStream(
       for (let i = 0; i < batch.length; i++) {
         const filePath = batch[i]
         const result = results[i]
-        doneFinal++
+        done++
 
         if (result.status === 'fulfilled' && result.value) {
-          allDocsFinal.push({
+          allDocs.push({
             title: path.relative(rootPath, filePath) || path.basename(filePath),
             sourceUri: `file://${filePath}`,
             content: result.value,
@@ -444,7 +418,7 @@ export async function* indexKnowledgeBaseStream(
         yield {
           stage: 'file',
           file: path.basename(filePath),
-          done: doneFinal,
+          done,
           total,
         }
       }
@@ -452,7 +426,7 @@ export async function* indexKnowledgeBaseStream(
 
     // Phase 3: chunk
     const chunks: ChunkCandidate[] = []
-    for (const doc of allDocsFinal) {
+    for (const doc of allDocs) {
       const contentChunks = chunkText(doc.content)
       for (const [chunkIndex, content] of contentChunks.entries()) {
         chunks.push({
@@ -501,7 +475,7 @@ export async function* indexKnowledgeBaseStream(
     ])
 
     const stats = {
-      documentCount: allDocsFinal.length,
+      documentCount: allDocs.length,
       chunkCount: chunks.length,
       semanticIndexed: Boolean(embeddings?.length),
     }
@@ -572,38 +546,120 @@ export async function* indexDatabaseSourceStream(
       await client.connect()
       queryFn = async (sql: string) => { const res = await client.query(sql); return res.rows }
       closeFn = async () => { await client.end() }
+    } else if (dbType === 'sqlserver') {
+      const mssql = await import('mssql')
+      const csStr = String(config.connectionString || '')
+      const pool = csStr
+        ? await mssql.connect(csStr)
+        : await mssql.connect({
+            user: String(config.user || ''), password: String(config.password || ''),
+            server: String(config.host || 'localhost'), port: Number(config.port || 1433),
+            database: String(config.database || ''),
+            options: { encrypt: true, trustServerCertificate: true }
+          })
+      queryFn = async (sql: string) => { const res = await pool.request().query(sql); return res.recordset }
+      closeFn = async () => { await pool.close() }
+    } else if (dbType === 'mongodb') {
+      const { MongoClient } = await import('mongodb')
+      const uri = config.connectionString 
+        ? String(config.connectionString)
+        : `mongodb://${config.user ? `${config.user}:${config.password}@` : ''}${config.host || 'localhost'}:${config.port || 27017}/${config.database || ''}`
+      const client = new MongoClient(uri)
+      await client.connect()
+      const db = client.db(config.database ? String(config.database) : undefined)
+      queryFn = async (collectionName: string) => {
+        // Here we overload queryFn to take collection name
+        const docs = await db.collection(collectionName).find({}).limit(5000).toArray()
+        return docs as unknown as Record<string, unknown>[]
+      }
+      closeFn = async () => { await client.close() }
+    } else if (dbType === 'redis') {
+      const Redis = (await import('ioredis')).default
+      const client = config.connectionString 
+        ? new Redis(String(config.connectionString)) 
+        : new Redis({
+            host: String(config.host || 'localhost'),
+            port: Number(config.port || 6379),
+            password: config.password ? String(config.password) : undefined,
+            db: config.database ? parseInt(String(config.database), 10) : 0
+          })
+      queryFn = async (key: string) => {
+        // QueryFn takes key pattern for Redis
+        const type = await client.type(key)
+        let data: any
+        if (type === 'string') data = await client.get(key)
+        else if (type === 'hash') data = await client.hgetall(key)
+        else if (type === 'list') data = await client.lrange(key, 0, -1)
+        else if (type === 'set') data = await client.smembers(key)
+        else if (type === 'zset') data = await client.zrange(key, 0, -1, 'WITHSCORES')
+        else data = `Unsupported type: ${type}`
+        return [{ key, type, data }] as Record<string, unknown>[]
+      }
+      closeFn = async () => { client.disconnect() }
     } else {
       yield { stage: 'error', error: `Unsupported DB type: ${dbType}` }; return
     }
 
     // Determine tables to import
+    const customSql = String(config.customSql || '')
     let tables = selectedTables
     if (tables.length === 0) {
       // Auto-discover all tables
       let discoverSql = 'SHOW TABLES'
       if (dbType === 'sqlite') discoverSql = `SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'`
       if (dbType === 'postgresql') discoverSql = `SELECT table_name as name FROM information_schema.tables WHERE table_schema='public'`
-      const rows = await queryFn(discoverSql)
-      tables = rows.map(r => String(Object.values(r)[0] || ''))
+      if (dbType === 'sqlserver') discoverSql = `SELECT TABLE_NAME as name FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE = 'BASE TABLE'`
+      
+      if (dbType === 'mongodb') {
+        const { MongoClient } = await import('mongodb')
+        const uri = config.connectionString ? String(config.connectionString) : `mongodb://${config.user ? `${config.user}:${config.password}@` : ''}${config.host || 'localhost'}:${config.port || 27017}/${config.database || ''}`
+        const client = new MongoClient(uri)
+        await client.connect()
+        const collections = await client.db(config.database ? String(config.database) : undefined).listCollections().toArray()
+        tables = collections.map(c => c.name)
+        await client.close()
+      } else if (dbType === 'redis') {
+        const Redis = (await import('ioredis')).default
+        const client = config.connectionString ? new Redis(String(config.connectionString)) : new Redis({ host: String(config.host || 'localhost'), port: Number(config.port || 6379), password: config.password ? String(config.password) : undefined, db: config.database ? parseInt(String(config.database), 10) : 0 })
+        tables = await client.keys('*')
+        if (tables.length > 100) tables = tables.slice(0, 100) // limit for safety
+        client.disconnect()
+      } else {
+        const rows = await queryFn(discoverSql)
+        tables = rows.map(r => String(Object.values(r)[0] || ''))
+      }
     }
 
     const allDocs: KnowledgeDocument[] = []
     yield { stage: 'fetch_table', total: tables.length, done: 0 }
 
-    const quote = (name: string) => dbType === 'mysql' ? `\`${name}\`` : `"${name}"`
+    const quote = (name: string) => dbType === 'mysql' ? `\`${name}\`` : dbType === 'sqlserver' ? `[${name}]` : `"${name}"`
 
     for (let ti = 0; ti < tables.length; ti++) {
       const tableName = tables[ti]
       yield { stage: 'table', table: tableName, done: ti + 1, total: tables.length }
       try {
-        const customSql = config.customSql ? String(config.customSql) : null
-        const sql = customSql ? customSql.replace(/\{table\}/g, quote(tableName)) : `SELECT * FROM ${quote(tableName)} LIMIT 5000`
-        const rows = await queryFn(sql)
+        let rows: Record<string, unknown>[] = []
+        if (dbType === 'mongodb' || dbType === 'redis') {
+           rows = await queryFn(tableName)
+        } else {
+           const sql = customSql 
+             ? customSql.replace(/\{table\}/g, quote(tableName)) 
+             : dbType === 'sqlserver'
+               ? `SELECT TOP 5000 * FROM ${quote(tableName)}`
+               : `SELECT * FROM ${quote(tableName)} LIMIT 5000`
+           rows = await queryFn(sql)
+        }
+
         if (rows.length > 0) {
           const headers = Object.keys(rows[0])
           const header = `Table: ${tableName}\nColumns: ${headers.join(', ')}\n\n`
           const rowsText = rows.map((row, idx) =>
-            `Row ${idx + 1}:\n${headers.map(h => `  ${h}: ${row[h] ?? ''}`).join('\n')}`
+            `Row ${idx + 1}:\n${headers.map(h => {
+               let val = row[h];
+               if (typeof val === 'object') val = JSON.stringify(val);
+               return `  ${h}: ${val ?? ''}`;
+            }).join('\n')}`
           ).join('\n\n')
           allDocs.push({
             title: `[DB] ${kb.name} -> ${tableName}`,
@@ -612,8 +668,8 @@ export async function* indexDatabaseSourceStream(
             metadata: { tableName, dbType, rowCount: rows.length },
           })
         }
-      } catch (tableErr: any) {
-        console.warn(`[KB-DB] Failed to query table ${tableName}:`, tableErr.message)
+      } catch (tableErr: unknown) {
+        console.warn(`[KB-DB] Failed to query table ${tableName}:`, (tableErr as Error).message)
       }
     }
 
@@ -683,7 +739,7 @@ export async function indexKnowledgeBase(knowledgeBaseId: string) {
 
 // ── CRUD ──────────────────────────────────────────────────────────────────────
 
-function serializeKnowledgeBase(record: any) {
+function serializeKnowledgeBase(record: { id: string; name: string; sourceType: string; engine: string; path: string | null; config: string | null; stats: string | null; status: string; lastError: string | null; lastIndexedAt: Date | null; tags: string | null; createdAt: Date; updatedAt: Date; _count?: { chunks: number } }) {
   return {
     id: record.id,
     name: record.name,
@@ -695,6 +751,7 @@ function serializeKnowledgeBase(record: any) {
     status: record.status,
     lastError: record.lastError,
     lastIndexedAt: record.lastIndexedAt,
+    tags: record.tags,
     createdAt: record.createdAt,
     updatedAt: record.updatedAt,
     chunkCount: record._count?.chunks ?? 0,
@@ -723,6 +780,7 @@ export async function createKnowledgeBase(input: {
   engine?: string
   path?: string | null
   config?: JsonObject | string
+  tags?: string[]
 }) {
   const sourceType = input.sourceType || 'local'
   const config = typeof input.config === 'string' ? safeJsonParse<JsonObject>(input.config, {}) : (input.config || {})
@@ -731,9 +789,9 @@ export async function createKnowledgeBase(input: {
   if (!input.name?.trim()) throw new Error('Name is required')
 
   if (sourceType === 'local') {
-    if (!normalizedPath) throw new Error('Local directory path is required')
-    if (!fs.existsSync(normalizedPath) || !fs.statSync(normalizedPath).isDirectory()) {
-      throw new Error('Directory does not exist or is inaccessible')
+    if (!normalizedPath) throw new Error('Local directory or file path is required')
+    if (!fs.existsSync(normalizedPath) || (!fs.statSync(normalizedPath).isDirectory() && !fs.statSync(normalizedPath).isFile())) {
+      throw new Error('Directory or file does not exist or is inaccessible')
     }
     config.rootPath = normalizedPath
   }
@@ -771,6 +829,7 @@ export async function createKnowledgeBase(input: {
       stats: JSON.stringify({}),
       status: 'idle',
       lastError: '',
+      tags: input.tags?.length ? JSON.stringify(input.tags) : null,
     },
   })
 
@@ -781,82 +840,106 @@ export async function deleteKnowledgeBase(knowledgeBaseId: string) {
   await prisma.knowledgeBase.delete({ where: { id: knowledgeBaseId } })
 }
 
-// ── retrieval ─────────────────────────────────────────────────────────────────
-
-function scoreChunk(
-  query: string,
-  queryTokens: string[],
-  queryEmbedding: number[] | null,
-  chunk: { title: string; content: string; keywords: string; embedding: string | null }
-): number {
-  const queryLower = query.toLowerCase()
-  const titleLower = chunk.title.toLowerCase()
-  const contentLower = chunk.content.toLowerCase()
-  const keywordSet = new Set(chunk.keywords.split(' ').filter(Boolean))
-
-  let lexicalScore = 0
-  if (queryLower && contentLower.includes(queryLower)) lexicalScore += 8
-  if (queryLower && titleLower.includes(queryLower)) lexicalScore += 12
-
-  for (const token of queryTokens) {
-    if (keywordSet.has(token)) lexicalScore += token.length > 4 ? 4 : 2.5
-    if (titleLower.includes(token)) lexicalScore += 6
-    lexicalScore += Math.min(4, countOccurrences(contentLower, token)) * (token.length > 3 ? 1.8 : 1.1)
-  }
-
-  let semanticScore = 0
-  if (queryEmbedding && chunk.embedding) {
-    const vector = safeJsonParse<number[]>(chunk.embedding, [])
-    semanticScore = cosineSimilarity(queryEmbedding, vector) * 12
-  }
-
-  return lexicalScore + semanticScore
+export async function updateKnowledgeBase(id: string, input: { name?: string; tags?: string[] }) {
+  const data: Record<string, unknown> = {}
+  if (input.name !== undefined) data.name = input.name.trim()
+  if (input.tags !== undefined) data.tags = input.tags.length ? JSON.stringify(input.tags) : null
+  return prisma.knowledgeBase.update({ where: { id }, data })
 }
+
+// ── retrieval ─────────────────────────────────────────────────────────────────
 
 export async function buildKnowledgeContext(knowledgeBaseId: string, query: string) {
   let kb = await prisma.knowledgeBase.findUnique({
     where: { id: knowledgeBaseId },
-    include: { chunks: true },
+    include: { _count: { select: { chunks: true } } },
   })
 
   if (!kb) return null
 
   // Auto-index if not ready
-  if (kb.chunks.length === 0 || kb.status !== 'ready') {
+  const chunkCount = kb._count?.chunks ?? 0
+  if (chunkCount === 0 || kb.status !== 'ready') {
     await indexKnowledgeBase(knowledgeBaseId)
     kb = await prisma.knowledgeBase.findUnique({
       where: { id: knowledgeBaseId },
-      include: { chunks: true },
+      include: { _count: { select: { chunks: true } } },
     })
   }
 
   if (!kb) return null
 
-  if (kb.chunks.length === 0) {
+  const totalChunks = kb._count?.chunks ?? 0
+  if (totalChunks === 0) {
     return { knowledgeBase: kb, citations: [] as Array<{ title: string; url: string }>, chunks: [], context: '' }
   }
 
-  const settings = await prisma.settings.findUnique({ where: { id: 'default' } })
   const queryTokens = tokenize(query)
+  const LEXICAL_TOP_K = 50
+
+  // ── Stage 1: Load only keywords/metadata (no embedding) for lexical pre-filtering ──
+  const lightweightChunks = await prisma.knowledgeChunk.findMany({
+    where: { knowledgeBaseId },
+    select: { id: true, keywords: true, sourceUri: true, title: true, chunkIndex: true, content: true },
+  })
+
+  // Compute lexical scores for all chunks
+  const queryLower = query.toLowerCase()
+  const scored = lightweightChunks.map((chunk) => {
+    const titleLower = chunk.title.toLowerCase()
+    const contentLower = chunk.content.toLowerCase()
+    const keywordSet = new Set(chunk.keywords.split(' ').filter(Boolean))
+
+    let lexicalScore = 0
+    if (queryLower && contentLower.includes(queryLower)) lexicalScore += 8
+    if (queryLower && titleLower.includes(queryLower)) lexicalScore += 12
+
+    for (const token of queryTokens) {
+      if (keywordSet.has(token)) lexicalScore += token.length > 4 ? 4 : 2.5
+      if (titleLower.includes(token)) lexicalScore += 6
+      lexicalScore += Math.min(4, countOccurrences(contentLower, token)) * (token.length > 3 ? 1.8 : 1.1)
+    }
+
+    // Path boost
+    const pathTokens = tokenize(chunk.title.split(/[\\/.]/).join(' '))
+    let pathMatches = 0
+    for (const t of queryTokens) if (pathTokens.includes(t)) pathMatches++
+    if (pathMatches > 0) lexicalScore += pathMatches * 15
+
+    return { id: chunk.id, score: lexicalScore }
+  })
+
+  scored.sort((a, b) => b.score - a.score)
+  const topIds = scored.slice(0, LEXICAL_TOP_K).map((s) => s.id)
+
+  // ── Stage 2: Load full data (with embedding) only for top-K candidates ──
+  const topChunks = await prisma.knowledgeChunk.findMany({
+    where: { id: { in: topIds } },
+  })
+
+  // Build a score lookup from stage 1
+  const scoreMap = new Map(scored.map((s) => [s.id, s.score]))
+
+  const settings = await prisma.settings.findUnique({ where: { id: 'default' } })
   let queryEmbedding: number[] | null = null
 
-  if (kb.chunks.some((c) => c.embedding)) {
+  if (topChunks.some((c) => c.embedding)) {
     try {
       const vectors = await createEmbeddings([query], settings || {})
       queryEmbedding = vectors?.[0] || null
     } catch { /* fallback to lexical */ }
   }
 
-  // Score all chunks
-  const ranked = kb.chunks
+  // Re-score with semantic similarity added
+  const ranked = topChunks
     .map((chunk) => {
-      let score = scoreChunk(query, queryTokens, queryEmbedding, chunk)
-      
-      // Massive path-boost: if the filename heavily overlaps with the query
-      const pathTokens = tokenize(chunk.title.split(/[\\/.]/).join(' '))
-      let pathMatches = 0
-      for (const t of queryTokens) if (pathTokens.includes(t)) pathMatches++
-      if (pathMatches > 0) score += pathMatches * 15 // World-class boost for exact filename matches (e.g. finding auth.ts for "auth")
+      let score = scoreMap.get(chunk.id) || 0
+
+      // Add semantic score
+      if (queryEmbedding && chunk.embedding) {
+        const vector = safeJsonParse<number[]>(chunk.embedding, [])
+        score += cosineSimilarity(queryEmbedding, vector) * 12
+      }
 
       return { ...chunk, score }
     })
@@ -864,7 +947,7 @@ export async function buildKnowledgeContext(knowledgeBaseId: string, query: stri
 
   // Top 20, but with Dynamic Noise Filtering (drop garbage chunks relative to best match)
   const topScore = ranked[0]?.score || 0
-  const dynamicThreshold = Math.max(0.5, topScore * 0.25) // must be at least 25% as good as the best match, minimum 0.5
+  const dynamicThreshold = Math.max(0.5, topScore * 0.25)
   const selected = ranked.filter((c) => c.score >= dynamicThreshold).slice(0, 20)
 
   // Context Merging (Group by File to prevent disjointed reading)
@@ -888,7 +971,7 @@ export async function buildKnowledgeContext(knowledgeBaseId: string, query: stri
        if (lastIndex !== -99 && c.chunkIndex - lastIndex > 1) {
           fileContent += '\n\n... (other code) ...\n\n'
        } else if (lastIndex !== -99) {
-          fileContent += '\n\n' // They are adjacent, just separate visually
+          fileContent += '\n\n'
        }
        fileContent += c.content
        lastIndex = c.chunkIndex

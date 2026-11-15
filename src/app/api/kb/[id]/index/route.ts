@@ -27,8 +27,8 @@ export async function POST(
       for await (const event of generator) {
         await write(event)
       }
-    } catch (err: any) {
-      await write({ stage: 'error', error: err.message || 'Unknown error' })
+    } catch (err: unknown) {
+      await write({ stage: 'error', error: (err as Error).message || 'Unknown error' })
     } finally {
       try { await writer.close() } catch { /* already closed */ }
     }

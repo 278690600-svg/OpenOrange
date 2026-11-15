@@ -13,8 +13,8 @@ export async function GET() {
     }
     const content = fs.readFileSync(configPath, 'utf-8')
     return NextResponse.json(JSON.parse(content))
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+  } catch (error: unknown) {
+    return NextResponse.json({ error: (error as Error).message }, { status: 500 })
   }
 }
 
@@ -22,7 +22,6 @@ export async function POST(req: Request) {
   try {
     const config = await req.json()
     
-    // Basic validation
     if (!config || typeof config !== 'object') {
       throw new Error("Invalid config format")
     }
@@ -32,11 +31,10 @@ export async function POST(req: Request) {
     
     fs.writeFileSync(configPath, JSON.stringify(config, null, 2))
     
-    // Close all clients to force reload with new config
     await mcpManager.closeAll()
     
     return NextResponse.json({ success: true })
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+  } catch (error: unknown) {
+    return NextResponse.json({ error: (error as Error).message }, { status: 500 })
   }
 }

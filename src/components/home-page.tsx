@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useI18n } from "@/lib/i18n"
 import { 
   Lightbulb, 
   Layout, 
@@ -19,43 +20,63 @@ interface WelcomeHomeProps {
 }
 
 const CATEGORIES = [
-  { id: 'suggested', label: 'Suggested', icon: <Lightbulb className="size-4" /> },
-  { id: 'wireframe', label: 'Wireframe', icon: <Layout className="size-4" /> },
-  { id: 'apps', label: 'Apps', icon: <Smartphone className="size-4" /> },
-  { id: 'websites', label: 'Websites', icon: <Globe className="size-4" /> },
-  { id: 'analysis', label: 'Analysis', icon: <PieChart className="size-4" /> },
-  { id: 'prototype', label: 'Prototype', icon: <Box className="size-4" /> },
+  { id: 'suggested', labelKey: 'home.suggested', icon: <Lightbulb className="size-4" /> },
+  { id: 'wireframe', labelKey: 'home.wireframe', icon: <Layout className="size-4" /> },
+  { id: 'apps', labelKey: 'home.apps', icon: <Smartphone className="size-4" /> },
+  { id: 'websites', labelKey: 'home.websites', icon: <Globe className="size-4" /> },
+  { id: 'analysis', labelKey: 'home.analysis', icon: <PieChart className="size-4" /> },
+  { id: 'prototype', labelKey: 'home.prototype', icon: <Box className="size-4" /> },
 ]
-
-const PROMPT_LISTS: Record<string, any[]> = {
-  suggested: [
-    { id: 1, icon: <Sparkles className="size-4" />, text: "A developer portfolio with dark theme, project cards, and contact form.", prompt: "Design a developer portfolio with dark theme, project cards, and contact form." },
-    { id: 2, icon: <Calculator className="size-4" />, text: "A modern SaaS landing page for a time-tracking app.", prompt: "Create a modern SaaS landing page for a time-tracking app." },
-    { id: 3, icon: <Globe className="size-4" />, text: "What are the latest AI breakthroughs this month?", prompt: "What are the latest AI breakthroughs this month?" },
-    { id: 4, icon: <Lightbulb className="size-4" />, text: "Creative gift ideas for a 30th birthday on a budget.", prompt: "Give me creative gift ideas for a 30th birthday on a budget." },
-    { id: 5, icon: <Languages className="size-4" />, text: "Translate this English business proposal into professional Chinese.", prompt: "Translate this English business proposal into professional Chinese: [Insert content]" },
-  ],
-  wireframe: [
-    { id: 6, icon: <Layout className="size-4" />, text: "Clean blog layout with focus on typography and readability.", prompt: "Design a clean blog layout with focus on typography and readability." },
-    { id: 7, icon: <Layout className="size-4" />, text: "SaaS dashboard wireframe with sidebar and data widgets.", prompt: "Wireframe a SaaS dashboard with sidebar and data widgets." },
-  ],
-  apps: [
-    { id: 8, icon: <Smartphone className="size-4" />, text: "Fitness tracking app design with custom workout plans.", prompt: "Design a fitness tracking app with custom workout plans." },
-    { id: 9, icon: <Smartphone className="size-4" />, text: "Daily journal app with mood tracking and prompts.", prompt: "Create a UI for a daily journal app with mood tracking." },
-  ],
-  websites: [
-    { id: 10, icon: <Globe className="size-4" />, text: "E-commerce dashboard for tracking global sales.", prompt: "Design an e-commerce dashboard for tracking global sales." },
-  ],
-  analysis: [
-    { id: 11, icon: <PieChart className="size-4" />, text: "Analyze monthly sales trends and customer demographic data.", prompt: "Analyze monthly sales trends and customer demographic data." },
-  ],
-  prototype: [
-    { id: 12, icon: <Box className="size-4" />, text: "Interactive 3D model viewer for architectural product pages.", prompt: "Prototype an interactive 3D model viewer for architectural products." },
-  ]
-}
 
 export function WelcomeHome({ onSelectPrompt }: WelcomeHomeProps) {
   const [activeTab, setActiveTab] = useState('suggested')
+  const { t } = useI18n()
+
+  const PROMPT_LISTS: Record<string, Array<{ id: number; icon: React.ReactNode; text: string; prompt: string }>> = {
+    suggested: [
+      { id: 1, icon: <Sparkles className="size-4" />, text: t("home.suggested.1.text"), prompt: t("home.suggested.1.prompt") },
+      { id: 2, icon: <Calculator className="size-4" />, text: t("home.suggested.2.text"), prompt: t("home.suggested.2.prompt") },
+      { id: 3, icon: <Globe className="size-4" />, text: t("home.suggested.3.text"), prompt: t("home.suggested.3.prompt") },
+      { id: 4, icon: <Lightbulb className="size-4" />, text: t("home.suggested.4.text"), prompt: t("home.suggested.4.prompt") },
+      { id: 5, icon: <Languages className="size-4" />, text: t("home.suggested.5.text"), prompt: t("home.suggested.5.prompt") },
+    ],
+    wireframe: [
+      { id: 6, icon: <Layout className="size-4" />, text: t("home.wireframe.1.text"), prompt: t("home.wireframe.1.prompt") },
+      { id: 7, icon: <Layout className="size-4" />, text: t("home.wireframe.2.text"), prompt: t("home.wireframe.2.prompt") },
+      { id: 8, icon: <Layout className="size-4" />, text: t("home.wireframe.3.text"), prompt: t("home.wireframe.3.prompt") },
+      { id: 9, icon: <Layout className="size-4" />, text: t("home.wireframe.4.text"), prompt: t("home.wireframe.4.prompt") },
+      { id: 10, icon: <Layout className="size-4" />, text: t("home.wireframe.5.text"), prompt: t("home.wireframe.5.prompt") },
+    ],
+    apps: [
+      { id: 11, icon: <Smartphone className="size-4" />, text: t("home.apps.1.text"), prompt: t("home.apps.1.prompt") },
+      { id: 12, icon: <Smartphone className="size-4" />, text: t("home.apps.2.text"), prompt: t("home.apps.2.prompt") },
+      { id: 13, icon: <Smartphone className="size-4" />, text: t("home.apps.3.text"), prompt: t("home.apps.3.prompt") },
+      { id: 14, icon: <Smartphone className="size-4" />, text: t("home.apps.4.text"), prompt: t("home.apps.4.prompt") },
+      { id: 15, icon: <Smartphone className="size-4" />, text: t("home.apps.5.text"), prompt: t("home.apps.5.prompt") },
+    ],
+    websites: [
+      { id: 16, icon: <Globe className="size-4" />, text: t("home.websites.1.text"), prompt: t("home.websites.1.prompt") },
+      { id: 17, icon: <Globe className="size-4" />, text: t("home.websites.2.text"), prompt: t("home.websites.2.prompt") },
+      { id: 18, icon: <Globe className="size-4" />, text: t("home.websites.3.text"), prompt: t("home.websites.3.prompt") },
+      { id: 19, icon: <Globe className="size-4" />, text: t("home.websites.4.text"), prompt: t("home.websites.4.prompt") },
+      { id: 20, icon: <Globe className="size-4" />, text: t("home.websites.5.text"), prompt: t("home.websites.5.prompt") },
+    ],
+    analysis: [
+      { id: 21, icon: <PieChart className="size-4" />, text: t("home.analysis.1.text"), prompt: t("home.analysis.1.prompt") },
+      { id: 22, icon: <PieChart className="size-4" />, text: t("home.analysis.2.text"), prompt: t("home.analysis.2.prompt") },
+      { id: 23, icon: <PieChart className="size-4" />, text: t("home.analysis.3.text"), prompt: t("home.analysis.3.prompt") },
+      { id: 24, icon: <PieChart className="size-4" />, text: t("home.analysis.4.text"), prompt: t("home.analysis.4.prompt") },
+      { id: 25, icon: <PieChart className="size-4" />, text: t("home.analysis.5.text"), prompt: t("home.analysis.5.prompt") },
+    ],
+    prototype: [
+      { id: 26, icon: <Box className="size-4" />, text: t("home.prototype.1.text"), prompt: t("home.prototype.1.prompt") },
+      { id: 27, icon: <Box className="size-4" />, text: t("home.prototype.2.text"), prompt: t("home.prototype.2.prompt") },
+      { id: 28, icon: <Box className="size-4" />, text: t("home.prototype.3.text"), prompt: t("home.prototype.3.prompt") },
+      { id: 29, icon: <Box className="size-4" />, text: t("home.prototype.4.text"), prompt: t("home.prototype.4.prompt") },
+      { id: 30, icon: <Box className="size-4" />, text: t("home.prototype.5.text"), prompt: t("home.prototype.5.prompt") },
+    ]
+  }
+
   const currentList = PROMPT_LISTS[activeTab] || PROMPT_LISTS.suggested
 
   return (
@@ -63,28 +84,28 @@ export function WelcomeHome({ onSelectPrompt }: WelcomeHomeProps) {
       <div className="w-full bg-white dark:bg-zinc-950 border border-zinc-100 dark:border-zinc-800 rounded-[1.5rem] overflow-hidden shadow-xl shadow-zinc-200/20 dark:shadow-none flex flex-col">
         
         {/* Tabs Filter - Improved adaptation */}
-        <div className="flex items-center px-3 py-2 overflow-x-auto no-scrollbar gap-1 border-b border-zinc-50 dark:border-zinc-800/80 bg-zinc-50/50 dark:bg-zinc-900/30">
+        <div className="flex items-center w-full justify-between sm:justify-start px-2 py-1.5 sm:px-3 sm:py-2 gap-1 border-b border-zinc-50 dark:border-zinc-800/80 bg-zinc-50/50 dark:bg-zinc-900/30">
           {CATEGORIES.map((cat) => (
             <button
               key={cat.id}
               onClick={() => setActiveTab(cat.id)}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold transition-all whitespace-nowrap ${
+              className={`flex items-center gap-1 sm:gap-2 px-2 py-1 sm:px-3 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-bold transition-all whitespace-nowrap ${
                 activeTab === cat.id 
                   ? 'bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 shadow-md' 
                   : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-200 hover:bg-zinc-200/50 dark:hover:bg-zinc-800/50'
               }`}
             >
-              <span className={`scale-90 ${activeTab === cat.id ? '' : 'text-zinc-400'}`}>
+              <span className="hidden sm:inline-flex scale-90">
                 {cat.icon}
               </span>
-              {cat.label}
+              {t(cat.labelKey)}
             </button>
           ))}
         </div>
 
         {/* Prompt List - Flexible sizing */}
-        <div className="flex-1 p-2 md:p-4 space-y-1 overflow-y-auto max-h-[480px] app-scrollbar">
-          {currentList.map((item, i) => (
+        <div className="flex-1 p-2 md:p-4 space-y-1 overflow-y-auto max-h-[360px] sm:max-h-[480px] app-scrollbar">
+          {currentList.map((item) => (
             <button
               key={item.id}
               onClick={() => onSelectPrompt(item.prompt)}
@@ -95,7 +116,7 @@ export function WelcomeHome({ onSelectPrompt }: WelcomeHomeProps) {
               </div>
               
               <div className="flex-1 flex flex-col gap-0.5">
-                <span className="text-sm text-zinc-600 dark:text-zinc-400 group-hover:text-zinc-900 dark:group-hover:text-zinc-100 transition-colors leading-normal font-medium line-clamp-1">
+                <span className="text-sm text-zinc-600 dark:text-zinc-400 group-hover:text-zinc-900 dark:group-hover:text-zinc-100 transition-colors leading-normal font-medium line-clamp-2 md:line-clamp-1">
                   {item.text}
                 </span>
               </div>
@@ -110,7 +131,7 @@ export function WelcomeHome({ onSelectPrompt }: WelcomeHomeProps) {
       
       <div className="mt-6 flex items-center gap-3 text-zinc-400/40 transition-opacity hover:opacity-100">
         <div className="h-px w-6 bg-current" />
-        <p className="text-[9px] uppercase tracking-[0.2em] font-black">Premium Experience</p>
+        <p className="text-[9px] uppercase tracking-[0.2em] font-black">{t("Premium Experience") || "PREMIUM EXPERIENCE"}</p>
         <div className="h-px w-6 bg-current" />
       </div>
     </div>

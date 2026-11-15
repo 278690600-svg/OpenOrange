@@ -22,11 +22,11 @@ export async function GET(req: Request) {
     const models = await response.json()
     
     // Process models to extract relevant info for the UI
-    const processedModels = models.map((m: any) => {
+    const processedModels = models.map((m: { id: string; author: string; downloads: number; likes: number; lastModified: string; tags: string[]; siblings: Array<{ rfilename: string }>; description?: string }) => {
       // Find GGUF files in the sibling files
       const ggufFiles = (m.siblings || [])
-        .filter((s: any) => s.rfilename.endsWith('.gguf'))
-        .map((s: any) => s.rfilename)
+        .filter((s) => s.rfilename.endsWith('.gguf'))
+        .map((s) => s.rfilename)
       
       return {
         id: m.id,
@@ -37,13 +37,12 @@ export async function GET(req: Request) {
         updated: m.lastModified,
         tags: m.tags,
         ggufFiles: ggufFiles,
-        description: m.description || ""
       }
-    }).filter((m: any) => m.ggufFiles.length > 0)
+    }).filter((m: { ggufFiles: string[] }) => m.ggufFiles.length > 0)
     
     return NextResponse.json({ models: processedModels })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[Market API] Error:', error)
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json({ error: (error as Error).message }, { status: 500 })
   }
 }

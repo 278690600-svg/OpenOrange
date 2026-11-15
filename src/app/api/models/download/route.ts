@@ -10,8 +10,11 @@ export async function POST(req: Request) {
   }
 
   const downloadUrl = `https://huggingface.co/${modelId}/resolve/main/${fileName}`
-  const targetDir = getLocalModelsDir()
-  const targetPath = path.join(targetDir, fileName)
+  const repoName = modelId.split('/').pop() || ''
+  const safeRepoFolder = path.basename(repoName)
+  const safeFileName = path.basename(fileName)
+  const targetDir = path.join(getLocalModelsDir(), safeRepoFolder)
+  const targetPath = path.join(targetDir, safeFileName)
 
   // Ensure directory exists
   if (!fs.existsSync(targetDir)) {
@@ -22,7 +25,7 @@ export async function POST(req: Request) {
   const encoder = new TextEncoder()
   const stream = new ReadableStream({
     async start(controller) {
-      const sendStatus = (data: any) => {
+      const sendStatus = (data: Record<string, unknown>) => {
         controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`))
       }
 
@@ -69,9 +72,9 @@ export async function POST(req: Request) {
         fileStream.end()
         sendStatus({ status: 'done', message: 'Download complete!', path: fileName })
         controller.close()
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error('[Download API] Error:', error)
-        sendStatus({ status: 'error', message: error.message })
+        sendStatus({ status: 'error', message: (error as Error).message })
         controller.close()
       }
     }

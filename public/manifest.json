@@ -1,0 +1,48 @@
+{
+  "name": "OpenOrangeAI Office Assistant",
+  "short_name": "OpenOrangeAI",
+  "description": "AI-powered office assistant with document editing, spreadsheets, OCR, and more",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#6366f1",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "/logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["productivity", "business"],
+  "shortcuts": [
+    {
+      "name": "New Chat",
+      "short_name": "Chat",
+      "description": "Start a new AI conversation",
+      "url": "/",
+      "icons": [{ "src": "/logo.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "New Document",
+      "short_name": "Document",
+      "description": "Create a new document",
+      "url": "/documents",
+      "icons": [{ "src": "/logo.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "New Spreadsheet",
+      "short_name": "Spreadsheet",
+      "description": "Create a new spreadsheet",
+      "url": "/spreadsheet",
+      "icons": [{ "src": "/logo.png", "sizes": "192x192" }]
+    }
+  ]
+}

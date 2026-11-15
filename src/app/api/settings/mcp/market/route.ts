@@ -6,6 +6,15 @@ const MODELSCOPE_SEARCH_API = 'https://modelscope.cn/api/v1/dolphin/mcpServers'
 const SMITHERY_SEARCH_API = 'https://api.smithery.ai/servers'
 const GLAMA_SEARCH_API = 'https://glama.ai/mcp/servers.data'
 
+interface PrismaLike {
+  mcpServer: {
+    findFirst: (args: { where: { name: string } }) => Promise<unknown>
+    create: (args: { data: Record<string, unknown> }) => Promise<unknown>
+  }
+}
+
+const db = prisma as unknown as PrismaLike
+
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url)
@@ -37,7 +46,7 @@ export async function GET(req: Request) {
       }
       
       const data = await res.json()
-      const servers = (data.McpServers || []).map((s: any) => ({
+      const servers = (data.McpServers || []).map((s: { Name: string; AbstractCN?: string; Abstract?: string; Publisher: string; Hosted?: boolean; Id?: string }) => ({
         name: s.Name,
         description: s.AbstractCN || s.Abstract || '',
         vendor: s.Publisher,
@@ -59,7 +68,7 @@ export async function GET(req: Request) {
       }
       
       const data = await res.json()
-      const servers = (data.servers || []).map((s: any) => ({
+      const servers = (data.servers || []).map((s: { displayName?: string; name: string; description?: string; author?: { name?: string }; homepage?: string; iconUrl?: string; id?: string; packageName?: string }) => ({
         name: s.displayName || s.name,
         description: s.description || '',
         vendor: s.author?.name || 'Community',
@@ -83,10 +92,10 @@ export async function GET(req: Request) {
       
       const data = await res.json()
       const serversData = Array.isArray(data) ? data : (data?.servers || [])
-      const servers = serversData.map((s: any) => ({
-        name: s.name || s.displayName,
+      const servers = serversData.map((s: { name?: string; displayName?: string; description?: string; author?: { name?: string } | string; homepage?: string; url?: string; githubUrl?: string; iconUrl?: string; npmPackage?: string }) => ({
+        name: s.displayName || s.name,
         description: s.description || '',
-        vendor: s.author?.name || s.author || 'Community',
+        vendor: typeof s.author === 'string' ? s.author : (s.author?.name || 'Community'),
         homepage: s.homepage || s.url || `https://glama.ai/mcp/servers/${s.name}`,
         transport: 'stdio',
         iconUrl: s.iconUrl,
@@ -106,32 +115,33 @@ export async function GET(req: Request) {
       }
 
       const data = await res.json()
-      const servers = (data.servers || []).map((item: any) => {
+      const servers = (data.servers || []).map((item: { server?: { name: string; description: string; vendor: string; homepage: string; repository?: { url: string }; transport: string; githubUrl?: string } }) => {
         const s = item.server || item
+        const sObj = s as { name: string; description: string; vendor?: string; homepage?: string; repository?: { url: string }; transport?: string; githubUrl?: string }
         return {
-          name: s.name,
-          description: s.description,
-          vendor: s.vendor || 'Community',
-          homepage: s.homepage || s.repository?.url,
-          transport: s.transport || 'stdio',
-          githubUrl: s.repository?.url || s.githubUrl
+          name: sObj.name,
+          description: sObj.description,
+          vendor: sObj.vendor || 'Community',
+          homepage: sObj.homepage || sObj.repository?.url || '',
+          transport: sObj.transport || 'stdio',
+          githubUrl: sObj.githubUrl || sObj.repository?.url || ''
         }
       })
       
       return NextResponse.json({ servers })
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[MCP Market] Error fetching registry:', error)
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json({ error: (error as Error).message }, { status: 500 })
   }
 }
 
 export async function POST(req: Request) {
   try {
     const data = await req.json()
-    const { name, description, transport, command, args, url, env, homepage, source } = data
+    const { name, transport, command, args, url, env } = data
 
-    const existing = await (prisma as any).mcpServer.findFirst({
+    const existing = await db.mcpServer.findFirst({
       where: { name }
     })
 
@@ -163,7 +173,7 @@ export async function POST(req: Request) {
       parsedEnv = {}
     }
 
-    const server = await (prisma as any).mcpServer.create({
+    const server = await db.mcpServer.create({
       data: {
         name,
         type: transport || 'stdio',
@@ -176,8 +186,8 @@ export async function POST(req: Request) {
     })
 
     return NextResponse.json(server)
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[MCP Market Install] Error:', error)
-    return NextResponse.json({ error: error.message || 'Failed to install server' }, { status: 500 })
+    return NextResponse.json({ error: (error as Error).message || 'Failed to install server' }, { status: 500 })
   }
 }

@@ -1,5 +1,7 @@
 import fs from 'fs'
 import path from 'path'
+import dns from 'dns/promises'
+import { URL } from 'url'
 import * as xlsx from 'xlsx'
 import Papa from 'papaparse'
 import prisma from '@/lib/db'
@@ -107,6 +109,64 @@ function escapeMysqlIdentifier(identifier: string) {
 
 function escapeSqlServerIdentifier(identifier: string) {
   return `[${identifier.replace(/]/g, ']]')}]`
+}
+
+function escapeSqliteIdentifier(identifier: string) {
+  return `"${identifier.replace(/"/g, '""')}"`
+}
+
+function isPrivateIp(ip: string): boolean {
+  // Check IPv4
+  const ipv4Match = ip.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/)
+  if (ipv4Match) {
+    const [, octet1, octet2] = ipv4Match.map(Number)
+    if (octet1 === 127) return true // Loopback
+    if (octet1 === 10) return true // Private Class A
+    if (octet1 === 172 && octet2 >= 16 && octet2 <= 31) return true // Private Class B
+    if (octet1 === 192 && octet2 === 168) return true // Private Class C
+    if (octet1 === 169 && octet2 === 254) return true // Link-local (Cloud metadata)
+    return false
+  }
+
+  // Check IPv6
+  const normalizedIp = ip.toLowerCase().trim()
+  if (normalizedIp === '::1' || normalizedIp === '::') return true
+  // Unique Local Address (fc00::/7) or Link-local (fe80::/10)
+  if (normalizedIp.startsWith('fc') || normalizedIp.startsWith('fd') || /^fe[89ab]/i.test(normalizedIp)) {
+    return true
+  }
+  return false
+}
+
+export async function validateUrlSafety(urlString: string): Promise<void> {
+  let parsedUrl: URL
+  try {
+    parsedUrl = new URL(urlString)
+  } catch (err) {
+    throw new Error('Invalid URL format')
+  }
+  const hostname = parsedUrl.hostname
+
+  // Direct IP check
+  if (/^(?:\d{1,3}\.){3}\d{1,3}$/.test(hostname) || hostname.includes(':')) {
+    if (isPrivateIp(hostname)) {
+      throw new Error('Access to private or local network IP is prohibited.')
+    }
+    return
+  }
+
+  // DNS resolution check using dns.lookup to respect local hosts file / names
+  try {
+    const dnsLookup = (await import('dns')).promises.lookup
+    const addresses = await dnsLookup(hostname, { all: true })
+    for (const addr of addresses) {
+      if (isPrivateIp(addr.address)) {
+        throw new Error('Domain resolves to prohibited private or local network IP.')
+      }
+    }
+  } catch (err: any) {
+    if (err.message && err.message.includes('prohibited')) throw err
+  }
 }
 
 function splitTopLevel(input: string, delimiter: string): string[] {
@@ -238,6 +298,7 @@ function parseSqlDump(text: string): TableSnapshot[] {
 
 async function inspectApiSource(config: JsonObject) {
   const url = String(config.url || '')
+  await validateUrlSafety(url)
   const method = String(config.method || 'GET').toUpperCase()
   const headers = (config.headers && typeof config.headers === 'object' ? config.headers : {}) as Record<string, string>
   const rawBody = typeof config.body === 'string' ? config.body : undefined
@@ -443,14 +504,14 @@ async function inspectSqliteFile(filePath: string) {
 
   const tables: TableSnapshot[] = []
   for (const tableName of tableNames) {
-    const columnsResult = db.exec(`PRAGMA table_info(${JSON.stringify(tableName)})`)
+    const columnsResult = db.exec(`PRAGMA table_info(${escapeSqliteIdentifier(tableName)})`)
     const columnRows = columnsResult[0]?.values || []
     const columns = columnRows.map((row) => ({
       name: String(row[1]),
       type: String(row[2] || 'text'),
     }))
 
-    const sampleResult = db.exec(`SELECT * FROM ${JSON.stringify(tableName)} LIMIT ${MAX_SAMPLE_ROWS}`)
+    const sampleResult = db.exec(`SELECT * FROM ${escapeSqliteIdentifier(tableName)} LIMIT ${MAX_SAMPLE_ROWS}`)
     const sampleColumns = sampleResult[0]?.columns || []
     const sampleRows = (sampleResult[0]?.values || []).map((values) =>
       Object.fromEntries(sampleColumns.map((column, index) => [column, values[index]]))
@@ -564,15 +625,15 @@ async function inspectSource(record: { type: string; engine: string; path: strin
   throw new Error(`Unsupported data source engine: ${record.engine}`)
 }
 
-function serializeDataSource(record: any) {
+function serializeDataSource(record: Record<string, unknown>) {
   return {
     id: record.id,
     name: record.name,
     type: record.type,
     engine: record.engine,
     path: record.path,
-    config: sanitizeConfig(safeJsonParse<JsonObject>(record.config, {})),
-    metadata: safeJsonParse<JsonObject>(record.metadata, {}),
+    config: sanitizeConfig(safeJsonParse<JsonObject>(record.config as string, {})),
+    metadata: safeJsonParse<JsonObject>(record.metadata as string, {}),
     status: record.status,
     lastError: record.lastError,
     lastSyncedAt: record.lastSyncedAt,

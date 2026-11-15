@@ -1,8 +1,15 @@
 import { NextResponse } from 'next/server'
 
 export async function GET() {
-  const g = globalThis as any
-  const cache = g.localGgufCache
+  const g = globalThis as Record<string, unknown>
+  const cache = g.localGgufCache as { 
+    session?: unknown; 
+    refs?: Set<unknown>; 
+    isLoaded?: boolean; 
+    modelPath?: string | null;
+    model?: { dispose(): Promise<void> };
+    context?: { dispose(): Promise<void> };
+  } | undefined
 
   if (!cache || !cache.isLoaded) {
     return NextResponse.json({
@@ -13,7 +20,7 @@ export async function GET() {
   }
 
   // 获取文件名而不是完整路径
-  const modelName = cache.modelPath.split(/[\/\\]/).pop() || 'Unknown Model'
+  const modelName = (cache.modelPath || '').split(/[\/\\]/).pop() || 'Unknown Model'
 
   return NextResponse.json({
     isLoaded: true,
@@ -23,8 +30,15 @@ export async function GET() {
 }
 
 export async function DELETE() {
-  const g = globalThis as any
-  const cache = g.localGgufCache
+  const g = globalThis as Record<string, unknown>
+  const cache = g.localGgufCache as { 
+    session?: unknown; 
+    refs?: Set<unknown>; 
+    isLoaded?: boolean; 
+    modelPath?: string | null;
+    model?: { dispose(): Promise<void> };
+    context?: { dispose(): Promise<void> };
+  } | undefined
 
   if (cache) {
     try {
@@ -47,7 +61,9 @@ export async function DELETE() {
       model: null,
       context: null,
       session: null,
-      isLoaded: false
+      isLoaded: false,
+      loadingPromise: null,
+      systemPrompt: undefined
     }
   }
 

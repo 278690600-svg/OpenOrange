@@ -46,3 +46,67 @@ next-env.d.ts
 /models/
 /.models/
 *.gguf
+
+# SQLite databases
+*.db
+!node_modules/**
+
+# Test & debug scripts
+check-*.js
+fix-*.js
+test-*.js
+test_*.js
+test_*.cjs
+update-*.cjs
+test_*.ts
+debug.log
+debug_payload.json
+debug_route.log
+val.txt
+out.txt
+build.log
+build_*.txt
+hook.txt
+snapshot*.txt
+screenshot-*.png
+check_db.js
+check_tables.js
+check_mcp.js
+check_db.cjs
+purge_kb.js
+inspect_chunks.js
+test_mysql.js
+test_kb.db
+
+# E2E test outputs
+e2e-final/
+e2e-final2/
+e2e-multi/
+e2e-screenshots/
+e2e-test/
+e2e-verify/
+e2e-verify/
+
+# Playwright MCP logs
+.playwright-mcp/
+
+# Claude worktrees
+.claude/
+
+# Temporary files & debug dumps
+tmp/
+temp_fix*
+patch.*
+find_classes.js
+parse_bing_html*
+bing_raw.html
+test-*.mjs
+
+# Prisma dev database
+prisma/dev.db
+
+# User uploads & audit captures
+/uploads/
+/audit_screenshots/
+.trae/
+

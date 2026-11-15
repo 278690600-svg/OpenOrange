@@ -2,6 +2,7 @@
 
 import { ExternalLink, Globe, Search, ChevronDown, ChevronUp } from "lucide-react"
 import { useState } from "react"
+import { useI18n } from "@/lib/i18n"
 
 interface Citation {
   title: string
@@ -9,6 +10,7 @@ interface Citation {
 }
 
 export function SearchResults({ citations }: { citations: Citation[] }) {
+  const { t } = useI18n()
   const [isExpanded, setIsExpanded] = useState(false)
 
   if (!citations || citations.length === 0) return null
@@ -36,7 +38,7 @@ export function SearchResults({ citations }: { citations: Citation[] }) {
         
         <div className="flex-1 flex items-center gap-2 overflow-hidden">
           <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300 whitespace-nowrap">
-            已阅读 {citations.length} 个网页
+            {t("Read {{count}} pages", { count: citations.length })}
           </span>
           
           <div className="flex -space-x-1.5 overflow-hidden py-1">
@@ -64,7 +66,7 @@ export function SearchResults({ citations }: { citations: Citation[] }) {
               let hostname = ""
               try {
                 hostname = new URL(c.url).hostname.replace('www.', '')
-              } catch (e) {
+              } catch {
                 hostname = "source"
               }
 

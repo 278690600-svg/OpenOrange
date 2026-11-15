@@ -12,7 +12,7 @@ export async function GET(req: Request) {
   try {
     const details = await mcpManager.getServerDetails(id)
     return NextResponse.json(details)
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+  } catch (error: unknown) {
+    return NextResponse.json({ error: (error as Error).message }, { status: 500 })
   }
 }

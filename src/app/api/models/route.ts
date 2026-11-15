@@ -1,232 +1,283 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
 import { scanLocalGgufModels } from '@/lib/models'
 
-type ModelOption = {
-  id: string
-  name: string
-  provider: string
+const CLOUD_MODELS: Record<string, Array<{ id: string; name: string; provider: string }>> = {
+  openai: [
+    { id: 'openai::gpt-4o', name: 'GPT-4o', provider: 'openai' },
+    { id: 'openai::gpt-4o-mini', name: 'GPT-4o Mini', provider: 'openai' },
+    { id: 'openai::gpt-4-turbo', name: 'GPT-4 Turbo', provider: 'openai' },
+    { id: 'openai::gpt-3.5-turbo', name: 'GPT-3.5 Turbo', provider: 'openai' },
+    { id: 'openai::o1', name: 'o1', provider: 'openai' },
+    { id: 'openai::o3-mini', name: 'o3 Mini', provider: 'openai' },
+  ],
+  anthropic: [
+    { id: 'anthropic::claude-sonnet-4-20250514', name: 'Claude Sonnet 4', provider: 'anthropic' },
+    { id: 'anthropic::claude-opus-4-20250514', name: 'Claude Opus 4', provider: 'anthropic' },
+    { id: 'anthropic::claude-3-5-sonnet-latest', name: 'Claude 3.5 Sonnet', provider: 'anthropic' },
+    { id: 'anthropic::claude-3-haiku-20240307', name: 'Claude 3 Haiku', provider: 'anthropic' },
+  ],
+  google: [
+    { id: 'google::gemini-2.5-pro', name: 'Gemini 2.5 Pro', provider: 'google' },
+    { id: 'google::gemini-2.0-flash', name: 'Gemini 2.0 Flash', provider: 'google' },
+    { id: 'google::gemini-1.5-pro', name: 'Gemini 1.5 Pro', provider: 'google' },
+  ],
+  deepseek: [
+    { id: 'deepseek::deepseek-chat', name: 'DeepSeek Chat', provider: 'deepseek' },
+    { id: 'deepseek::deepseek-reasoner', name: 'DeepSeek Reasoner', provider: 'deepseek' },
+  ],
+  minimax: [
+    { id: 'minimax::MiniMax-M2.7', name: 'MiniMax M2.7', provider: 'minimax' },
+    { id: 'minimax::abab6.5s-chat', name: 'MiniMax abab6.5s', provider: 'minimax' },
+  ],
+  openrouter: [
+    { id: 'openrouter::anthropic/claude-sonnet-4', name: 'Claude Sonnet 4 (via OpenRouter)', provider: 'openrouter' },
+    { id: 'openrouter::openai/gpt-4o', name: 'GPT-4o (via OpenRouter)', provider: 'openrouter' },
+    { id: 'openrouter::google/gemini-pro', name: 'Gemini Pro (via OpenRouter)', provider: 'openrouter' },
+  ],
+  nvidia: [
+    { id: 'nvidia::meta/llama3-70b', name: 'Llama3 70B (via NVIDIA)', provider: 'nvidia' },
+    { id: 'nvidia::mistralai/mixtral-8x7b', name: 'Mixtral 8x7B (via NVIDIA)', provider: 'nvidia' },
+  ],
+  groq: [
+    { id: 'groq::llama3-70b-8192', name: 'Llama3 70B (via Groq)', provider: 'groq' },
+    { id: 'groq::mixtral-8x7b-32768', name: 'Mixtral 8x7B (via Groq)', provider: 'groq' },
+    { id: 'groq::gemma2-9b-it', name: 'Gemma2 9B (via Groq)', provider: 'groq' },
+  ],
+  mistral: [
+    { id: 'mistral::mistral-large-latest', name: 'Mistral Large', provider: 'mistral' },
+    { id: 'mistral::mistral-medium-latest', name: 'Mistral Medium', provider: 'mistral' },
+    { id: 'mistral::open-mistral-nemo', name: 'Mistral Nemo', provider: 'mistral' },
+  ],
+  zhipu: [
+    { id: 'zhipu::glm-4', name: 'GLM-4', provider: 'zhipu' },
+    { id: 'zhipu::glm-4-flash', name: 'GLM-4 Flash', provider: 'zhipu' },
+    { id: 'zhipu::glm-4-plus', name: 'GLM-4 Plus', provider: 'zhipu' },
+    { id: 'zhipu::glm-4-air', name: 'GLM-4 Air', provider: 'zhipu' },
+    { id: 'zhipu::glm-4-airx', name: 'GLM-4 AirX', provider: 'zhipu' },
+    { id: 'zhipu::glm-z1-flash', name: 'GLM-Z1 Flash', provider: 'zhipu' },
+    { id: 'zhipu::glm-z1-air', name: 'GLM-Z1 Air', provider: 'zhipu' },
+    { id: 'zhipu::glm-z1-airx', name: 'GLM-Z1 AirX', provider: 'zhipu' },
+    { id: 'zhipu::glm-z1', name: 'GLM-Z1', provider: 'zhipu' },
+    { id: 'zhipu::glm-5.2', name: 'GLM-5.2', provider: 'zhipu' },
+  ],
+
+  lingyi: [
+    { id: 'lingyi::yi-lightning', name: 'Yi Lightning', provider: 'lingyi' },
+    { id: 'lingyi::yi-large', name: 'Yi Large', provider: 'lingyi' },
+  ],
+  volcengine: [
+    { id: 'volcengine::ark-code-latest', name: 'Ark Code Latest', provider: 'volcengine' },
+    { id: 'volcengine::doubao-seed-2.0-code', name: 'Doubao Seed 2.0 Code', provider: 'volcengine' },
+  ],
 }
 
-function normalizeBaseUrl(rawValue: string | null | undefined, fallback: string) {
-  const trimmed = (rawValue || fallback).trim()
-  const withProtocol = /^https?:\/\//i.test(trimmed) ? trimmed : `http://${trimmed}`
-  return withProtocol.replace(/\/+$/, '')
-}
-
-function joinUrl(baseUrl: string, routePath: string) {
-  return `${baseUrl}${routePath.startsWith('/') ? routePath : `/${routePath}`}`
-}
-
-function dedupeModels(models: ModelOption[]) {
-  const seen = new Set<string>()
-  return models.filter((model) => {
-    if (seen.has(model.id)) return false
-    seen.add(model.id)
-    return true
-  })
-}
-
-async function fetchJsonCandidates(baseUrl: string, paths: string[], init?: RequestInit, timeoutMs = 5000) {
-  for (const routePath of paths) {
-    const url = joinUrl(baseUrl, routePath)
-    try {
-      const res = await fetch(url, {
-        ...init,
-        signal: AbortSignal.timeout(timeoutMs),
-      })
-      if (res.ok) return await res.json()
-    } catch {
-      // try next endpoint
-    }
-  }
-
-  return null
-}
-
-function toOpenAICompatibleModels(payload: unknown, provider: string, prefix: string, filter?: (id: string) => boolean) {
-  if (!payload || typeof payload !== 'object' || !Array.isArray((payload as { data?: unknown[] }).data)) {
-    return [] as ModelOption[]
-  }
-
-  return ((payload as { data: Array<{ id?: string }> }).data || [])
-    .map((item) => item.id?.trim())
-    .filter((id): id is string => Boolean(id))
-    .filter((id) => (filter ? filter(id) : true))
-    .map((id) => ({
-      id: `${prefix}${id}`,
-      name: id,
-      provider,
-    }))
-}
-
-function toOllamaModels(payload: unknown) {
-  if (!payload || typeof payload !== 'object' || !Array.isArray((payload as { models?: unknown[] }).models)) {
-    return [] as ModelOption[]
-  }
-
-  return ((payload as { models: Array<{ name?: string; model?: string }> }).models || [])
-    .map((item) => (item.name || item.model || '').trim())
-    .filter((name): name is string => Boolean(name))
-    .map((name) => ({
-      id: `ollama::${name}`,
-      name,
-      provider: 'ollama',
-    }))
-}
-
-async function discoverLocalModels(ollamaUrl: string, lmstudioUrl: string) {
-  const [ollamaPayload, lmsPayload] = await Promise.all([
-    fetchJsonCandidates(ollamaUrl, ['/api/tags', '/v1/models'], undefined, 5000),
-    fetchJsonCandidates(lmstudioUrl, ['/v1/models', '/models'], undefined, 5000),
-  ])
-
-  const ollamaModels = toOllamaModels(ollamaPayload)
-  const lmstudioModels = toOpenAICompatibleModels(lmsPayload, 'lmstudio', 'lmstudio::')
-
-  return [...ollamaModels, ...lmstudioModels]
-}
-
-async function discoverApiModels(baseUrl: string, apiKey: string, provider: string, prefix: string) {
-  if (!apiKey) return [] as ModelOption[]
-
-  const payload = await fetchJsonCandidates(
-    baseUrl,
-    ['/v1/models', '/models'],
-    {
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-      },
-    },
-    10000
-  )
-
-  return toOpenAICompatibleModels(payload, provider, prefix, (id) => {
-    if (provider === 'openrouter') {
-      return id.endsWith(':free')
-    }
-    return true
-  })
-}
-
-function fallbackModels(settings: {
-  openaiKey?: string | null
-  deepseekKey?: string | null
-  minimaxKey?: string | null
-}) {
-  const models: ModelOption[] = []
-
-  if (settings.openaiKey) {
-    models.push(
-      { id: 'openai::gpt-4o', name: 'gpt-4o', provider: 'openai' },
-      { id: 'openai::gpt-4o-mini', name: 'gpt-4o-mini', provider: 'openai' },
-      { id: 'openai::o1', name: 'o1', provider: 'openai' },
-      { id: 'openai::o1-mini', name: 'o1-mini', provider: 'openai' }
-    )
-  }
-
-  if (settings.deepseekKey) {
-    models.push(
-      { id: 'deepseek::deepseek-chat', name: 'deepseek-chat', provider: 'deepseek' },
-      { id: 'deepseek::deepseek-reasoner', name: 'deepseek-reasoner', provider: 'deepseek' }
-    )
-  }
-
-  if (settings.minimaxKey) {
-    models.push(
-      { id: 'minimax::MiniMax-M2.7', name: 'MiniMax-M2.7', provider: 'minimax' },
-      { id: 'minimax::MiniMax-M2.5', name: 'MiniMax-M2.5', provider: 'minimax' },
-    )
-  }
-
-  if ((settings as any).openrouterKey) {
-    models.push(
-      { id: 'openrouter::qwen/qwen3.6-plus:free', name: 'Qwen 3.6 Plus (Free)', provider: 'openrouter' },
-      { id: 'openrouter::deepseek/deepseek-chat-v3-0324:free', name: 'DeepSeek V3 (Free)', provider: 'openrouter' },
-      { id: 'openrouter::minimax/minimax-m2.5:free', name: 'MiniMax M2.5 (Free)', provider: 'openrouter' },
-      { id: 'openrouter::stepfun/step-3.5-flash:free', name: 'Step 3.5 Flash (Free)', provider: 'openrouter' },
-      { id: 'openrouter::nvidia/nemotron-3-super-120b-a12b:free', name: 'Nemotron 3 Super 120B (Free)', provider: 'openrouter' }
-    )
-  }
-
-  if ((settings as any).nvidiaKey) {
-    models.push(
-      { id: 'nvidia::z-ai/glm-5.1', name: 'glm-5.1 (NVIDIA)', provider: 'nvidia' },
-      { id: 'nvidia::meta/llama-3.1-405b-instruct', name: 'llama-3.1-405b (NVIDIA)', provider: 'nvidia' },
-    )
-  }
-  return models
-}
-
-let modelsCache: { data: any; timestamp: number } | null = null
-const MODELS_CACHE_TTL = 15000
-
-export async function GET(req: Request) {
-  try {
-    const { searchParams } = new URL(req.url)
-    const refresh = searchParams.get('refresh') === 'true'
-    const showAll = searchParams.get('all') === 'true'
+async function getAvailableCloudModels(settings: any, fetchDynamic: boolean = false) {
+  const availableModels: Array<{ id: string; name: string; provider: string }> = []
+  
+  for (const [provider, models] of Object.entries(CLOUD_MODELS)) {
+    const apiKeyField = `${provider}Key`
+    const hasApiKey = settings[apiKeyField] && settings[apiKeyField].trim().length > 0
     
-    const now = Date.now()
-    if (!refresh && modelsCache && (now - modelsCache.timestamp < MODELS_CACHE_TTL)) {
-      return NextResponse.json(modelsCache.data)
-    }
-
-    const settings = (await prisma.settings.findUnique({ where: { id: 'default' } })) as any
-
-    const ollamaUrl = normalizeBaseUrl(settings?.ollamaUrl, 'http://127.0.0.1:11434')
-    const lmstudioUrl = normalizeBaseUrl(settings?.lmstudioUrl, 'http://127.0.0.1:1234')
-
-    const results = await Promise.allSettled([
-      settings?.localGgufEnabled ? scanLocalGgufModels(refresh) : Promise.resolve([]),
-      discoverLocalModels(ollamaUrl, lmstudioUrl),
-      discoverApiModels('https://api.openai.com', settings?.openaiKey || '', 'openai', 'openai::'),
-      discoverApiModels('https://api.deepseek.com', settings?.deepseekKey || '', 'deepseek', 'deepseek::'),
-      discoverApiModels('https://api.minimaxi.com', settings?.minimaxKey || '', 'minimax', 'minimax::'),
-      discoverApiModels('https://openrouter.ai/api', (settings as any)?.openrouterKey || '', 'openrouter', 'openrouter::'),
-      discoverApiModels('https://integrate.api.nvidia.com', (settings as any)?.nvidiaKey || '', 'nvidia', 'nvidia::'),
-    ])
-
-    const localGgufs = (settings as any)?.localGgufEnabled && results[0].status === 'fulfilled' ? results[0].value : []
-    const localModels = results[1].status === 'fulfilled' ? results[1].value : []
-    const openaiModels = results[2].status === 'fulfilled' ? results[2].value : []
-    const deepseekModels = results[3].status === 'fulfilled' ? results[3].value : []
-    const minimaxModels = results[4].status === 'fulfilled' ? results[4].value : []
-    const openrouterModels = results[5].status === 'fulfilled' ? results[5].value : []
-    const nvidiaModels = results[6].status === 'fulfilled' ? results[6].value : []
-
-    let models = dedupeModels([
-      ...localGgufs,
-      ...localModels,
-      ...openaiModels,
-      ...deepseekModels,
-      ...minimaxModels,
-      ...openrouterModels,
-      ...nvidiaModels,
-      ...fallbackModels(settings || {}),
-    ])
-
-    // Filter by enabledModels if not showing all
-    if (!showAll && settings?.enabledModels) {
-      try {
-        const enabledIds = JSON.parse(settings.enabledModels)
-        if (Array.isArray(enabledIds) && enabledIds.length > 0) {
-          const enabledSet = new Set(enabledIds)
-          models = models.filter(m => enabledSet.has(m.id))
+    if (hasApiKey) {
+      availableModels.push(...models)
+      
+      // Dynamic fetch for OpenAI compatible proxies
+      if (provider === 'openai' && fetchDynamic) {
+        try {
+          const baseUrl = (settings.openaiApiBase || 'https://api.openai.com/v1').replace(/\/$/, '')
+          const res = await fetch(`${baseUrl}/models`, {
+            headers: {
+              'Authorization': `Bearer ${settings.openaiKey}`
+            },
+            signal: AbortSignal.timeout(5000)
+          })
+          if (res.ok) {
+            const data = await res.json()
+            if (data && Array.isArray(data.data)) {
+              for (const m of data.data) {
+                const modelId = `openai::${m.id}`
+                if (!availableModels.find(x => x.id === modelId)) {
+                  availableModels.push({
+                    id: modelId,
+                    name: m.id,
+                    provider: 'openai'
+                  })
+                }
+              }
+            }
+          }
+        } catch (e) {
+          console.warn('[Models API] Failed to fetch dynamic models from OpenAI proxy:', e)
         }
-      } catch (e) {
-        console.error("Failed to parse enabledModels:", e)
+      }
+
+      // Dynamic fetch for Volcengine
+      if (provider === 'volcengine' && fetchDynamic) {
+        try {
+          const res = await fetch('https://ark.cn-beijing.volces.com/api/coding/v3/models', {
+            headers: {
+              'Authorization': `Bearer ${settings.volcengineKey}`
+            },
+            signal: AbortSignal.timeout(5000)
+          })
+          if (res.ok) {
+            const data = await res.json()
+            if (data && Array.isArray(data.data)) {
+              for (const m of data.data) {
+                const modelId = `volcengine::${m.id}`
+                if (!availableModels.find(x => x.id === modelId)) {
+                  availableModels.push({
+                    id: modelId,
+                    name: m.id,
+                    provider: 'volcengine'
+                  })
+                }
+              }
+            }
+          }
+        } catch (e) {
+          console.warn('[Models API] Failed to fetch dynamic models from Volcengine:', e)
+        }
       }
     }
-
-    if (models.length === 0) {
-      models = [{ id: 'ollama::llama3', name: 'llama3 (default)', provider: 'ollama' }]
-    }
-
-    modelsCache = { data: models, timestamp: Date.now() }
-    return NextResponse.json(models)
-  } catch (error) {
-    console.error('Models GET Error:', error)
-    return NextResponse.json([], { status: 500 })
   }
+  
+  return availableModels
+}
+
+export async function GET(req: NextRequest) {
+  const { searchParams } = new URL(req.url)
+  const action = searchParams.get('action')
+  const refresh = searchParams.get('refresh')
+  const all = searchParams.get('all')
+
+  if (refresh === 'true' || all === 'true' || (!action && !refresh && !all)) {
+    try {
+      const settings = await prisma.settings.findUnique({ where: { id: 'default' } })
+      
+      const localModels = await scanLocalGgufModels(refresh === 'true')
+      
+      // When refreshing or requesting all, we try to fetch dynamic models from the proxy
+      const cloudModels = await getAvailableCloudModels(settings || {}, all === 'true' || refresh === 'true')
+      
+      // Merge manually added custom models
+      let customList: Array<{ id: string; name: string; provider: string }> = []
+      if ((settings as any)?.customModels) {
+        try {
+          customList = JSON.parse((settings as any).customModels)
+        } catch (e) {
+          console.error('[Models API] Failed to parse customModels:', e)
+        }
+      }
+      for (const cm of customList) {
+        if (!cloudModels.find(m => m.id === cm.id)) {
+          cloudModels.push(cm)
+        }
+      }
+      
+      // For all === 'true', we also want to include the static fallback models just in case they aren't configured yet
+      if (all === 'true') {
+        const staticModels = Object.values(CLOUD_MODELS).flat()
+        for (const sm of staticModels) {
+          if (!cloudModels.find(m => m.id === sm.id)) {
+            cloudModels.push(sm)
+          }
+        }
+      }
+      
+      let models = [...cloudModels, ...localModels]
+
+      if (all !== 'true') {
+        let enabledList: string[] = []
+        const rawEnabledModels = (settings as any)?.enabledModels
+        if (rawEnabledModels) {
+          try {
+            enabledList = JSON.parse(rawEnabledModels)
+          } catch (e) {
+            console.error('[Models API] Failed to parse enabledModels:', e)
+          }
+        }
+        if (Array.isArray(enabledList) && enabledList.length > 0) {
+          models = models.filter(m => enabledList.includes(m.id))
+        }
+      }
+
+      return NextResponse.json({ models })
+    } catch (error) {
+      console.error('[Models API] Error fetching models:', error)
+      return NextResponse.json({ models: [] })
+    }
+  }
+
+  if (action === 'list') {
+    const performances = await prisma.modelPerformance.findMany({
+      orderBy: { timestamp: 'desc' },
+      take: 100
+    })
+    return NextResponse.json({ performances })
+  }
+
+  if (action === 'stats') {
+    const stats = await prisma.modelPerformance.groupBy({
+      by: ['model', 'provider', 'status'],
+      _avg: { latency: true, tokensUsed: true, cost: true },
+      _count: { id: true }
+    })
+
+    const summary = await prisma.modelPerformance.aggregate({
+      _avg: { latency: true, tokensUsed: true, cost: true },
+      _count: { id: true },
+      _min: { latency: true },
+      _max: { latency: true }
+    })
+
+    return NextResponse.json({ stats, summary })
+  }
+
+  if (action === 'embedding-models') {
+    const models = [
+      { id: 'text-embedding-3-small', name: 'OpenAI text-embedding-3-small', dimensions: 1536, provider: 'openai' },
+      { id: 'text-embedding-3-large', name: 'OpenAI text-embedding-3-large', dimensions: 3072, provider: 'openai' },
+      { id: 'bge-large-zh-v1.5', name: 'BAAI/bge-large-zh-v1.5', dimensions: 1024, provider: 'huggingface' },
+      { id: 'bge-m3', name: 'BAAI/bge-m3', dimensions: 1024, provider: 'huggingface' },
+      { id: 'nomic-embed-text', name: 'Nomic Embed Text', dimensions: 768, provider: 'ollama' },
+      { id: 'm3e-base', name: 'Moka/m3e-base', dimensions: 768, provider: 'huggingface' }
+    ]
+    return NextResponse.json({ models })
+  }
+
+  return NextResponse.json({ error: 'Invalid action' }, { status: 400 })
+}
+
+export async function POST(req: NextRequest) {
+  const { searchParams } = new URL(req.url)
+  const action = searchParams.get('action')
+  const body = await req.json()
+
+  if (action === 'record') {
+    const performance = await prisma.modelPerformance.create({
+      data: {
+        model: body.model,
+        provider: body.provider,
+        latency: body.latency,
+        tokensUsed: body.tokensUsed || 0,
+        cost: body.cost || 0,
+        status: body.status || 'success'
+      }
+    })
+    return NextResponse.json({ performance })
+  }
+
+  if (action === 'configure-embedding') {
+    const { model, dimensions, apiKey, baseUrl } = body
+    return NextResponse.json({
+      configured: true,
+      model,
+      dimensions,
+      provider: model.split('-')[0]
+    })
+  }
+
+  return NextResponse.json({ error: 'Invalid action' }, { status: 400 })
 }

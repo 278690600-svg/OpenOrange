@@ -1,11 +1,73 @@
 import { NextResponse } from 'next/server'
 
+const MAX_URL_LENGTH = 2048
+
+const PRIVATE_IP_RANGES = [
+  /^127\./,
+  /^10\./,
+  /^172\.(1[6-9]|2\d|3[01])\./,
+  /^192\.168\./,
+  /^169\.254\./,
+  /^0\.0\.0\.0$/,
+  /^::1$/,
+  /^::ffff:127\./,
+  /^fc00:/i,
+  /^fe80:/i,
+]
+
+function isPrivateIP(ip: string): boolean {
+  return PRIVATE_IP_RANGES.some(regex => regex.test(ip))
+}
+
+async function resolveAndCheckIP(hostname: string): Promise<boolean> {
+  try {
+    const { lookup } = await import('dns')
+    return new Promise<boolean>((resolve) => {
+      lookup(hostname, (err, address) => {
+        if (err) { resolve(false); return }
+        resolve(isPrivateIP(address))
+      })
+    })
+  } catch {
+    return false
+  }
+}
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const url = searchParams.get('url')
 
   if (!url) {
     return new NextResponse('Missing url parameter', { status: 400 })
+  }
+
+  // URL length limit
+  if (url.length > MAX_URL_LENGTH) {
+    return new NextResponse('URL too long', { status: 400 })
+  }
+
+  // Protocol check - only allow http/https
+  let parsedUrl: URL
+  try {
+    parsedUrl = new URL(url)
+  } catch {
+    return new NextResponse('Invalid URL', { status: 400 })
+  }
+
+  if (!['http:', 'https:'].includes(parsedUrl.protocol)) {
+    return new NextResponse('Only http/https protocols are allowed', { status: 400 })
+  }
+
+  // Private IP check
+  const hostname = parsedUrl.hostname
+  if (isPrivateIP(hostname)) {
+    return new NextResponse('Private IP addresses are not allowed', { status: 403 })
+  }
+
+  // DNS rebinding check
+  const isPrivate = await resolveAndCheckIP(hostname)
+  if (isPrivate) {
+    return new NextResponse('Resolved to private IP address', { status: 403 })
   }
 
   try {
@@ -33,7 +95,6 @@ export async function GET(request: Request) {
             headers: {
               'Content-Type': fContentType || 'image/jpeg',
               'Cache-Control': 'public, max-age=31536000, immutable',
-              'Access-Control-Allow-Origin': '*'
             }
          })
       }
@@ -47,11 +108,10 @@ export async function GET(request: Request) {
       headers: {
         'Content-Type': contentType || 'image/jpeg',
         'Cache-Control': 'public, max-age=31536000, immutable',
-        'Access-Control-Allow-Origin': '*'
       }
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Proxy proxy-image Error:', error)
-    return new NextResponse(`Error fetching image: ${error.message}`, { status: 500 })
+    return new NextResponse(`Error fetching image: ${(error as Error).message}`, { status: 500 })
   }
 }

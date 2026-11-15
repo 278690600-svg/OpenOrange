@@ -5,8 +5,8 @@ export async function GET() {
   try {
     const records = await listKnowledgeBases()
     return NextResponse.json(records)
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+  } catch (error: unknown) {
+    return NextResponse.json({ error: (error as Error).message }, { status: 500 })
   }
 }
 
@@ -15,7 +15,7 @@ export async function POST(req: Request) {
     const body = await req.json()
     const record = await createKnowledgeBase(body)
     return NextResponse.json(record)
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 400 })
+  } catch (error: unknown) {
+    return NextResponse.json({ error: (error as Error).message }, { status: 400 })
   }
 }

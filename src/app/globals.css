@@ -127,8 +127,12 @@
   --primary: oklch(0.7 0.2 45);
   --primary-foreground: oklch(0.1 0 0);
   --sidebar-primary: oklch(0.7 0.2 45);
+  --sidebar-primary-foreground: oklch(0.1 0 0);
   --sidebar-accent: oklch(0.22 0.03 45);
   --sidebar-accent-foreground: oklch(0.7 0.2 45);
+  --accent: oklch(0.22 0.03 45);
+  --accent-foreground: oklch(0.7 0.2 45);
+  --destructive: oklch(0.55 0.2 25);
 }
 
 /* --- Blue Theme --- */
@@ -144,6 +148,12 @@
   --primary: oklch(0.65 0.18 245);
   --primary-foreground: oklch(0.1 0 0);
   --sidebar-primary: oklch(0.65 0.18 245);
+  --sidebar-primary-foreground: oklch(0.1 0 0);
+  --sidebar-accent: oklch(0.22 0.03 245);
+  --sidebar-accent-foreground: oklch(0.65 0.18 245);
+  --accent: oklch(0.22 0.03 245);
+  --accent-foreground: oklch(0.65 0.18 245);
+  --destructive: oklch(0.55 0.2 25);
 }
 
 /* --- Green Theme --- */
@@ -157,7 +167,14 @@
 }
 .dark[data-theme="green"] {
   --primary: oklch(0.65 0.15 150);
+  --primary-foreground: oklch(0.1 0 0);
   --sidebar-primary: oklch(0.65 0.15 150);
+  --sidebar-primary-foreground: oklch(0.1 0 0);
+  --sidebar-accent: oklch(0.22 0.03 150);
+  --sidebar-accent-foreground: oklch(0.65 0.15 150);
+  --accent: oklch(0.22 0.03 150);
+  --accent-foreground: oklch(0.65 0.15 150);
+  --destructive: oklch(0.55 0.2 25);
 }
 
 /* --- Rose Theme --- */
@@ -171,7 +188,14 @@
 }
 .dark[data-theme="rose"] {
   --primary: oklch(0.65 0.2 340);
+  --primary-foreground: oklch(0.1 0 0);
   --sidebar-primary: oklch(0.65 0.2 340);
+  --sidebar-primary-foreground: oklch(0.1 0 0);
+  --sidebar-accent: oklch(0.22 0.03 340);
+  --sidebar-accent-foreground: oklch(0.65 0.2 340);
+  --accent: oklch(0.22 0.03 340);
+  --accent-foreground: oklch(0.65 0.2 340);
+  --destructive: oklch(0.55 0.2 25);
 }
 
 @layer base {
@@ -200,10 +224,10 @@
     @apply bg-transparent;
   }
   .app-scrollbar::-webkit-scrollbar-thumb {
-    @apply bg-zinc-200 dark:bg-zinc-800 rounded-full;
+    @apply bg-border rounded-full;
   }
   .app-scrollbar::-webkit-scrollbar-thumb:hover {
-    @apply bg-zinc-300 dark:bg-zinc-700;
+    @apply bg-muted-foreground/40;
   }
 
   .animate-progress-indeterminate {
@@ -226,10 +250,10 @@
 }
 
 .suggestion-card {
-  @apply flex flex-col gap-2 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-4 text-left transition-all bg-white/50 dark:bg-zinc-900/40 backdrop-blur-sm;
+  @apply flex flex-col gap-2 rounded-2xl border border-border p-4 text-left transition-all bg-card/50 backdrop-blur-sm;
 }
 .suggestion-card:hover {
-  @apply border-primary/50 bg-white dark:bg-zinc-900;
+  @apply border-primary/50 bg-card;
   transform: translateY(-2px);
   box-shadow: 0 8px 24px var(--theme-shadow);
 }
@@ -258,7 +282,7 @@
 }
 
 .message-assistant {
-  @apply bg-white dark:bg-zinc-900/40 border border-border/60 shadow-sm w-full backdrop-blur-md;
+  @apply bg-card border border-border/60 shadow-sm w-full backdrop-blur-md;
 }
 
 /* ========================================
@@ -266,7 +290,7 @@
    ======================================== */
 
 .code-block-wrapper {
-  @apply relative rounded-xl overflow-hidden border border-zinc-200 dark:border-zinc-700 my-4;
+  @apply relative rounded-xl overflow-hidden border border-border my-4;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 .dark .code-block-wrapper {
@@ -274,26 +298,26 @@
 }
 
 .code-block-header {
-  @apply flex items-center justify-between px-4 py-2 bg-zinc-100 dark:bg-zinc-800 border-b border-zinc-200 dark:border-zinc-700;
+  @apply flex items-center justify-between px-4 py-2 bg-muted border-b border-border;
 }
 
 .code-block-lang {
-  @apply flex items-center gap-1.5 text-xs text-zinc-500 dark:text-zinc-400 font-mono font-medium;
+  @apply flex items-center gap-1.5 text-xs text-muted-foreground font-mono font-medium;
 }
 
 .code-copy-btn {
-  @apply flex items-center gap-1.5 text-xs text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 transition-all px-2 py-1 rounded-md;
+  @apply flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-all px-2 py-1 rounded-md;
 }
 .code-copy-btn:hover {
-  @apply bg-zinc-200/60 dark:bg-zinc-700/60;
+  @apply bg-muted-foreground/10;
 }
 
 .code-block-pre {
-  @apply p-4 overflow-x-auto text-sm bg-zinc-50 dark:bg-zinc-900 leading-relaxed;
+  @apply p-4 overflow-x-auto text-sm bg-muted/50 leading-relaxed;
 }
 
 .inline-code {
-  @apply bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded-md text-sm font-mono text-zinc-800 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-700;
+  @apply bg-muted px-1.5 py-0.5 rounded-md text-sm font-mono text-foreground border border-border;
   word-break: break-all;
 }
 
@@ -392,14 +416,11 @@
 }
 
 .search-progress-header {
-  @apply flex items-center gap-3 w-full p-3 rounded-2xl border border-zinc-200/60 dark:border-zinc-800/60 transition-all text-left cursor-pointer;
-  background: rgba(249, 250, 251, 0.5);
-}
-.dark .search-progress-header {
-  background: rgba(24, 24, 27, 0.3);
+  @apply flex items-center gap-3 w-full p-3 rounded-2xl border border-border/60 transition-all text-left cursor-pointer;
+  background: oklch(from var(--muted) l c h / 0.5);
 }
 .search-progress-header:hover {
-  @apply bg-zinc-100 dark:bg-zinc-800;
+  @apply bg-muted;
 }
 
 .search-progress-icon {
@@ -426,7 +447,7 @@
 }
 
 .search-progress-label {
-  @apply text-sm font-medium text-zinc-700 dark:text-zinc-300 whitespace-nowrap;
+  @apply text-sm font-medium text-foreground whitespace-nowrap;
 }
 
 .search-favicon-strip {
@@ -434,28 +455,28 @@
 }
 
 .search-favicon {
-  @apply size-5 rounded-full border-2 border-white dark:border-zinc-950 bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center overflow-hidden shrink-0;
+  @apply size-5 rounded-full border-2 border-card bg-muted flex items-center justify-center overflow-hidden shrink-0;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
 .search-progress-toggle {
-  @apply text-zinc-400 transition-colors shrink-0;
+  @apply text-muted-foreground transition-colors shrink-0;
 }
 .search-progress-header:hover .search-progress-toggle {
-  @apply text-zinc-600 dark:text-zinc-300;
+  @apply text-foreground;
 }
 
 /* Search steps timeline */
 .search-steps-timeline {
-  @apply mt-2 ml-5 pl-4 border-l-2 border-zinc-200 dark:border-zinc-800 space-y-1.5 py-1;
+  @apply mt-2 ml-5 pl-4 border-l-2 border-border space-y-1.5 py-1;
   animation: fadeSlideIn 0.3s ease-out;
 }
 
 .search-step {
-  @apply flex items-center gap-2.5 text-xs text-zinc-500 dark:text-zinc-400 py-0.5;
+  @apply flex items-center gap-2.5 text-xs text-muted-foreground py-0.5;
 }
 .search-step-active {
-  @apply text-indigo-600 dark:text-indigo-400 font-medium;
+  @apply text-primary font-medium;
 }
 
 .search-step-icon {
@@ -472,10 +493,10 @@
 }
 
 .search-citations-toggle {
-  @apply flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors px-3 py-1.5 rounded-lg;
+  @apply flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors px-3 py-1.5 rounded-lg;
 }
 .search-citations-toggle:hover {
-  @apply bg-zinc-100 dark:bg-zinc-800;
+  @apply bg-muted;
 }
 
 .search-citations-grid {
@@ -484,47 +505,40 @@
 }
 
 .search-citation-card {
-  @apply flex-none w-52 p-3.5 rounded-xl border border-zinc-200/80 dark:border-zinc-800/80 transition-all snap-start;
-  background: rgba(255, 255, 255, 0.5);
-}
-.dark .search-citation-card {
-  background: rgba(24, 24, 27, 0.4);
+  @apply flex-none w-52 p-3.5 rounded-xl border border-border/80 transition-all snap-start;
+  background: oklch(from var(--card) l c h / 0.5);
 }
 .search-citation-card:hover {
-  @apply border-indigo-500/40;
-  background: white;
+  @apply border-primary/40 bg-card;
   box-shadow: 0 8px 24px rgba(99, 102, 241, 0.06);
   transform: translateY(-1px);
-}
-.dark .search-citation-card:hover {
-  background: rgba(39, 39, 42, 0.8);
 }
 
 .search-citation-header {
   @apply flex items-center gap-2 mb-2;
 }
 .search-citation-favicon {
-  @apply size-5 rounded-md bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center shrink-0;
+  @apply size-5 rounded-md bg-muted flex items-center justify-center shrink-0;
 }
 .search-citation-domain {
-  @apply text-[10px] font-bold text-zinc-400 truncate uppercase tracking-widest flex-1;
+  @apply text-[10px] font-bold text-muted-foreground truncate uppercase tracking-widest flex-1;
 }
 .search-citation-index {
-  @apply text-[10px] font-mono font-bold text-indigo-500 bg-indigo-50 dark:bg-indigo-500/10 px-1.5 py-0.5 rounded;
+  @apply text-[10px] font-mono font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded;
 }
 
 .search-citation-title {
-  @apply text-[13px] font-semibold text-zinc-800 dark:text-zinc-200 line-clamp-2 leading-tight min-h-[2.5rem];
+  @apply text-[13px] font-semibold text-foreground line-clamp-2 leading-tight min-h-[2.5rem];
 }
 .search-citation-card:hover .search-citation-title {
-  @apply text-indigo-600 dark:text-indigo-400;
+  @apply text-primary;
 }
 
 .search-citation-footer {
-  @apply mt-2.5 pt-2.5 border-t border-zinc-100 dark:border-zinc-800 flex justify-end text-zinc-300;
+  @apply mt-2.5 pt-2.5 border-t border-border flex justify-end text-muted-foreground/30;
 }
 .search-citation-card:hover .search-citation-footer {
-  @apply text-indigo-500/70;
+  @apply text-primary/70;
 }
 
 /* ========================================
@@ -536,21 +550,21 @@
 }
 
 .prose-container {
-  @apply text-zinc-800 dark:text-zinc-200;
+  @apply text-foreground;
   overflow-wrap: anywhere;
   word-break: break-word;
 }
 
 .content-h1 {
-  @apply text-xl font-bold mt-6 mb-3 text-zinc-900 dark:text-zinc-100 pb-2 border-b border-zinc-200 dark:border-zinc-800;
+  @apply text-xl font-bold mt-6 mb-3 text-foreground pb-2 border-b border-border;
   overflow-wrap: anywhere;
 }
 .content-h2 {
-  @apply text-lg font-bold mt-5 mb-2.5 text-zinc-900 dark:text-zinc-100;
+  @apply text-lg font-bold mt-5 mb-2.5 text-foreground;
   overflow-wrap: anywhere;
 }
 .content-h3 {
-  @apply text-base font-semibold mt-4 mb-2 text-zinc-900 dark:text-zinc-100;
+  @apply text-base font-semibold mt-4 mb-2 text-foreground;
   overflow-wrap: anywhere;
 }
 
@@ -572,26 +586,26 @@
 }
 
 .content-strong {
-  @apply font-semibold text-zinc-900 dark:text-zinc-100;
+  @apply font-semibold text-foreground;
 }
 
 .content-link {
-  @apply text-indigo-600 dark:text-indigo-400 underline underline-offset-2 decoration-indigo-300 dark:decoration-indigo-700 transition-colors;
+  @apply text-primary underline underline-offset-2 decoration-primary/30 transition-colors;
 }
 .content-link:hover {
-  @apply text-indigo-700 dark:text-indigo-300 decoration-indigo-500;
+  @apply text-primary/80 decoration-primary/60;
 }
 
 .content-blockquote {
-  @apply border-l-[3px] border-indigo-400 dark:border-indigo-500 pl-4 pr-2 py-2 my-5 text-zinc-600 dark:text-zinc-400 italic bg-indigo-50/40 dark:bg-indigo-900/10 rounded-r-lg;
+  @apply border-l-[3px] border-primary/40 pl-4 pr-2 py-2 my-5 text-muted-foreground italic bg-primary/5 rounded-r-lg;
 }
 
 .content-hr {
-  @apply my-6 border-zinc-200 dark:border-zinc-800;
+  @apply my-6 border-border;
 }
 
 .table-block-wrapper {
-  @apply relative my-5 rounded-xl border border-zinc-200 dark:border-zinc-700 overflow-hidden shadow-sm;
+  @apply relative my-5 rounded-xl border border-border overflow-hidden shadow-sm;
 }
 
 .table-wrapper {
@@ -599,15 +613,15 @@
 }
 
 .table-wrapper table {
-  @apply w-full text-sm border-collapse bg-white dark:bg-zinc-900/50;
+  @apply w-full text-sm border-collapse bg-card;
 }
 
 .table-wrapper th {
-  @apply px-4 py-3 text-left font-semibold bg-zinc-50 dark:bg-zinc-800/80 text-zinc-800 dark:text-zinc-200 border-b border-zinc-200 dark:border-zinc-700 whitespace-nowrap;
+  @apply px-4 py-3 text-left font-semibold bg-muted text-foreground border-b border-border whitespace-nowrap;
 }
 
 .table-wrapper td {
-  @apply px-4 py-2.5 border-b border-zinc-100 dark:border-zinc-800/80 transition-colors;
+  @apply px-4 py-2.5 border-b border-border/60 transition-colors;
 }
 
 .table-wrapper tr:last-child td {
@@ -615,7 +629,7 @@
 }
 
 .table-wrapper tr:hover td {
-  @apply bg-zinc-50/80 dark:bg-zinc-800/40;
+  @apply bg-muted/50;
 }
 
 
@@ -624,7 +638,7 @@
    ======================================== */
 
 .streaming-cursor {
-  @apply inline-block text-indigo-500;
+  @apply inline-block text-primary;
   animation: cursor-blink 0.8s ease-in-out infinite;
 }
 
@@ -638,7 +652,7 @@
    ======================================== */
 
 .loading-bubble {
-  @apply rounded-3xl px-5 py-3.5 bg-zinc-50 dark:bg-zinc-900/80 border border-zinc-200 dark:border-zinc-800 w-fit;
+  @apply rounded-3xl px-5 py-3.5 bg-muted border border-border w-fit;
 }
 
 .loading-dots {
@@ -646,7 +660,7 @@
 }
 
 .loading-dot {
-  @apply size-1.5 rounded-full bg-indigo-500;
+  @apply size-1.5 rounded-full bg-primary;
   animation: bounce 1.4s ease-in-out infinite;
 }
 
