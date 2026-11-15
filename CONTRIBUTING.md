@@ -13,8 +13,8 @@
 
 2. **克隆并安装**：
    ```bash
-   git clone https://github.com/278690600-svg/ClosedUI.git
-   cd ClosedUI
+   git clone https://github.com/278690600-svg/OpenOrange.git
+   cd OpenOrange
    npm install
    ```
 

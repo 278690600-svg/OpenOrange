@@ -19,7 +19,7 @@
 [![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js&logoColor=white)](https://nextjs.org/)
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)](https://react.dev/)
 [![TailwindCSS](https://img.shields.io/badge/TailwindCSS-v4-38B2AC?logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/278690600-svg/ClosedUI/pulls)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/278690600-svg/OpenOrange/pulls)
 
 </div>
 
@@ -96,8 +96,8 @@ Ensure [Docker](https://www.docker.com/) and Docker Compose are installed.
 
 1. **Clone the repository**:
    ```bash
-   git clone https://github.com/278690600-svg/ClosedUI.git
-   cd ClosedUI
+   git clone https://github.com/278690600-svg/OpenOrange.git
+   cd OpenOrange
    ```
 
 2. **Start the stack** (includes OpenOrangeAI + Ollama):
